@@ -26,8 +26,7 @@
  */
 
 /**
- * @fileoverview Generate api via swagger scheme.
-Supports OA 3.0, 2.0, JSON, yaml.
+ * @fileoverview Generate api via swagger scheme. Supports OA 3.0, 2.0, JSON, yaml.
  * @author Acacode
  *
  * Rewritten to TypeScript and ES Module by Hung (@hunghg255)

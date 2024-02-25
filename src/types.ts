@@ -1,8 +1,18 @@
 export interface IOptions {
-  input: string;
-  output: string;
+  /**
+   *  name of output typescript api file (default: "Api.ts")
+   */
   name: string;
+  /**
+   * output path of typescript api file (default: "./")
+   */
+  output: string;
+  /**
+   * path/url to swagger scheme
+   */
   url: string;
+
+  input?: string;
   spec?: {
     swagger?: '2.0' | '3.0';
     info?: {
@@ -21,6 +31,9 @@ export interface IOptions {
   extractRequestBody?: boolean;
   extractEnums?: boolean;
   unwrapResponseData?: boolean;
+  /**
+   * By default prettier config is load from your project
+   */
   prettier?: {
     // By default prettier config is load from your project
     printWidth?: number;
@@ -46,6 +59,7 @@ export interface IOptions {
     responseBodySuffix?: string[];
     responseErrorSuffix?: string[];
   };
+
   /** allow to generate extra files based with this extra templates, see more below */
   extraTemplates?: [];
   anotherArrayType?: boolean;
