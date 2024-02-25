@@ -1,0 +1,6 @@
+{
+    "extends": ["@hunghg255/eslint-config-ts"],
+    "rules": {
+        "verbatimModuleSyntax": "off"
+    }
+}
