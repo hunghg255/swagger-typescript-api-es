@@ -17,7 +17,7 @@
   },
   "sideEffects": false,
   "bin": {
-    "bin-cli": "./bin/cli.mjs"
+    "swagger-typescript-api-es": "./bin/cli.mjs"
   },
   "files": [
     "bin",
@@ -28,7 +28,7 @@
   "scripts": {
     "build": "unbuild",
     "dev": "unbuild --stub",
-    "test:cli": "node ./dist/cli.mjs -w -p 1234 -c awesome",
+    "test:cli": "esno src/cli.ts -u http://localhost:5002/api-json -o ./play -n api-cli.ts --httpClientType axios",
     "lint": "eslint --ext .ts,.tsx src --color",
     "start": "esno play/test.ts",
     "test": "vitest",
@@ -79,6 +79,8 @@
     "prettier": "^3.2.5",
     "swagger-schema-official": "^2.0.0-bab6bed",
     "swagger2openapi": "^7.0.8",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "unprompts": "^1.0.11",
+    "unreadconfig": "^0.0.13"
   }
 }
