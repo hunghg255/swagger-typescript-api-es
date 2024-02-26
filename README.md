@@ -15,7 +15,7 @@
   <a href="https://github.com/hunghg255/swagger-typescript-api-es/graphs/contributors" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/all_contributors-1-orange.svg" alt="Contributors" /></a>
   <a href="https://github.com/hunghg255/swagger-typescript-api-es/blob/main/LICENSE" target="_blank" rel="noopener noreferrer"><img src="https://badgen.net/github/license/hunghg255/swagger-typescript-api-es" alt="License" /></a>
 </p>
-
+1
 ## 📝 License
 
 Licensed under the [MIT License](https://github.com/hunghg255/swagger-typescript-api-es/blob/master/LICENSE).
