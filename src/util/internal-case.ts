@@ -1,5 +1,6 @@
-import _ from 'lodash';
+import camelCase from 'lodash/camelCase';
+import lowerCase from 'lodash/lowerCase';
 
-const internalCase = (value: any) => _.camelCase(_.lowerCase(value));
+const internalCase = (value: any) => camelCase(lowerCase(value));
 
 export { internalCase };

@@ -6,16 +6,40 @@
 /* eslint-disable unicorn/prefer-array-some */
 /* eslint-disable unicorn/no-null */
 /* eslint-disable unicorn/prefer-spread */
-import _, { camelCase } from 'lodash';
 
+import assign from 'lodash/assign';
+import camelCase from 'lodash/camelCase';
+import compact from 'lodash/compact';
+import concat from 'lodash/concat';
+import each from 'lodash/each';
+import endsWith from 'lodash/endsWith';
+import entries from 'lodash/entries';
+import find from 'lodash/find';
+import flatMap from 'lodash/flatMap';
+import forEach from 'lodash/forEach';
+import get from 'lodash/get';
+import includes from 'lodash/includes';
+import isEqual from 'lodash/isEqual';
+import isNaN from 'lodash/isNaN';
+import isObject from 'lodash/isObject';
+import keys from 'lodash/keys';
+import map from 'lodash/map';
+import reduce from 'lodash/reduce';
+import replace from 'lodash/replace';
+import slice from 'lodash/slice';
+import some from 'lodash/some';
+import split from 'lodash/split';
+import startsWith from 'lodash/startsWith';
+import uniq from 'lodash/uniq';
+
+import { SpecificArgNameResolver } from './util/specific-arg-name-resolver';
 import {
   DEFAULT_BODY_ARG_NAME,
   RESERVED_BODY_ARG_NAMES,
   RESERVED_PATH_ARG_NAMES,
   RESERVED_QUERY_ARG_NAMES,
-} from '~src/constants';
-import { SpecificArgNameResolver } from '~src/schema-routes/util/specific-arg-name-resolver';
-import { generateId } from '~src/util/id';
+} from '../../src/constants';
+import { generateId } from '../util/id';
 
 const CONTENT_KIND = {
   JSON: 'JSON',
@@ -79,25 +103,25 @@ class SchemaRoutes {
     this.logger = logger;
     this.templatesWorker = templatesWorker;
 
-    this.FORM_DATA_TYPES = _.uniq([
+    this.FORM_DATA_TYPES = uniq([
       this.schemaUtils.getSchemaType({ type: 'string', format: 'file' }),
       this.schemaUtils.getSchemaType({ type: 'string', format: 'binary' }),
     ]);
   }
 
   createRequestsMap = (routeInfoByMethodsMap: any) => {
-    const parameters = _.get(routeInfoByMethodsMap, 'parameters');
+    const parameters = get(routeInfoByMethodsMap, 'parameters');
 
-    return _.reduce(
+    return reduce(
       routeInfoByMethodsMap,
       (acc: any, requestInfo, method) => {
-        if (_.startsWith(method, 'x-') || ['parameters', '$ref'].includes(method)) {
+        if (startsWith(method, 'x-') || ['parameters', '$ref'].includes(method)) {
           return acc;
         }
 
         acc[method] = {
           ...requestInfo,
-          parameters: _.compact(_.concat(parameters, requestInfo.parameters)),
+          parameters: compact(concat(parameters, requestInfo.parameters)),
         };
 
         return acc;
@@ -114,22 +138,22 @@ class SchemaRoutes {
     );
 
     // used in case when path parameters is not declared in requestInfo.parameters ("in": "path")
-    const pathParams: any = _.reduce(
+    const pathParams: any = reduce(
       pathParamMatches,
       (pathParams: any, match) => {
-        const paramName = _.replace(match, /[:{}]/g, '');
+        const paramName = replace(match, /[:{}]/g, '');
 
         if (!paramName) {
           return pathParams;
         }
 
-        if (_.includes(paramName, '-')) {
+        if (includes(paramName, '-')) {
           this.logger.warn('wrong path param name', paramName);
         }
 
         pathParams.push({
           $match: match,
-          name: _.camelCase(paramName),
+          name: camelCase(paramName),
           required: true,
           type: 'string',
           description: '',
@@ -144,12 +168,12 @@ class SchemaRoutes {
       [],
     );
 
-    let fixedRoute = _.reduce(
+    let fixedRoute = reduce(
       pathParams,
       (fixedRoute, pathParam, i, arr) => {
         const insertion =
           this.config.hooks.onInsertPathParam(pathParam.name, i, arr, fixedRoute) || pathParam.name;
-        return _.replace(fixedRoute, pathParam.$match, `\${${insertion}}`);
+        return replace(fixedRoute, pathParam.$match, `\${${insertion}}`);
       },
       routeName || '',
     );
@@ -162,19 +186,19 @@ class SchemaRoutes {
         fixedRoute = fixedRoute.replace(match, '');
       }
 
-      for (const paramName of _.uniq(
+      for (const paramName of uniq(
         queryParamMatches
           .join(',')
           .replaceAll(/({\?)|(})|\s/g, '')
           .split(','),
       )) {
-        if (_.includes(paramName as any, '-')) {
+        if (includes(paramName as any, '-')) {
           this.logger.warn('wrong query param name', paramName);
         }
 
         queryParams.push({
           $match: paramName,
-          name: _.camelCase(paramName as any),
+          name: camelCase(paramName as any),
           required: true,
           type: 'string',
           description: '',
@@ -212,7 +236,7 @@ class SchemaRoutes {
       cookie: [],
     };
 
-    _.each(parameters, (parameter) => {
+    each(parameters, (parameter) => {
       const refTypeInfo = this.schemaParserFabric.schemaUtils.getSchemaRefType(parameter);
       let routeParam = null;
 
@@ -245,7 +269,7 @@ class SchemaRoutes {
           return;
         }
 
-        routeParam.name = _.camelCase(routeParam.name);
+        routeParam.name = camelCase(routeParam.name);
       }
 
       if (routeParam) {
@@ -254,19 +278,16 @@ class SchemaRoutes {
     });
 
     // used in case when path parameters is not declared in requestInfo.parameters ("in": "path")
-    _.each(pathParamsFromRouteName, (pathParam) => {
-      const alreadyExist = _.some(
-        routeParams.path,
-        (parameter) => parameter.name === pathParam.name,
-      );
+    each(pathParamsFromRouteName, (pathParam) => {
+      const alreadyExist = some(routeParams.path, (parameter) => parameter.name === pathParam.name);
 
       if (!alreadyExist) {
         routeParams.path.push(pathParam);
       }
     });
     // used in case when path parameters is not declared in requestInfo.parameters ("in": "path")
-    _.each(queryParamsFromRouteName, (queryParam) => {
-      const alreadyExist = _.some(
+    each(queryParamsFromRouteName, (queryParam) => {
+      const alreadyExist = some(
         routeParams.query,
         (parameter) => parameter.name === queryParam.name,
       );
@@ -280,20 +301,20 @@ class SchemaRoutes {
   };
 
   getContentTypes = (requestInfo: any, extraContentTypes: any) =>
-    _.uniq(
-      _.compact([
+    uniq(
+      compact([
         ...(extraContentTypes || []),
-        ..._.flatMap(
+        ...flatMap(
           requestInfo,
-          (requestInfoData) => requestInfoData && _.keys(requestInfoData.content),
+          (requestInfoData) => requestInfoData && keys(requestInfoData.content),
         ),
       ]),
     );
 
   getContentKind = (contentTypes: any) => {
     if (
-      _.some(contentTypes, (contentType) => _.startsWith(contentType, 'application/json')) ||
-      _.some(contentTypes, (contentType) => _.endsWith(contentType, '+json'))
+      some(contentTypes, (contentType) => startsWith(contentType, 'application/json')) ||
+      some(contentTypes, (contentType) => endsWith(contentType, '+json'))
     ) {
       return CONTENT_KIND.JSON;
     }
@@ -306,11 +327,11 @@ class SchemaRoutes {
       return CONTENT_KIND.FORM_DATA;
     }
 
-    if (_.some(contentTypes, (contentType) => _.includes(contentType, 'image/'))) {
+    if (some(contentTypes, (contentType) => includes(contentType, 'image/'))) {
       return CONTENT_KIND.IMAGE;
     }
 
-    if (_.some(contentTypes, (contentType) => _.startsWith(contentType, 'text/'))) {
+    if (some(contentTypes, (contentType) => startsWith(contentType, 'text/'))) {
       return CONTENT_KIND.TEXT;
     }
 
@@ -324,7 +345,7 @@ class SchemaRoutes {
     status === '2xx';
 
   getSchemaFromRequestType = (requestInfo: any) => {
-    const content = _.get(requestInfo, 'content');
+    const content = get(requestInfo, 'content');
 
     if (!content) {
       return null;
@@ -360,12 +381,12 @@ class SchemaRoutes {
       const content = this.schemaParserFabric.getInlineParseContent(schema, typeName, [
         operationId,
       ]);
-      const foundedSchemaByName = _.find(
+      const foundedSchemaByName = find(
         parsedSchemas,
         (parsedSchema) => this.typeNameFormatter.format(parsedSchema.name) === content,
       );
-      const foundSchemaByContent = _.find(parsedSchemas, (parsedSchema) =>
-        _.isEqual(parsedSchema.content, content),
+      const foundSchemaByContent = find(parsedSchemas, (parsedSchema) =>
+        isEqual(parsedSchema.content, content),
       );
 
       const foundSchema = foundedSchemaByName || foundSchemaByContent;
@@ -375,11 +396,11 @@ class SchemaRoutes {
 
     if (refTypeInfo) {
       // const refTypeWithoutOpId = refType.replace(operationId, '');
-      // const foundedSchemaByName = _.find(parsedSchemas, ({ name }) => name === refType || name === refTypeWithoutOpId)
+      // const foundedSchemaByName = find(parsedSchemas, ({ name }) => name === refType || name === refTypeWithoutOpId)
 
       // TODO:HACK fix problem of swagger2opeanpi
-      const typeNameWithoutOpId = _.replace(refTypeInfo.typeName, operationId, '');
-      if (_.find(parsedSchemas, (schema) => schema.name === typeNameWithoutOpId)) {
+      const typeNameWithoutOpId = replace(refTypeInfo.typeName, operationId, '');
+      if (find(parsedSchemas, (schema) => schema.name === typeNameWithoutOpId)) {
         return this.typeNameFormatter.format(typeNameWithoutOpId);
       }
 
@@ -409,7 +430,7 @@ class SchemaRoutes {
   };
 
   getRequestInfoTypes = ({ requestInfos, parsedSchemas, operationId, defaultType }: any) =>
-    _.reduce(
+    reduce(
       requestInfos,
       (acc: any, requestInfo: any, status: any) => {
         // @ts-ignore
@@ -434,7 +455,7 @@ class SchemaRoutes {
               requestInfo.description || '',
               true,
             ),
-            status: _.isNaN(+status) ? status : +status,
+            status: isNaN(+status) ? status : +status,
             isSuccess: this.isSuccessStatus(status),
           },
         ];
@@ -508,7 +529,7 @@ class SchemaRoutes {
   };
 
   convertRouteParamsIntoObject = (params: any) => {
-    return _.reduce(
+    return reduce(
       params,
       (objectSchema, schemaPart) => {
         if (!schemaPart || !schemaPart.name) {
@@ -583,7 +604,7 @@ class SchemaRoutes {
       // TODO: Refactor that.
       // It needed for cases when swagger schema is not declared request body type as form data
       // but request body data type contains form data types like File
-      if (this.FORM_DATA_TYPES.some((dataType: any) => _.includes(content, `: ${dataType}`))) {
+      if (this.FORM_DATA_TYPES.some((dataType: any) => includes(content, `: ${dataType}`))) {
         contentKind = CONTENT_KIND.FORM_DATA;
       }
     }
@@ -620,7 +641,7 @@ class SchemaRoutes {
       return null;
     }
 
-    const pathParams = _.reduce(
+    const pathParams = reduce(
       pathArgsSchemas,
       (acc: any, pathArgSchema) => {
         if (pathArgSchema.name) {
@@ -635,10 +656,10 @@ class SchemaRoutes {
       {},
     );
 
-    const fixedQueryParams = _.reduce(
-      _.get(queryObjectSchema, 'properties', {}),
+    const fixedQueryParams = reduce(
+      get(queryObjectSchema, 'properties', {}),
       (acc: any, property, name) => {
-        if (name && _.isObject(property)) {
+        if (name && isObject(property)) {
           acc[name] = {
             ...property,
             in: 'query',
@@ -706,7 +727,7 @@ class SchemaRoutes {
         });
 
         if (idx > -1) {
-          _.assign(responseBodyInfo.responses[idx], {
+          assign(responseBodyInfo.responses[idx], {
             ...successResponse.schema,
             type: successResponse.type,
           });
@@ -773,7 +794,7 @@ class SchemaRoutes {
 
     const duplicateIdentifier = `${moduleName}|${routeName}`;
 
-    if (routeNameDuplicatesMap.has(duplicateIdentifier)) {
+    if (routeName && routeNameDuplicatesMap.has(duplicateIdentifier)) {
       routeNameDuplicatesMap.set(
         duplicateIdentifier,
         routeNameDuplicatesMap.get(duplicateIdentifier) + 1,
@@ -831,8 +852,8 @@ class SchemaRoutes {
     const firstTag = tags && tags.length > 0 ? tags[0] : null;
     const moduleName =
       moduleNameFirstTag && firstTag
-        ? _.camelCase(firstTag)
-        : _.camelCase(_.compact(_.split(route, '/'))[moduleNameIndex]);
+        ? camelCase(firstTag)
+        : camelCase(compact(split(route, '/'))[moduleNameIndex]);
     let hasSecurity = !!(globalSecurity && globalSecurity.length > 0);
     if (security) {
       hasSecurity = security.length > 0;
@@ -971,7 +992,7 @@ class SchemaRoutes {
 
     return {
       id: routeId,
-      namespace: _.replace(moduleName, /^(\d)/, 'v$1'),
+      namespace: replace(moduleName, /^(\d)/, 'v$1'),
       routeName,
       routeParams,
       requestBodyInfo,
@@ -1011,12 +1032,12 @@ class SchemaRoutes {
   attachSchema = ({ usageSchema, parsedSchemas }: any) => {
     this.config.routeNameDuplicatesMap.clear();
 
-    const pathsEntries = _.entries(usageSchema.paths);
+    const pathsEntries = entries(usageSchema.paths);
 
-    _.forEach(pathsEntries, ([rawRouteName, routeInfoByMethodsMap]) => {
+    forEach(pathsEntries, ([rawRouteName, routeInfoByMethodsMap]) => {
       const routeInfosMap = this.createRequestsMap(routeInfoByMethodsMap);
 
-      _.forEach(routeInfosMap, (routeInfo, method) => {
+      forEach(routeInfosMap, (routeInfo, method) => {
         const parsedRouteInfo = this.parseRouteInfo(
           rawRouteName,
           routeInfo,
@@ -1064,7 +1085,7 @@ class SchemaRoutes {
       },
     );
 
-    const routeGroups = _.reduce(
+    const routeGroups = reduce(
       groupedRoutes,
       (acc: any, routesGroup, moduleName) => {
         if (moduleName === '$outOfModule') {
@@ -1076,7 +1097,7 @@ class SchemaRoutes {
 
           acc.combined.push({
             moduleName,
-            routes: _.map(routesGroup, (route) => {
+            routes: map(routesGroup, (route) => {
               const { original: originalName, usage: usageName } = route.routeName;
 
               // TODO: https://github.com/acacode/swagger-typescript-api/issues/152
@@ -1084,7 +1105,7 @@ class SchemaRoutes {
               if (
                 routesGroup.length > 1 &&
                 usageName !== originalName &&
-                !_.some(
+                !some(
                   routesGroup,
                   ({ routeName, id }) => id !== route.id && originalName === routeName.original,
                 )
@@ -1112,7 +1133,7 @@ class SchemaRoutes {
         routeGroups.outOfModule = this.sortRoutes(routeGroups.outOfModule);
       }
       if (routeGroups.combined) {
-        _.each(routeGroups.combined, (routeGroup) => {
+        each(routeGroups.combined, (routeGroup) => {
           routeGroup.routes = this.sortRoutes(routeGroup.routes);
         });
       }
@@ -1122,7 +1143,7 @@ class SchemaRoutes {
   };
 
   sortRoutes = (routes: any) => {
-    return _.slice(routes).sort((routeA: any, routeB: any) =>
+    return slice(routes).sort((routeA: any, routeB: any) =>
       routeA.routeName.usage.localeCompare(routeB.routeName.usage),
     );
   };

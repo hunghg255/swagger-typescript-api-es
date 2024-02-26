@@ -3,10 +3,15 @@
 /* eslint-disable unicorn/no-null */
 import path, { resolve } from 'node:path';
 
-import Eta from 'eta';
-import _ from 'lodash';
+import * as Eta from 'eta';
+import endsWith from 'lodash/endsWith';
+import keys from 'lodash/keys';
+import lowerCase from 'lodash/lowerCase';
+import reduce from 'lodash/reduce';
+import replace from 'lodash/replace';
+import startsWith from 'lodash/startsWith';
 
-import { __dirname_esm } from '~src/constants';
+import { __dirname_esm } from './constants';
 
 class TemplatesWorker {
   /**
@@ -62,7 +67,7 @@ class TemplatesWorker {
 
   cropExtension = (path: any) =>
     this.config.templateExtensions.reduce(
-      (path: any, ext: any) => (_.endsWith(path, ext) ? path.replace(ext, '') : path),
+      (path: any, ext: any) => (endsWith(path, ext) ? path.replace(ext, '') : path),
       path,
     );
 
@@ -76,7 +81,7 @@ class TemplatesWorker {
   };
 
   requireFnFromTemplate = (packageOrPath: any) => {
-    const isPath = _.startsWith(packageOrPath, './') || _.startsWith(packageOrPath, '../');
+    const isPath = startsWith(packageOrPath, './') || startsWith(packageOrPath, '../');
 
     if (isPath) {
       return require(
@@ -106,7 +111,7 @@ class TemplatesWorker {
     let fileContent = customFullPath && this.fileSystem.getFileContent(customFullPath);
 
     if (fileContent) {
-      this.logger.log(`"${_.lowerCase(name)}" template found in "${templatePaths.custom}"`);
+      this.logger.log(`"${lowerCase(name)}" template found in "${templatePaths.custom}"`);
       return fileContent;
     }
 
@@ -116,11 +121,11 @@ class TemplatesWorker {
       fileContent = this.fileSystem.getFileContent(baseFullPath);
     } else if (templatePaths.custom) {
       this.logger.warn(
-        `"${_.lowerCase(name)}" template not found in "${templatePaths.custom}"`,
+        `"${lowerCase(name)}" template not found in "${templatePaths.custom}"`,
         '\nCode generator will use the default template',
       );
     } else {
-      this.logger.log(`Code generator will use the default template for "${_.lowerCase(name)}"`);
+      this.logger.log(`Code generator will use the default template for "${lowerCase(name)}"`);
     }
 
     const originalFullPath = this.getTemplateFullPath(templatePaths.original, fileName);
@@ -137,7 +142,7 @@ class TemplatesWorker {
       this.logger.log(`try to read templates from directory "${templatePaths.custom}"`);
     }
 
-    return _.reduce(
+    return reduce(
       this.config.templateInfos,
       (acc, { fileName, name }) => ({
         ...acc,
@@ -156,12 +161,12 @@ class TemplatesWorker {
   };
 
   getTemplateContent = (path: any) => {
-    const foundTemplatePathKey: any = _.keys(this.config.templatePaths).find((key) =>
-      _.startsWith(path, `@${key}`),
+    const foundTemplatePathKey: any = keys(this.config.templatePaths).find((key) =>
+      startsWith(path, `@${key}`),
     );
 
     const rawPath = resolve(
-      _.replace(path, `@${foundTemplatePathKey}`, this.config.templatePaths[foundTemplatePathKey]),
+      replace(path, `@${foundTemplatePathKey}`, this.config.templatePaths[foundTemplatePathKey]),
     );
     const fixedPath = this.findTemplateWithExt(rawPath);
 
@@ -194,11 +199,10 @@ class TemplatesWorker {
    * @param options
    * @returns {Promise<string|string|void>}
    */
-  renderTemplate = (template: any, configuration: any, options: any) => {
+  renderTemplate = (template: string, configuration: any, options: any) => {
     if (!template) {
       return '';
     }
-
     // @ts-ignore
     return Eta.render(
       template,

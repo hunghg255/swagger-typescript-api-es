@@ -1,6 +1,7 @@
 import https from 'node:https';
 
-import _ from 'lodash';
+import merge from 'lodash/merge';
+import startsWith from 'lodash/startsWith';
 // @ts-ignore
 import fetch from 'node-fetch-h2';
 
@@ -33,7 +34,7 @@ class Request {
      */
     const requestOptions: any = {};
 
-    if (disableStrictSSL && !_.startsWith(url, 'http://')) {
+    if (disableStrictSSL && !startsWith(url, 'http://')) {
       requestOptions.agent = new https.Agent({
         rejectUnauthorized: false,
       });
@@ -44,7 +45,7 @@ class Request {
       };
     }
 
-    _.merge(requestOptions, options, this.config.requestOptions);
+    merge(requestOptions, options, this.config.requestOptions);
 
     try {
       const response = await fetch(url, requestOptions);

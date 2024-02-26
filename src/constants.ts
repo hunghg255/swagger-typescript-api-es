@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/prefer-module */
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -49,7 +50,8 @@ const PRETTIER_OPTIONS = {
   parser: 'typescript',
 };
 
-export const __dirname_esm = dirname(fileURLToPath(import.meta.url));
+export const __dirname_esm =
+  typeof __dirname === 'undefined' ? dirname(fileURLToPath(import.meta.url)) : __dirname;
 
 export {
   FILE_PREFIX,

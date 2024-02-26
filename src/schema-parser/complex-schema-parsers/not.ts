@@ -1,4 +1,4 @@
-import { MonoSchemaParser } from '~src/schema-parser/mono-schema-parser';
+import { MonoSchemaParser } from '../mono-schema-parser';
 
 class NotSchemaParser extends MonoSchemaParser {
   parse() {

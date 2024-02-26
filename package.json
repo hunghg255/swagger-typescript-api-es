@@ -1,18 +1,15 @@
 {
   "name": "swagger-typescript-api-es",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "license": "MIT",
-  "main": "./dist/index.cjs",
+  "type": "module",
+  "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     "import": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.mjs"
-    },
-    "require": {
-      "types": "./dist/index.d.cts",
-      "default": "./dist/index.cjs"
     }
   },
   "sideEffects": false,
@@ -22,13 +19,13 @@
   "files": [
     "bin",
     "dist",
-    "LICENSE",
-    "templates"
+    "LICENSE"
   ],
   "scripts": {
-    "build": "unbuild",
+    "build": "unbuild && cp -r ./templates ./dist",
     "dev": "unbuild --stub",
-    "test:cli": "esno src/cli.ts -u http://localhost:5002/api-json -o ./play -n api-cli.ts --httpClientType axios",
+    "test:cli": "node dist/cli.mjs",
+    "test:cli1": "esno src/cli.ts",
     "lint": "eslint --ext .ts,.tsx src --color",
     "start": "esno play/test.ts",
     "test": "vitest",
@@ -49,6 +46,7 @@
     "bumpp": "^9.2.1",
     "esno": "^0.16.3",
     "git-scm-hooks": "^0.0.7",
+    "lodash": "^4.17.21",
     "tslib": "^2.6.2",
     "unbuild": "^2.0.0",
     "verify-commit-msg": "^0.0.10",
@@ -71,7 +69,6 @@
     "cosmiconfig": "^9.0.0",
     "eta": "^2.2.0",
     "js-yaml": "^4.1.0",
-    "lodash": "^4.17.21",
     "make-dir": "^4.0.0",
     "nanoid": "^5.0.6",
     "node-emoji": "^2.1.3",

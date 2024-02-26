@@ -1,5 +1,5 @@
 /* eslint-disable indent */
-import _ from 'lodash';
+import reduceRight from 'lodash/reduceRight';
 import prettier from 'prettier';
 import ts from 'typescript';
 
@@ -25,7 +25,7 @@ class CodeFormatter {
     )[0];
 
     if (fileTextChanges && fileTextChanges.textChanges.length > 0) {
-      return _.reduceRight(
+      return reduceRight(
         fileTextChanges.textChanges,
         (content, { span, newText }) =>
           `${content.slice(0, span.start)}${newText}${content.slice(span.start + span.length)}`,
@@ -45,13 +45,14 @@ class CodeFormatter {
     return formatted;
   };
 
-  formatCode = async (code: any, { removeUnusedImports = true, prettierFormat = true } = {}) => {
+  formatCode = async (code: string, { removeUnusedImports = true, prettierFormat = true } = {}) => {
     if (removeUnusedImports) {
       code = this.removeUnusedImports(code);
     }
     if (prettierFormat) {
       code = await this.prettierFormat(code);
     }
+
     return code;
   };
 }

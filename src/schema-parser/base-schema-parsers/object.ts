@@ -1,14 +1,19 @@
-import _ from 'lodash';
+import compact from 'lodash/compact';
+import get from 'lodash/get';
+import isObject from 'lodash/isObject';
+import map from 'lodash/map';
+import some from 'lodash/some';
+import values from 'lodash/values';
 
-import { SCHEMA_TYPES } from '~src/constants';
-import { MonoSchemaParser } from '~src/schema-parser/mono-schema-parser';
+import { SCHEMA_TYPES } from '../../constants';
+import { MonoSchemaParser } from '../mono-schema-parser';
 
 class ObjectSchemaParser extends MonoSchemaParser {
   parse() {
     const contentProperties = this.getObjectSchemaContent(this.schema);
 
     return {
-      ...(_.isObject(this.schema) ? this.schema : {}),
+      ...(isObject(this.schema) ? this.schema : {}),
       $schemaPath: [...this.schemaPath],
       $parsedSchema: true,
       schemaType: SCHEMA_TYPES.OBJECT,
@@ -16,7 +21,7 @@ class ObjectSchemaParser extends MonoSchemaParser {
       typeIdentifier: this.config.Ts.Keyword.Interface,
       name: this.typeName,
       description: this.schemaFormatters.formatDescription(this.schema.description),
-      allFieldsAreOptional: !_.some(_.values(contentProperties), (part) => part.isRequired),
+      allFieldsAreOptional: !some(values(contentProperties), (part) => part.isRequired),
       content: contentProperties,
     };
   }
@@ -24,9 +29,9 @@ class ObjectSchemaParser extends MonoSchemaParser {
   getObjectSchemaContent = (schema: any) => {
     const { properties, additionalProperties } = schema || {};
 
-    const propertiesContent = _.map(properties, (property, name) => {
+    const propertiesContent = map(properties, (property, name) => {
       const required = this.schemaUtils.isPropertyRequired(name, property, schema);
-      const rawTypeData = _.get(this.schemaUtils.getSchemaRefType(property), 'rawTypeData', {});
+      const rawTypeData = get(this.schemaUtils.getSchemaRefType(property), 'rawTypeData', {});
       const nullable = !!(rawTypeData.nullable || property.nullable);
       const fieldName = this.typeNameFormatter.isValidName(name)
         ? name
@@ -45,10 +50,10 @@ class ObjectSchemaParser extends MonoSchemaParser {
         title: property.title,
         description:
           property.description ||
-          _.compact(_.map(property[this.schemaUtils.getComplexType(property)], 'description'))[0] ||
+          compact(map(property[this.schemaUtils.getComplexType(property)], 'description'))[0] ||
           rawTypeData.description ||
-          _.compact(
-            _.map(rawTypeData[this.schemaUtils.getComplexType(rawTypeData)], 'description'),
+          compact(
+            map(rawTypeData[this.schemaUtils.getComplexType(rawTypeData)], 'description'),
           )[0] ||
           '',
         isRequired: required,

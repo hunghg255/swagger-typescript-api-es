@@ -32,9 +32,8 @@
  * Rewritten to TypeScript and ES Module by Hung (@hunghg255)
  */
 
-import { IOptions } from '~src/types.js';
-
 import { CodeGenProcess } from './code-gen-process.js';
+import { IOptions } from './types';
 
 const generateApi = ({ name, prettier, ...config }: IOptions) => {
   const codeGenProcess = new CodeGenProcess({
@@ -50,6 +49,6 @@ export const defaultConfig = (options: IOptions) => {
 };
 
 export { generateApi };
-export * as constants from '~src/constants';
+export * as constants from './constants';
 
 export { generateTemplates } from './commands/generate-templates';

@@ -1,7 +1,14 @@
 /* eslint-disable indent */
-import _ from 'lodash';
 
-import { SCHEMA_TYPES } from '~src/constants';
+import compact from 'lodash/compact';
+import get from 'lodash/get';
+import includes from 'lodash/includes';
+import isString from 'lodash/isString';
+import map from 'lodash/map';
+import replace from 'lodash/replace';
+import trim from 'lodash/trim';
+
+import { SCHEMA_TYPES } from '../constants';
 
 class SchemaFormatters {
   /** @type {CodeGenConfig} */
@@ -29,7 +36,7 @@ class SchemaFormatters {
         return {
           ...parsedSchema,
           $content: parsedSchema.content,
-          content: this.config.Ts.UnionType(_.map(parsedSchema.content, ({ value }) => value)),
+          content: this.config.Ts.UnionType(map(parsedSchema.content, ({ value }) => value)),
         };
       }
 
@@ -64,15 +71,15 @@ class SchemaFormatters {
         content: parsedSchema.$ref
           ? parsedSchema.typeName
           : this.config.Ts.UnionType(
-              _.compact([
-                ..._.map(parsedSchema.content, ({ value }) => `${value}`),
+              compact([
+                ...map(parsedSchema.content, ({ value }) => `${value}`),
                 parsedSchema.nullable && this.config.Ts.Keyword.Null,
               ]),
             ) || this.config.Ts.Keyword.Any,
       };
     },
     [SCHEMA_TYPES.OBJECT]: (parsedSchema: any) => {
-      if (_.isString(parsedSchema.content)) {
+      if (isString(parsedSchema.content)) {
         return {
           ...parsedSchema,
           typeIdentifier: this.config.Ts.Keyword.Type,
@@ -99,8 +106,8 @@ class SchemaFormatters {
    */
   formatSchema = (parsedSchema: any, formatType = 'base') => {
     const schemaType =
-      _.get(parsedSchema, ['schemaType']) || _.get(parsedSchema, ['$parsed', 'schemaType']);
-    const formatterFn = _.get(this, [formatType, schemaType]);
+      get(parsedSchema, ['schemaType']) || get(parsedSchema, ['$parsed', 'schemaType']);
+    const formatterFn = get(this, [formatType, schemaType]);
     return (formatterFn && formatterFn(parsedSchema)) || parsedSchema;
   };
 
@@ -111,24 +118,24 @@ class SchemaFormatters {
 
     let prettified = description;
 
-    prettified = _.replace(prettified, /\*\//g, '*/');
+    prettified = replace(prettified, /\*\//g, '*/');
 
-    const hasMultipleLines = _.includes(prettified, '\n');
+    const hasMultipleLines = includes(prettified, '\n');
 
     if (!hasMultipleLines) {
       return prettified;
     }
 
     if (inline) {
-      return _(prettified)
+      return `${prettified}`
         .split(/\n/g)
-        .map((part) => _.trim(part))
-        .compact()
+        .map((part) => trim(part))
+        .filter(Boolean)
         .join(' ')
         .valueOf();
     }
 
-    return _.replace(prettified, /\n$/g, '');
+    return replace(prettified, /\n$/g, '');
   };
 
   formatObjectContent = (content: any) => {

@@ -3,12 +3,22 @@
 /* eslint-disable unicorn/no-null */
 /* eslint-disable valid-typeof */
 /* eslint-disable unicorn/no-nested-ternary */
-import _, { camelCase } from 'lodash';
 
-import { internalCase } from '~src/util/internal-case';
-import { pascalCase } from '~src/util/pascal-case';
+import camelCase from 'lodash/camelCase';
+import compact from 'lodash/compact';
+import filter from 'lodash/filter';
+import get from 'lodash/get';
+import isArray from 'lodash/isArray';
+import isBoolean from 'lodash/isBoolean';
+import isEmpty from 'lodash/isEmpty';
+import isFunction from 'lodash/isFunction';
+import isString from 'lodash/isString';
+import keys from 'lodash/keys';
+import uniq from 'lodash/uniq';
 
 import { SCHEMA_TYPES } from '../constants';
+import { internalCase } from '../util/internal-case';
+import { pascalCase } from '../util/pascal-case';
 
 class SchemaUtils {
   /** @type {CodeGenConfig} */
@@ -28,7 +38,7 @@ class SchemaUtils {
   }
 
   getRequiredProperties = (schema: any) => {
-    return _.uniq((schema && _.isArray(schema.required) && schema.required) || []);
+    return uniq((schema && isArray(schema.required) && schema.required) || []);
   };
 
   isRefSchema = (schema: any) => {
@@ -57,9 +67,9 @@ class SchemaUtils {
       return true;
     }
 
-    const isRequired = _.isBoolean(propertySchema.required)
+    const isRequired = isBoolean(propertySchema.required)
       ? !!propertySchema.required
-      : _.isArray(rootSchema.required)
+      : isArray(rootSchema.required)
         ? rootSchema.required.includes(name)
         : !!rootSchema.required;
 
@@ -74,8 +84,8 @@ class SchemaUtils {
   isNullMissingInType = (schema: any, type: any) => {
     const { nullable, type: schemaType } = schema || {};
     return (
-      (nullable || !!_.get(schema, 'x-nullable') || schemaType === this.config.Ts.Keyword.Null) &&
-      _.isString(type) &&
+      (nullable || !!get(schema, 'x-nullable') || schemaType === this.config.Ts.Keyword.Null) &&
+      isString(type) &&
       !type.includes(` ${this.config.Ts.Keyword.Null}`) &&
       !type.includes(`${this.config.Ts.Keyword.Null} `)
     );
@@ -102,7 +112,7 @@ class SchemaUtils {
 
       return internalCase(enumFieldType);
     }
-    if (_.keys(schema.properties).length > 0) {
+    if (keys(schema.properties).length > 0) {
       return SCHEMA_TYPES.OBJECT;
     }
     if (schema.items) {
@@ -133,7 +143,7 @@ class SchemaUtils {
       return childSchema;
     }
 
-    const required = _.uniq([
+    const required = uniq([
       ...this.getRequiredProperties(parentSchema),
       ...this.getRequiredProperties(childSchema),
     ]);
@@ -141,7 +151,7 @@ class SchemaUtils {
     const refData = this.getSchemaRefType(childSchema);
 
     if (refData) {
-      const refObjectProperties = _.keys(
+      const refObjectProperties = keys(
         (refData.rawTypeData && refData.rawTypeData.properties) || {},
       );
       const existedRequiredKeys = refObjectProperties.filter((key) => required.includes(key));
@@ -155,7 +165,7 @@ class SchemaUtils {
         $$requiredKeys: existedRequiredKeys,
       };
     } else if (childSchema.properties) {
-      const childSchemaProperties = _.keys(childSchema.properties);
+      const childSchemaProperties = keys(childSchema.properties);
       const existedRequiredKeys = childSchemaProperties.filter((key) => required.includes(key));
 
       if (existedRequiredKeys.length === 0) {
@@ -163,7 +173,7 @@ class SchemaUtils {
       }
 
       return {
-        required: _.uniq([...this.getRequiredProperties(childSchema), ...existedRequiredKeys]),
+        required: uniq([...this.getRequiredProperties(childSchema), ...existedRequiredKeys]),
         ...childSchema,
       };
     }
@@ -172,7 +182,7 @@ class SchemaUtils {
   };
 
   filterSchemaContents = (contents: any, filterFn: any) => {
-    return _.uniq(_.filter(contents, (type) => filterFn(type)));
+    return uniq(filter(contents, (type) => filterFn(type)));
   };
 
   resolveTypeName = (
@@ -211,7 +221,7 @@ class SchemaUtils {
   };
 
   getInternalSchemaType = (schema: any) => {
-    if (!_.isEmpty(schema.enum) || !_.isEmpty(this.getEnumNames(schema))) {
+    if (!isEmpty(schema.enum) || !isEmpty(this.getEnumNames(schema))) {
       return SCHEMA_TYPES.ENUM;
     }
     if (schema.discriminator) {
@@ -220,7 +230,7 @@ class SchemaUtils {
     if (schema.allOf || schema.oneOf || schema.anyOf || schema.not) {
       return SCHEMA_TYPES.COMPLEX;
     }
-    if (!_.isEmpty(schema.properties)) {
+    if (!isEmpty(schema.properties)) {
       return SCHEMA_TYPES.OBJECT;
     }
     if (schema.type === SCHEMA_TYPES.ARRAY) {
@@ -257,11 +267,11 @@ class SchemaUtils {
       }
 
       const typeAlias =
-        _.get(this.config.primitiveTypes, [primitiveType, schema.format]) ||
-        _.get(this.config.primitiveTypes, [primitiveType, '$default']) ||
+        get(this.config.primitiveTypes, [primitiveType, schema.format]) ||
+        get(this.config.primitiveTypes, [primitiveType, '$default']) ||
         this.config.primitiveTypes[primitiveType];
 
-      resultType = _.isFunction(typeAlias) ? typeAlias(schema, this) : typeAlias || primitiveType;
+      resultType = isFunction(typeAlias) ? typeAlias(schema, this) : typeAlias || primitiveType;
     }
 
     if (!resultType) {
@@ -272,13 +282,13 @@ class SchemaUtils {
   };
 
   buildTypeNameFromPath = (schemaPath: any) => {
-    schemaPath = _.uniq(_.compact(schemaPath));
+    schemaPath = uniq(compact(schemaPath));
 
     if (!schemaPath || !schemaPath[0]) {
       return null;
     }
 
-    return pascalCase(camelCase(_.uniq([schemaPath[0], schemaPath.at(-1)]).join('_')));
+    return pascalCase(camelCase(uniq([schemaPath[0], schemaPath.at(-1)]).join('_')));
   };
 
   isConstantSchema(schema: any) {

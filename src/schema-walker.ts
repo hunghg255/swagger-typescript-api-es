@@ -1,5 +1,7 @@
 /* eslint-disable unicorn/no-null */
-import _ from 'lodash';
+
+import cloneDeep from 'lodash/cloneDeep';
+import get from 'lodash/get';
 
 // TODO: WIP
 // this class will be needed to walk by schema everywhere
@@ -25,7 +27,7 @@ class SchemaWalker {
    * @param schema {Record<string, any>}
    */
   addSchema = (name: any, schema: any) => {
-    this.schemas.set(name, _.cloneDeep(schema));
+    this.schemas.set(name, cloneDeep(schema));
   };
 
   /**
@@ -79,7 +81,7 @@ class SchemaWalker {
 
   _getRefDataFromSchema = (schema: any, ref: any) => {
     const path = ref.replace('#', '').split('/');
-    const refData = _.get(schema, path);
+    const refData = get(schema, path);
     if (refData) {
       this.caches.set(ref, refData);
     }

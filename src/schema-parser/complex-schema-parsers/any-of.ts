@@ -1,12 +1,12 @@
-import _ from 'lodash';
+import map from 'lodash/map';
 
-import { MonoSchemaParser } from '~src/schema-parser/mono-schema-parser';
+import { MonoSchemaParser } from '../mono-schema-parser';
 
 // T1 | T2
 class AnyOfSchemaParser extends MonoSchemaParser {
   parse() {
     const ignoreTypes = new Set([this.config.Ts.Keyword.Any]);
-    const combined = _.map(this.schema.anyOf, (childSchema) =>
+    const combined = map(this.schema.anyOf, (childSchema) =>
       this.schemaParserFabric.getInlineParseContent(
         this.schemaUtils.makeAddRequiredToChildSchema(this.schema, childSchema),
         undefined,

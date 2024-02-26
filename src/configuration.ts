@@ -6,13 +6,17 @@
 import path from 'node:path';
 
 import { cosmiconfigSync } from 'cosmiconfig';
-import _ from 'lodash';
+import cloneDeep from 'lodash/cloneDeep';
+import compact from 'lodash/compact';
+import join from 'lodash/join';
+import map from 'lodash/map';
+import merge from 'lodash/merge';
+import uniq from 'lodash/uniq';
 import ts from 'typescript';
-
-import { IOptions } from '~src/types';
 
 import { ComponentTypeNameResolver } from './component-type-name-resolver';
 import * as CONSTANTS from './constants';
+import { IOptions } from './types';
 import { objectAssign } from './util/object-assign';
 
 const TsKeyword = {
@@ -216,8 +220,8 @@ class CodeGenConfig {
   customTranslator: any;
 
   Ts = {
-    Keyword: _.cloneDeep(TsKeyword),
-    CodeGenKeyword: _.cloneDeep(TsCodeGenKeyword),
+    Keyword: cloneDeep(TsKeyword),
+    CodeGenKeyword: cloneDeep(TsCodeGenKeyword),
     /**
      * $A[] or Array<$A>
      */
@@ -247,7 +251,7 @@ class CodeGenConfig {
     /**
      * $A1 | $A2
      */
-    UnionType: (contents: any) => _.join(_.uniq(contents), ` ${this.Ts.Keyword.Union} `),
+    UnionType: (contents: any) => join(uniq(contents), ` ${this.Ts.Keyword.Union} `),
     /**
      * ($A1)
      */
@@ -255,8 +259,7 @@ class CodeGenConfig {
     /**
      * $A1 & $A2
      */
-    IntersectionType: (contents: any) =>
-      _.join(_.uniq(contents), ` ${this.Ts.Keyword.Intersection} `),
+    IntersectionType: (contents: any) => join(uniq(contents), ` ${this.Ts.Keyword.Intersection} `),
     /**
      * Record<$A1, $A2>
      */
@@ -266,7 +269,7 @@ class CodeGenConfig {
      * readonly $key?:$value
      */
     TypeField: ({ readonly, key, optional, value }: any) =>
-      _.compact([readonly && 'readonly ', key, optional && '?', ': ', value]).join(''),
+      compact([readonly && 'readonly ', key, optional && '?', ': ', value]).join(''),
     /**
      * [key: $A1]: $A2
      */
@@ -286,7 +289,7 @@ class CodeGenConfig {
      * $AN.key = $AN.value,
      */
     EnumFieldsWrapper: (contents: any) =>
-      _.map(contents, ({ key, value }) => `  ${this.Ts.EnumField(key, value)}`).join(',\n'),
+      map(contents, ({ key, value }) => `  ${this.Ts.EnumField(key, value)}`).join(',\n'),
     /**
      * {\n $A \n}
      */
@@ -387,7 +390,7 @@ class CodeGenConfig {
       ...otherConfig,
       prettierOptions:
         prettierOptions === undefined ? getDefaultPrettierOptions() : prettierOptions,
-      hooks: _.merge(this.hooks, hooks || {}),
+      hooks: merge(this.hooks, hooks || {}),
       constants: {
         ...CONSTANTS,
         ...constants,

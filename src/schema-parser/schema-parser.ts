@@ -1,7 +1,11 @@
 /* eslint-disable eqeqeq */
 /* eslint-disable unicorn/no-null */
 /* eslint-disable no-unused-vars */
-import _ from 'lodash';
+import first from 'lodash/first';
+import get from 'lodash/get';
+import merge from 'lodash/merge';
+import omit from 'lodash/omit';
+import values from 'lodash/values';
 
 import { ArraySchemaParser } from './base-schema-parsers/array';
 import { ComplexSchemaParser } from './base-schema-parsers/complex';
@@ -165,7 +169,7 @@ class SchemaParser {
 
       this.schemaPath.push(this.typeName);
 
-      _.merge(
+      merge(
         this.schema,
         this.config.hooks.onPreParseSchema(this.schema, this.typeName, schemaType),
       );
@@ -198,8 +202,8 @@ class SchemaParser {
   extractSchemaFromResponseStruct = (responseStruct: any) => {
     const { content, ...extras } = responseStruct;
 
-    const firstResponse = _.first(_.values(content));
-    const firstSchema = _.get(firstResponse, 'schema');
+    const firstResponse = first(values(content));
+    const firstSchema = get(firstResponse, 'schema');
 
     if (!firstSchema) {
       return;
@@ -207,7 +211,7 @@ class SchemaParser {
 
     return {
       ...extras,
-      ..._.omit(firstResponse, 'schema'),
+      ...omit(firstResponse, 'schema'),
       ...firstSchema,
     };
   };

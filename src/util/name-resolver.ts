@@ -1,6 +1,10 @@
 /* eslint-disable unicorn/no-array-for-each */
 /* eslint-disable unicorn/no-null */
-import _ from 'lodash';
+
+import compact from 'lodash/compact';
+import forEach from 'lodash/forEach';
+import some from 'lodash/some';
+import uniq from 'lodash/uniq';
 
 class NameResolver {
   reservedNames = [];
@@ -27,7 +31,7 @@ class NameResolver {
    * @param {string[]} names
    */
   reserve(names: any) {
-    const fixedNames = _.uniq(_.compact(names));
+    const fixedNames = uniq(compact(names));
     for (const name of fixedNames) {
       // @ts-ignore
       if (!this.reservedNames.includes(name)) {
@@ -42,7 +46,7 @@ class NameResolver {
   }
 
   isReserved(name: any) {
-    return _.some(this.reservedNames, (reservedName) => reservedName === name);
+    return some(this.reservedNames, (reservedName) => reservedName === name);
   }
 
   /**
@@ -72,9 +76,9 @@ class NameResolver {
       return usageName;
     } else if (Array.isArray(variants)) {
       let usageName: any = null;
-      const uniqVariants = _.uniq(_.compact(variants));
+      const uniqVariants = uniq(compact(variants));
 
-      _.forEach(uniqVariants, (variant) => {
+      forEach(uniqVariants, (variant) => {
         if (!usageName && (!shouldReserve || !this.isReserved(variant))) {
           usageName = variant;
         }

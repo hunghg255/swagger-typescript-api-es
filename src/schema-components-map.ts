@@ -1,5 +1,7 @@
 /* eslint-disable unicorn/no-null */
-import _ from 'lodash';
+
+import filter from 'lodash/filter';
+import startsWith from 'lodash/startsWith';
 
 class SchemaComponentsMap {
   /** @type {SchemaComponent[]} */
@@ -64,9 +66,9 @@ class SchemaComponentsMap {
    * @returns {SchemaComponent[]}
    */
   filter(...componentNames: any) {
-    return _.filter(this._data, (it: any) =>
+    return filter(this._data, (it: any) =>
       componentNames.some((componentName: any) =>
-        _.startsWith(it.$ref, `#/components/${componentName}`),
+        startsWith(it.$ref, `#/components/${componentName}`),
       ),
     );
   }

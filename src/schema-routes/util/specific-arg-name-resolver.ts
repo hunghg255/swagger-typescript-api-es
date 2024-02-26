@@ -1,4 +1,4 @@
-import { NameResolver } from '~src/util/name-resolver';
+import { NameResolver } from '../../util/name-resolver';
 
 class SpecificArgNameResolver extends NameResolver {
   counter = 1;

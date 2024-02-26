@@ -1,12 +1,12 @@
 import fs from 'node:fs';
 import { resolve } from 'node:path';
 
-import _ from 'lodash';
+import noop from 'lodash/noop';
+import split from 'lodash/split';
 import makeDir from 'make-dir';
 
-import { __dirname_esm } from '~src/constants';
-
 import { Logger } from './logger';
+import { __dirname_esm } from '../constants';
 
 const FILE_PREFIX = `/* eslint-disable */
 /*
@@ -49,7 +49,7 @@ class FileSystem {
   };
 
   cropExtension = (fileName: any) => {
-    const fileNameParts = _.split(fileName, '.');
+    const fileNameParts = split(fileName, '.');
 
     if (fileNameParts.length > 1) {
       fileNameParts.pop();
@@ -92,7 +92,7 @@ class FileSystem {
     const fileContent = `${withPrefix ? FILE_PREFIX : ''}${content}`;
 
     // @ts-ignore
-    return fs.writeFileSync(absolutePath, fileContent, _.noop);
+    return fs.writeFileSync(absolutePath, fileContent, noop);
   };
 }
 

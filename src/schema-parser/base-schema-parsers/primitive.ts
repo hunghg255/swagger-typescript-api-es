@@ -1,8 +1,9 @@
 /* eslint-disable indent */
-import _ from 'lodash';
+import isArray from 'lodash/isArray';
+import isObject from 'lodash/isObject';
 
-import { SCHEMA_TYPES } from '~src/constants';
-import { MonoSchemaParser } from '~src/schema-parser/mono-schema-parser';
+import { SCHEMA_TYPES } from '../../constants';
+import { MonoSchemaParser } from '../mono-schema-parser';
 
 class PrimitiveSchemaParser extends MonoSchemaParser {
   parse() {
@@ -10,7 +11,7 @@ class PrimitiveSchemaParser extends MonoSchemaParser {
     const { additionalProperties, type, description, items } = this.schema || {};
 
     if (type === this.config.Ts.Keyword.Object && additionalProperties) {
-      const fieldType = _.isObject(additionalProperties)
+      const fieldType = isObject(additionalProperties)
         ? this.schemaParserFabric
             .createSchemaParser({
               schema: additionalProperties,
@@ -21,14 +22,14 @@ class PrimitiveSchemaParser extends MonoSchemaParser {
       contentType = this.config.Ts.RecordType(this.config.Ts.Keyword.String, fieldType);
     }
 
-    if (_.isArray(type) && type.length > 0) {
+    if (isArray(type) && type.length > 0) {
       contentType = this.schemaParser._complexSchemaParsers.oneOf({
-        ...(_.isObject(this.schema) ? this.schema : {}),
+        ...(isObject(this.schema) ? this.schema : {}),
         oneOf: type.map((type) => ({ type })),
       });
     }
 
-    if (_.isArray(items) && type === SCHEMA_TYPES.ARRAY) {
+    if (isArray(items) && type === SCHEMA_TYPES.ARRAY) {
       contentType = this.config.Ts.Tuple(
         items.map((item) =>
           this.schemaParserFabric
@@ -39,7 +40,7 @@ class PrimitiveSchemaParser extends MonoSchemaParser {
     }
 
     return {
-      ...(_.isObject(this.schema) ? this.schema : {}),
+      ...(isObject(this.schema) ? this.schema : {}),
       $schemaPath: [...this.schemaPath],
       $parsedSchema: true,
       schemaType: SCHEMA_TYPES.PRIMITIVE,

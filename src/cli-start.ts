@@ -2,9 +2,8 @@
 import { cac } from 'unprompts';
 import { readConfig } from 'unreadconfig';
 
-import { generateApi } from '~src/index';
-import { formatOptions } from '~src/util/formatOptions';
-
+import { generateApi } from '.';
+import { formatOptions } from './util/formatOptions';
 import { version } from '../package.json';
 
 const cli = cac('swagger-typescript-api-es');
@@ -142,10 +141,6 @@ export function startCli() {
         Object.keys(optionsConfig).length <= 1
           ? readConfig(FILE_NAME_CONFIG)
           : formatOptions(optionsConfig);
-
-      console.log({
-        args,
-      });
 
       generateApi(optionsConfig);
     });

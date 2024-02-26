@@ -1,5 +1,11 @@
 import yaml from 'js-yaml';
-import _ from 'lodash';
+import cloneDeep from 'lodash/cloneDeep';
+import compact from 'lodash/compact';
+import each from 'lodash/each';
+import find from 'lodash/find';
+import get from 'lodash/get';
+import merge from 'lodash/merge';
+import uniq from 'lodash/uniq';
 import converter from 'swagger2openapi';
 
 import { Request } from './util/request';
@@ -60,8 +66,9 @@ class SwaggerSchemaResolver {
    */
   convertSwaggerObject(swaggerSchema: any, converterOptions: any) {
     return new Promise((resolve) => {
-      const result = _.cloneDeep(swaggerSchema);
-      result.info = _.merge(
+      const result = cloneDeep(swaggerSchema);
+
+      result.info = merge(
         {
           title: 'No title',
           version: '',
@@ -72,10 +79,10 @@ class SwaggerSchemaResolver {
       if (result.openapi) {
         resolve({
           usageSchema: result,
-          originalSchema: _.cloneDeep(result),
+          originalSchema: cloneDeep(result),
         });
       } else {
-        result.paths = _.merge({}, result.paths);
+        result.paths = merge({}, result.paths);
 
         converter.convertObj(
           result,
@@ -86,7 +93,7 @@ class SwaggerSchemaResolver {
             rbname: 'requestBodyName',
           },
           (err, options) => {
-            const parsedSwaggerSchema = _.get(err, 'options.openapi', _.get(options, 'openapi'));
+            const parsedSwaggerSchema = get(err, 'options.openapi', get(options, 'openapi'));
             if (!parsedSwaggerSchema && err) {
               throw new Error(err as any);
             }
@@ -139,30 +146,30 @@ class SwaggerSchemaResolver {
   }
 
   fixSwaggerSchema({ usageSchema, originalSchema }: any) {
-    const usagePaths = _.get(usageSchema, 'paths');
-    const originalPaths = _.get(originalSchema, 'paths');
+    const usagePaths = get(usageSchema, 'paths');
+    const originalPaths = get(originalSchema, 'paths');
 
     // walk by routes
-    _.each(usagePaths, (usagePathObject, route) => {
-      const originalPathObject = _.get(originalPaths, route);
+    each(usagePaths, (usagePathObject, route) => {
+      const originalPathObject = get(originalPaths, route);
 
       // walk by methods
-      _.each(usagePathObject, (usageRouteInfo, methodName) => {
-        const originalRouteInfo = _.get(originalPathObject, methodName);
-        const usageRouteParams = _.get(usageRouteInfo, 'parameters', []);
-        const originalRouteParams = _.get(originalRouteInfo, 'parameters', []);
+      each(usagePathObject, (usageRouteInfo, methodName) => {
+        const originalRouteInfo = get(originalPathObject, methodName);
+        const usageRouteParams = get(usageRouteInfo, 'parameters', []);
+        const originalRouteParams = get(originalRouteInfo, 'parameters', []);
 
         if (typeof usageRouteInfo === 'object') {
-          usageRouteInfo.consumes = _.uniq(
-            _.compact([...(usageRouteInfo.consumes || []), ...(originalRouteInfo.consumes || [])]),
+          usageRouteInfo.consumes = uniq(
+            compact([...(usageRouteInfo.consumes || []), ...(originalRouteInfo.consumes || [])]),
           );
-          usageRouteInfo.produces = _.uniq(
-            _.compact([...(usageRouteInfo.produces || []), ...(originalRouteInfo.produces || [])]),
+          usageRouteInfo.produces = uniq(
+            compact([...(usageRouteInfo.produces || []), ...(originalRouteInfo.produces || [])]),
           );
         }
 
-        _.each(originalRouteParams, (originalRouteParam) => {
-          const existUsageParam = _.find(
+        each(originalRouteParams, (originalRouteParam) => {
+          const existUsageParam = find(
             usageRouteParams,
             (param) => originalRouteParam.in === param.in && originalRouteParam.name === param.name,
           );

@@ -2,10 +2,26 @@
 /* eslint-disable unicorn/consistent-destructuring */
 /* eslint-disable new-cap */
 /* eslint-disable unicorn/no-null */
-import _ from 'lodash';
+import camelCase from 'lodash/camelCase';
+import compact from 'lodash/compact';
+import each from 'lodash/each';
+import get from 'lodash/get';
+import isEmpty from 'lodash/isEmpty';
+import isObject from 'lodash/isObject';
+import isString from 'lodash/isString';
+import isUndefined from 'lodash/isUndefined';
+import join from 'lodash/join';
+import lowerCase from 'lodash/lowerCase';
+import map from 'lodash/map';
+import merge from 'lodash/merge';
+import noop from 'lodash/noop';
+import replace from 'lodash/replace';
+import size from 'lodash/size';
+import sortBy from 'lodash/sortBy';
+import uniq from 'lodash/uniq';
+import upperCase from 'lodash/upperCase';
+import values from 'lodash/values';
 import ts from 'typescript';
-
-import { IOptions } from '~src/types';
 
 import { CodeFormatter } from './code-formatter';
 import { CodeGenConfig } from './configuration.js';
@@ -17,6 +33,7 @@ import { SwaggerSchemaResolver } from './swagger-schema-resolver.js';
 import { TemplatesWorker } from './templates-worker';
 import { JavascriptTranslator } from './translators/javascript';
 import { TypeNameFormatter } from './type-name-formatter.js';
+import { IOptions } from './types';
 import { FileSystem } from './util/file-system';
 import { internalCase } from './util/internal-case';
 import { Logger } from './util/logger.js';
@@ -56,7 +73,7 @@ class CodeGenProcess {
   /** @type {CodeFormatter} */
   codeFormatter;
   /** type {TemplatesWorker} */
-  templatesWorker;
+  templatesWorker: any;
   /** @type {SchemaWalker} */
   schemaWalker;
   /** @type {JavascriptTranslator} */
@@ -108,8 +125,8 @@ class CodeGenProcess {
 
     this.schemaComponentsMap.clear();
 
-    _.each(swagger.usageSchema.components, (component, componentName) =>
-      _.each(component, (rawTypeData, typeName) => {
+    each(swagger.usageSchema.components, (component, componentName) =>
+      each(component, (rawTypeData, typeName) => {
         this.schemaComponentsMap.createComponent(
           this.schemaComponentsMap.createRef(['components', componentName, typeName]),
           rawTypeData,
@@ -121,7 +138,7 @@ class CodeGenProcess {
      * @type {SchemaComponent[]}
      */
     const componentsToParse = this.schemaComponentsMap.filter(
-      _.compact(['schemas', this.config.extractResponses && 'responses']),
+      compact(['schemas', this.config.extractResponses && 'responses']),
     );
 
     const parsedSchemas = componentsToParse.map((schemaComponent: any) => {
@@ -223,7 +240,28 @@ class CodeGenProcess {
           return ` * ${line}${eol ? '\n' : ''}`;
         },
         NameResolver,
-        _,
+        _: {
+          compact,
+          merge,
+          each,
+          isEmpty,
+          sortByProperty,
+          noop,
+          isObject,
+          isString,
+          isUndefined,
+          map,
+          uniq,
+          size,
+          replace,
+          camelCase,
+          lowerCase,
+          values,
+          join,
+          get,
+          upperCase,
+          sortBy,
+        },
         require: this.templatesWorker.requireFnFromTemplate,
       },
       config: this.config,
@@ -234,7 +272,7 @@ class CodeGenProcess {
     const components = this.schemaComponentsMap.getComponents();
     let modelTypes = [];
 
-    const modelTypeComponents = _.compact(['schemas', this.config.extractResponses && 'responses']);
+    const modelTypeComponents = compact(['schemas', this.config.extractResponses && 'responses']);
 
     const getSchemaComponentsCount = () =>
       this.schemaComponentsMap.filter(...modelTypeComponents).length;
@@ -315,13 +353,14 @@ class CodeGenProcess {
       ? await this.createMultipleFileInfos(templatesToRender, configuration)
       : await this.createSingleFileInfo(templatesToRender, configuration);
 
-    if (!_.isEmpty(configuration.extraTemplates)) {
+    if (!isEmpty(configuration.extraTemplates)) {
       for (const extraTemplate of configuration.extraTemplates) {
         // @ts-ignore
         const content = this.templatesWorker.renderTemplate(
           this.fileSystem.getFileContent(extraTemplate.path),
           configuration,
         );
+
         output.push(
           ...(await this.createOutputFileInfo(configuration, extraTemplate.name, content)),
         );
@@ -444,22 +483,18 @@ class CodeGenProcess {
    * @param configuration
    * @returns {Promise<TranslatorIO[]>}
    */
-  createSingleFileInfo = async (templatesToRender: any, configuration: any) => {
+  createSingleFileInfo = (templatesToRender: any, configuration: any) => {
     const { generateRouteTypes, generateClient } = configuration.config;
 
-    return await this.createOutputFileInfo(
+    return this.createOutputFileInfo(
       configuration,
       configuration.fileName,
-      _.compact([
-        // @ts-ignore
+      compact([
         this.templatesWorker.renderTemplate(templatesToRender.dataContracts, configuration),
         generateRouteTypes &&
-          // @ts-ignore
           this.templatesWorker.renderTemplate(templatesToRender.routeTypes, configuration),
         generateClient &&
-          // @ts-ignore
           this.templatesWorker.renderTemplate(templatesToRender.httpClient, configuration),
-        // @ts-ignore
         generateClient && this.templatesWorker.renderTemplate(templatesToRender.api, configuration),
       ]).join('\n'),
     );
@@ -516,14 +551,14 @@ class CodeGenProcess {
       servers: servers || [],
       basePath,
       host,
-      externalDocs: _.merge(
+      externalDocs: merge(
         {
           url: '',
           description: '',
         },
         externalDocs,
       ),
-      tags: _.compact(tags),
+      tags: compact(tags),
       baseUrl: serverUrl,
       title,
       version,

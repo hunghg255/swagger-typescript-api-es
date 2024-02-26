@@ -1,8 +1,10 @@
-import _ from 'lodash';
-
 /**
  * @typedef {"enum-key" | "type-name"} FormattingSchemaType
  */
+
+import compact from 'lodash/compact';
+import replace from 'lodash/replace';
+import startCase from 'lodash/startCase';
 
 class TypeNameFormatter {
   /** @type {Map<string, string>} */
@@ -46,7 +48,7 @@ class TypeNameFormatter {
 
     // constant names like LEFT_ARROW, RIGHT_FORWARD, ETC_KEY, _KEY_NUM_
     if (/^([A-Z_]+)$/g.test(name)) {
-      return _.compact([typePrefix, name, typeSuffix]).join('_');
+      return compact([typePrefix, name, typeSuffix]).join('_');
     }
 
     if (this.formattedModelNamesMap.has(hashKey)) {
@@ -55,8 +57,8 @@ class TypeNameFormatter {
 
     const fixedModelName = this.fixModelName(name, { type: schemaType });
 
-    const formattedName = _.replace(
-      _.startCase(`${typePrefix}_${fixedModelName}_${typeSuffix}`),
+    const formattedName = replace(
+      startCase(`${typePrefix}_${fixedModelName}_${typeSuffix}`),
       /\s/g,
       '',
     );
@@ -98,7 +100,7 @@ class TypeNameFormatter {
       }
 
       if (name.includes('-')) {
-        name = _.startCase(name).replaceAll(' ', '');
+        name = startCase(name).replaceAll(' ', '');
       }
     }
 

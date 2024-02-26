@@ -1,11 +1,11 @@
 /* eslint-disable quotes */
 import path from 'node:path';
 
-import { TemplatesGenConfig } from '~src/commands/generate-templates/configuration';
-import { __dirname_esm } from '~src/constants';
-import { GenerateTemplatesParams } from '~src/types';
-import { FileSystem } from '~src/util/file-system';
-import { Logger } from '~src/util/logger';
+import { TemplatesGenConfig } from '../../../src/commands/generate-templates/configuration';
+import { __dirname_esm } from '../../../src/constants';
+import { GenerateTemplatesParams } from '../../../src/types';
+import { FileSystem } from '../../../src/util/file-system';
+import { Logger } from '../../../src/util/logger';
 
 class TemplatesGenProcess {
   /**

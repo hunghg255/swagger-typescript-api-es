@@ -1,4 +1,4 @@
-import { NameResolver } from '~src/util/name-resolver';
+import { NameResolver } from '../../util/name-resolver';
 
 class EnumKeyResolver extends NameResolver {
   counter = 1;

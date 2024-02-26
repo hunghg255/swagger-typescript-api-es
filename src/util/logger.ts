@@ -1,5 +1,6 @@
 /* eslint-disable unicorn/error-message */
-import _ from 'lodash';
+import map from 'lodash/map';
+import startsWith from 'lodash/startsWith';
 import { emojify } from 'node-emoji';
 
 class Logger {
@@ -48,8 +49,8 @@ class Logger {
       }
       logFn(
         '[message]',
-        ..._.map(messages, (message) =>
-          _.startsWith(message, '\n') ? `\n          ${message.replace(/\n/, '')}` : message,
+        ...map(messages, (message) =>
+          startsWith(message, '\n') ? `\n          ${message.replace(/\n/, '')}` : message,
         ),
       );
       logFn(trace.join('\n') + '\n---');
@@ -59,8 +60,8 @@ class Logger {
     console[type](
       emoji,
       ' ',
-      ..._.map(messages, (message) =>
-        _.startsWith(message, '\n') ? `\n${emoji}   ${message.replace(/\n/, '')}` : message,
+      ...map(messages, (message) =>
+        startsWith(message, '\n') ? `\n${emoji}   ${message.replace(/\n/, '')}` : message,
       ),
     );
   };

@@ -1,6 +1,6 @@
-import { HTTP_CLIENT, PROJECT_VERSION } from '~src/constants';
-import { GenerateTemplatesParams } from '~src/types';
-import { objectAssign } from '~src/util/object-assign';
+import { HTTP_CLIENT, PROJECT_VERSION } from '../../constants';
+import { GenerateTemplatesParams } from '../../types';
+import { objectAssign } from '../../util/object-assign';
 
 /**
  * @type {GenerateTemplatesParams}}

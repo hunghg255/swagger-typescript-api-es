@@ -1,10 +1,18 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable unused-imports/no-unused-vars */
 /* eslint-disable indent */
-import _ from 'lodash';
+import clone from 'lodash/clone';
+import cloneDeep from 'lodash/cloneDeep';
+import entries from 'lodash/entries';
+import get from 'lodash/get';
+import isArray from 'lodash/isArray';
+import isObject from 'lodash/isObject';
+import keys from 'lodash/keys';
+import omit from 'lodash/omit';
+import reduce from 'lodash/reduce';
 
-import { SCHEMA_TYPES } from '~src/constants';
-import { MonoSchemaParser } from '~src/schema-parser/mono-schema-parser';
+import { SCHEMA_TYPES } from '../../constants';
+import { MonoSchemaParser } from '../mono-schema-parser';
 
 class DiscriminatorSchemaParser extends MonoSchemaParser {
   parse() {
@@ -37,7 +45,7 @@ class DiscriminatorSchemaParser extends MonoSchemaParser {
     );
 
     return {
-      ...(_.isObject(this.schema) ? this.schema : {}),
+      ...(isObject(this.schema) ? this.schema : {}),
       $schemaPath: [...this.schemaPath],
       $parsedSchema: true,
       schemaType: SCHEMA_TYPES.COMPLEX,
@@ -54,7 +62,7 @@ class DiscriminatorSchemaParser extends MonoSchemaParser {
 
     const refPath = this.schemaComponentsMap.createRef(['components', 'schemas', this.typeName]);
     const { discriminator } = this.schema;
-    const mappingEntries = _.entries(discriminator.mapping);
+    const mappingEntries = entries(discriminator.mapping);
     const ableToCreateMappingType =
       !skipMappingType && !!(abstractSchemaStruct?.typeName && mappingEntries.length > 0);
     const mappingContents = [];
@@ -154,7 +162,7 @@ class DiscriminatorSchemaParser extends MonoSchemaParser {
     const ts = this.config.Ts;
 
     let mappingPropertySchemaEnumKeysMap = {};
-    let mappingPropertySchema = _.get(abstractSchemaStruct?.component?.rawTypeData, [
+    let mappingPropertySchema = get(abstractSchemaStruct?.component?.rawTypeData, [
       'properties',
       discPropertyName,
     ]);
@@ -163,7 +171,7 @@ class DiscriminatorSchemaParser extends MonoSchemaParser {
     }
 
     if (mappingPropertySchema?.rawTypeData?.$parsed?.type === SCHEMA_TYPES.ENUM) {
-      mappingPropertySchemaEnumKeysMap = _.reduce(
+      mappingPropertySchemaEnumKeysMap = reduce(
         mappingPropertySchema.rawTypeData.$parsed.enum,
         (acc: any, key, index) => {
           const enumKey = mappingPropertySchema.rawTypeData.$parsed.content[index].key;
@@ -184,13 +192,13 @@ class DiscriminatorSchemaParser extends MonoSchemaParser {
     refPath,
     mappingPropertySchemaEnumKeysMap,
   }: any) => {
-    const complexSchemaKeys = _.keys(this.schemaParser._complexSchemaParsers);
+    const complexSchemaKeys = keys(this.schemaParser._complexSchemaParsers);
     // override parent dependencies
     if (mappingSchema.$ref && abstractSchemaStruct?.component?.$ref) {
       const mappingRefSchema = this.schemaUtils.getSchemaRefType(mappingSchema)?.rawTypeData;
       if (mappingRefSchema) {
         for (const schemaKey of complexSchemaKeys) {
-          if (_.isArray(mappingRefSchema[schemaKey])) {
+          if (isArray(mappingRefSchema[schemaKey])) {
             mappingRefSchema[schemaKey] = mappingRefSchema[schemaKey].map((schema: any) => {
               if (schema.$ref === refPath) {
                 return {
@@ -223,12 +231,12 @@ class DiscriminatorSchemaParser extends MonoSchemaParser {
 
   createAbstractSchemaStruct = () => {
     const { discriminator, ...noDiscriminatorSchema } = this.schema;
-    const complexSchemaKeys = _.keys(this.schemaParser._complexSchemaParsers);
-    const schema = _.omit(_.clone(noDiscriminatorSchema), complexSchemaKeys);
+    const complexSchemaKeys = keys(this.schemaParser._complexSchemaParsers);
+    const schema = omit(clone(noDiscriminatorSchema), complexSchemaKeys);
     const schemaIsAny =
-      this.schemaParserFabric.getInlineParseContent(_.cloneDeep(schema)) ===
+      this.schemaParserFabric.getInlineParseContent(cloneDeep(schema)) ===
       this.config.Ts.Keyword.Any;
-    const schemaIsEmpty = _.keys(schema).length === 0;
+    const schemaIsEmpty = keys(schema).length === 0;
 
     if (schemaIsEmpty || schemaIsAny) {
       return undefined;
