@@ -1,4 +1,4 @@
-import cloneDeep from 'lodash/cloneDeep';
+import { cloneDeep } from 'lodash-es';
 
 import { SchemaFormatters } from './schema-formatters';
 import { SchemaParser } from './schema-parser';

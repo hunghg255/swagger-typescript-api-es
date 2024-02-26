@@ -1,9 +1,11 @@
-import compact from 'lodash/compact';
-import get from 'lodash/get';
-import isObject from 'lodash/isObject';
-import map from 'lodash/map';
-import some from 'lodash/some';
-import values from 'lodash/values';
+import {
+  compact,
+  get,
+  isObject,
+  map,
+  some,
+  values
+} from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../../constants';
 import { MonoSchemaParser } from '../mono-schema-parser';

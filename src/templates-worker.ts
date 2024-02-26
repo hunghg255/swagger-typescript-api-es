@@ -4,12 +4,7 @@
 import path, { resolve } from 'node:path';
 
 import * as Eta from 'eta';
-import endsWith from 'lodash/endsWith';
-import keys from 'lodash/keys';
-import lowerCase from 'lodash/lowerCase';
-import reduce from 'lodash/reduce';
-import replace from 'lodash/replace';
-import startsWith from 'lodash/startsWith';
+import { endsWith, keys, lowerCase, reduce, replace, startsWith } from 'lodash-es';
 
 import { __dirname_esm } from './constants';
 

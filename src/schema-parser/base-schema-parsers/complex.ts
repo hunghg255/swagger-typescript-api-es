@@ -1,9 +1,11 @@
-import clone from 'lodash/clone';
-import compact from 'lodash/compact';
-import isObject from 'lodash/isObject';
-import keys from 'lodash/keys';
-import map from 'lodash/map';
-import omit from 'lodash/omit';
+import {
+  clone,
+  compact,
+  isObject,
+  keys,
+  map,
+  omit
+} from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../../constants';
 import { MonoSchemaParser } from '../mono-schema-parser';

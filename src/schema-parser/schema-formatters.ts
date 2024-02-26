@@ -1,12 +1,14 @@
 /* eslint-disable indent */
 
-import compact from 'lodash/compact';
-import get from 'lodash/get';
-import includes from 'lodash/includes';
-import isString from 'lodash/isString';
-import map from 'lodash/map';
-import replace from 'lodash/replace';
-import trim from 'lodash/trim';
+import {
+  compact,
+  get,
+  includes,
+  isString,
+  map,
+  replace,
+  trim
+} from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../constants';
 

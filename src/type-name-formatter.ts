@@ -2,9 +2,7 @@
  * @typedef {"enum-key" | "type-name"} FormattingSchemaType
  */
 
-import compact from 'lodash/compact';
-import replace from 'lodash/replace';
-import startCase from 'lodash/startCase';
+import { compact, replace, startCase } from 'lodash-es';
 
 class TypeNameFormatter {
   /** @type {Map<string, string>} */

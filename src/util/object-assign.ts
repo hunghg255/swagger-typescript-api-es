@@ -1,5 +1,4 @@
-import map from 'lodash/map';
-import merge from 'lodash/merge';
+import { map, merge } from 'lodash-es';
 
 const objectAssign = (target: any, updaterFn: any) => {
   if (!updaterFn) {

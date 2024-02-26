@@ -1,5 +1,4 @@
-import isArray from 'lodash/isArray';
-import isObject from 'lodash/isObject';
+import { isArray, isObject } from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../../constants';
 import { MonoSchemaParser } from '../mono-schema-parser';

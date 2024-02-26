@@ -1,7 +1,6 @@
 /* eslint-disable unicorn/no-null */
 
-import cloneDeep from 'lodash/cloneDeep';
-import get from 'lodash/get';
+import { get, cloneDeep } from 'lodash-es';
 
 // TODO: WIP
 // this class will be needed to walk by schema everywhere

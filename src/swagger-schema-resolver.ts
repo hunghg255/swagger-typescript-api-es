@@ -1,11 +1,13 @@
 import yaml from 'js-yaml';
-import cloneDeep from 'lodash/cloneDeep';
-import compact from 'lodash/compact';
-import each from 'lodash/each';
-import find from 'lodash/find';
-import get from 'lodash/get';
-import merge from 'lodash/merge';
-import uniq from 'lodash/uniq';
+import {
+  cloneDeep,
+  compact,
+  each,
+  find,
+  get,
+  merge,
+  uniq
+} from 'lodash-es';
 import converter from 'swagger2openapi';
 
 import { Request } from './util/request';

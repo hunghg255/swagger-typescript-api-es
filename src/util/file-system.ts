@@ -1,8 +1,7 @@
 import fs from 'node:fs';
 import { resolve } from 'node:path';
 
-import noop from 'lodash/noop';
-import split from 'lodash/split';
+import { noop, split } from 'lodash-es';
 import makeDir from 'make-dir';
 
 import { Logger } from './logger';

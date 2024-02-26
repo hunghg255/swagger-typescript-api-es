@@ -6,12 +6,14 @@
 import path from 'node:path';
 
 import { cosmiconfigSync } from 'cosmiconfig';
-import cloneDeep from 'lodash/cloneDeep';
-import compact from 'lodash/compact';
-import join from 'lodash/join';
-import map from 'lodash/map';
-import merge from 'lodash/merge';
-import uniq from 'lodash/uniq';
+import {
+  cloneDeep,
+  compact,
+  join,
+  map,
+  merge,
+  uniq
+} from 'lodash-es';
 import ts from 'typescript';
 
 import { ComponentTypeNameResolver } from './component-type-name-resolver';

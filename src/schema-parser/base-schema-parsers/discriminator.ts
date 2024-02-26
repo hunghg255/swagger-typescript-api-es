@@ -1,15 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable unused-imports/no-unused-vars */
 /* eslint-disable indent */
-import clone from 'lodash/clone';
-import cloneDeep from 'lodash/cloneDeep';
-import entries from 'lodash/entries';
-import get from 'lodash/get';
-import isArray from 'lodash/isArray';
-import isObject from 'lodash/isObject';
-import keys from 'lodash/keys';
-import omit from 'lodash/omit';
-import reduce from 'lodash/reduce';
+import {
+  clone,
+  cloneDeep,
+  entries,
+  get,
+  isArray,
+  isObject,
+  keys,
+  omit,
+  reduce,
+} from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../../constants';
 import { MonoSchemaParser } from '../mono-schema-parser';

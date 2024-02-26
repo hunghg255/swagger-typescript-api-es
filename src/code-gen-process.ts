@@ -2,25 +2,7 @@
 /* eslint-disable unicorn/consistent-destructuring */
 /* eslint-disable new-cap */
 /* eslint-disable unicorn/no-null */
-import camelCase from 'lodash/camelCase';
-import compact from 'lodash/compact';
-import each from 'lodash/each';
-import get from 'lodash/get';
-import isEmpty from 'lodash/isEmpty';
-import isObject from 'lodash/isObject';
-import isString from 'lodash/isString';
-import isUndefined from 'lodash/isUndefined';
-import join from 'lodash/join';
-import lowerCase from 'lodash/lowerCase';
-import map from 'lodash/map';
-import merge from 'lodash/merge';
-import noop from 'lodash/noop';
-import replace from 'lodash/replace';
-import size from 'lodash/size';
-import sortBy from 'lodash/sortBy';
-import uniq from 'lodash/uniq';
-import upperCase from 'lodash/upperCase';
-import values from 'lodash/values';
+import { camelCase, compact, each, get, isEmpty, isObject, isString, isUndefined, join, lowerCase, map, merge, noop, replace, size, sortBy, uniq, upperCase, values } from 'lodash-es';
 import ts from 'typescript';
 
 import { CodeFormatter } from './code-formatter';

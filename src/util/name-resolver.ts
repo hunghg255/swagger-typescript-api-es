@@ -1,10 +1,12 @@
 /* eslint-disable unicorn/no-array-for-each */
 /* eslint-disable unicorn/no-null */
 
-import compact from 'lodash/compact';
-import forEach from 'lodash/forEach';
-import some from 'lodash/some';
-import uniq from 'lodash/uniq';
+import {
+  compact,
+  forEach,
+  some,
+  uniq
+} from 'lodash-es';
 
 class NameResolver {
   reservedNames = [];

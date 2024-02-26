@@ -1,7 +1,6 @@
 import https from 'node:https';
 
-import merge from 'lodash/merge';
-import startsWith from 'lodash/startsWith';
+import { merge, startsWith } from 'lodash-es';
 // @ts-ignore
 import fetch from 'node-fetch-h2';
 

@@ -4,17 +4,19 @@
 /* eslint-disable valid-typeof */
 /* eslint-disable unicorn/no-nested-ternary */
 
-import camelCase from 'lodash/camelCase';
-import compact from 'lodash/compact';
-import filter from 'lodash/filter';
-import get from 'lodash/get';
-import isArray from 'lodash/isArray';
-import isBoolean from 'lodash/isBoolean';
-import isEmpty from 'lodash/isEmpty';
-import isFunction from 'lodash/isFunction';
-import isString from 'lodash/isString';
-import keys from 'lodash/keys';
-import uniq from 'lodash/uniq';
+import {
+  camelCase,
+  compact,
+  filter,
+  get,
+  isArray,
+  isBoolean,
+  isEmpty,
+  isFunction,
+  isString,
+  keys,
+  uniq,
+} from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../constants';
 import { internalCase } from '../util/internal-case';

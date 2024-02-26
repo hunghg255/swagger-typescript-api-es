@@ -89,6 +89,9 @@ export interface ApiConfig<SecurityDataType = unknown>
   ) => Promise<AxiosRequestConfig | void> | AxiosRequestConfig | void;
   secure?: boolean;
   format?: ResponseType;
+
+  instance?: AxiosInstance;
+  injectHeaders?: (data: any) => any;
 }
 
 export enum ContentType {
@@ -96,11 +99,6 @@ export enum ContentType {
   FormData = 'multipart/form-data',
   UrlEncoded = 'application/x-www-form-urlencoded',
   Text = 'text/plain',
-}
-
-interface IHttpClient {
-  instance?: AxiosInstance;
-  injectHeaders: (data: any) => any;
 }
 
 export class HttpClient<SecurityDataType = unknown> {
@@ -118,7 +116,7 @@ export class HttpClient<SecurityDataType = unknown> {
     instance,
     injectHeaders,
     ...axiosConfig
-  }: ApiConfig<SecurityDataType | IHttpClient> = {}) {
+  }: ApiConfig<SecurityDataType> = {}) {
     this.instance =
       instance ?? axios.create({ ...axiosConfig, baseURL: axiosConfig.baseURL || '' });
     this.secure = secure;

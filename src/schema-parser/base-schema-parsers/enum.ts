@@ -1,12 +1,14 @@
 /* eslint-disable indent */
 /* eslint-disable eqeqeq */
-import get from 'lodash/get';
-import includes from 'lodash/includes';
-import isArray from 'lodash/isArray';
-import isObject from 'lodash/isObject';
-import isUndefined from 'lodash/isUndefined';
-import map from 'lodash/map';
-import size from 'lodash/size';
+import {
+  get,
+  includes,
+  isArray,
+  isObject,
+  isUndefined,
+  map,
+  size,
+} from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../../constants';
 import { MonoSchemaParser } from '../mono-schema-parser';

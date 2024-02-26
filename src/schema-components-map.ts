@@ -1,7 +1,6 @@
 /* eslint-disable unicorn/no-null */
 
-import filter from 'lodash/filter';
-import startsWith from 'lodash/startsWith';
+import { filter, startsWith } from 'lodash-es';
 
 class SchemaComponentsMap {
   /** @type {SchemaComponent[]} */

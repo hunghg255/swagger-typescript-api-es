@@ -7,30 +7,32 @@
 /* eslint-disable unicorn/no-null */
 /* eslint-disable unicorn/prefer-spread */
 
-import assign from 'lodash/assign';
-import camelCase from 'lodash/camelCase';
-import compact from 'lodash/compact';
-import concat from 'lodash/concat';
-import each from 'lodash/each';
-import endsWith from 'lodash/endsWith';
-import entries from 'lodash/entries';
-import find from 'lodash/find';
-import flatMap from 'lodash/flatMap';
-import forEach from 'lodash/forEach';
-import get from 'lodash/get';
-import includes from 'lodash/includes';
-import isEqual from 'lodash/isEqual';
-import isNaN from 'lodash/isNaN';
-import isObject from 'lodash/isObject';
-import keys from 'lodash/keys';
-import map from 'lodash/map';
-import reduce from 'lodash/reduce';
-import replace from 'lodash/replace';
-import slice from 'lodash/slice';
-import some from 'lodash/some';
-import split from 'lodash/split';
-import startsWith from 'lodash/startsWith';
-import uniq from 'lodash/uniq';
+import {
+  assign,
+  camelCase,
+  compact,
+  concat,
+  each,
+  endsWith,
+  entries,
+  find,
+  flatMap,
+  forEach,
+  get,
+  includes,
+  isEqual,
+  isNaN,
+  isObject,
+  keys,
+  map,
+  reduce,
+  replace,
+  slice,
+  some,
+  split,
+  startsWith,
+  uniq,
+} from 'lodash-es';
 
 import { SpecificArgNameResolver } from './util/specific-arg-name-resolver';
 import {

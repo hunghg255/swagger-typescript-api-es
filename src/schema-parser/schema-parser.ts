@@ -1,11 +1,7 @@
 /* eslint-disable eqeqeq */
 /* eslint-disable unicorn/no-null */
 /* eslint-disable no-unused-vars */
-import first from 'lodash/first';
-import get from 'lodash/get';
-import merge from 'lodash/merge';
-import omit from 'lodash/omit';
-import values from 'lodash/values';
+import { first, get, merge, omit, values } from 'lodash-es';
 
 import { ArraySchemaParser } from './base-schema-parsers/array';
 import { ComplexSchemaParser } from './base-schema-parsers/complex';

@@ -1,5 +1,5 @@
 /* eslint-disable indent */
-import reduceRight from 'lodash/reduceRight';
+import { reduceRight } from 'lodash-es';
 import prettier from 'prettier';
 import ts from 'typescript';
 

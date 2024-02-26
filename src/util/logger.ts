@@ -1,6 +1,5 @@
 /* eslint-disable unicorn/error-message */
-import map from 'lodash/map';
-import startsWith from 'lodash/startsWith';
+import { map, startsWith } from 'lodash-es';
 import { emojify } from 'node-emoji';
 
 class Logger {
