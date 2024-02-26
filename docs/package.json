@@ -1,0 +1,17 @@
+{
+  "name": "docs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "convert-markdown-to-html"
+  },
+  "keywords": [],
+  "author": "hunghg255",
+  "license": "ISC",
+  "devDependencies": {
+    "convert-markdown-to-html": "^0.0.34",
+    "swagger-typescript-api-es": "^0.0.5",
+    "typescript": "^5.3.3"
+  }
+}

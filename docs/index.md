@@ -1,6 +1,6 @@
 <p align="center">
 <a href="https://www.npmjs.com/package/swagger-typescript-api-es" target="_blank" rel="noopener noreferrer">
-<img src="https://api.iconify.design/devicon-plain:swagger-wordmark.svg?color=%2365fb92" alt="logo" width='150'/></a>
+<img src="https://api.iconify.design/devicon-plain:swagger-wordmark.svg?color=%2365fb92" alt="logo" style="width:150px;"/></a>
 </p>
 
 <p align="center">
@@ -18,9 +18,25 @@
 
 ## API
 
-```bash
+:::code-group-open
+
+```bash [npm]
 npx swagger-typescript-api-es@latest --help
 ```
+
+```bash [yarn]
+yarn dlx swagger-typescript-api-es@latest --help
+```
+
+```bash [pnpm]
+pnpx swagger-typescript-api-es@latest --help
+```
+
+```bash [bun]
+bunx swagger-typescript-api-es@latest --help
+```
+
+:::code-group-close
 
 ## CLI
 
@@ -28,15 +44,51 @@ npx swagger-typescript-api-es@latest --help
 npx swagger-typescript-api-es@latest -u https://petstore.swagger.io/v2/swagger.json -o ./src/api
 ```
 
+:::code-group-open
+
+```bash [npm]
+npx swagger-typescript-api-es@latest -u https://petstore.swagger.io/v2/swagger.json -o ./src/api
+```
+
+```bash [yarn]
+yarn dlx swagger-typescript-api-es@latest -u https://petstore.swagger.io/v2/swagger.json -o ./src/api
+```
+
+```bash [pnpm]
+pnpx swagger-typescript-api-es@latest -u https://petstore.swagger.io/v2/swagger.json -o ./src/api
+```
+
+```bash [bun]
+bunx swagger-typescript-api-es@latest -u https://petstore.swagger.io/v2/swagger.json -o ./src/api
+```
+
+:::code-group-close
+
 ## Install
 
-```bash
+:::code-group-open
+
+```bash [npm]
 npm i swagger-typescript-api-es@latest --save-dev
 ```
 
+```bash [yarn]
+yarn dlx swagger-typescript-api-es@latest --save-dev
+```
+
+```bash [pnpm]
+pnpm i swagger-typescript-api-es@latest --save-dev
+```
+
+```bash [bun]
+bun i swagger-typescript-api-es@latest --save-dev
+```
+
+:::code-group-close
+
 - Create a file `swagger-typescript-api.config.config.ts` in the root of the project
 
-```ts
+```ts twoslash
 import { defaultConfig } from 'swagger-typescript-api-es';
 
 export default defaultConfig({
