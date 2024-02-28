@@ -86,7 +86,7 @@ bun i swagger-typescript-api-es@latest --save-dev
 
 :::code-group-close
 
-- Create a file `swagger-typescript-api.config.config.ts` in the root of the project
+- Create a file `swagger-typescript-api.config.ts` in the root of the project
 
 ```ts twoslash
 import { defaultConfig } from 'swagger-typescript-api-es';
@@ -97,7 +97,11 @@ export default defaultConfig({
   url: 'http://localhost:5002/api-json',
   httpClientType: 'axios',
 });
+```
 
+- Options
+
+```ts twoslash
 // Options
 interface IOptions {
   /**
