@@ -21,12 +21,12 @@ class ComponentTypeNameResolver extends NameResolver {
         const variantCounter = this.countersByVariant.get(randomVariant) + 1;
         this.countersByVariant.set(randomVariant, variantCounter);
         const dirtyResolvedName = `${randomVariant}${variantCounter}`;
-        this.logger.debug('generated dirty resolved type name for component - ', dirtyResolvedName);
+        this.logger.debug('Generated dirty resolved type name for component - ', dirtyResolvedName);
         return dirtyResolvedName;
       }
 
       const fallbackName = `${this.config.componentTypeNameResolver}${this.fallbackNameCounter++}`;
-      this.logger.debug('generated fallback type name for component - ', fallbackName);
+      this.logger.debug('Generated fallback type name for component - ', fallbackName);
       return fallbackName;
     });
   }

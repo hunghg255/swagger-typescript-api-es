@@ -2,7 +2,28 @@
 /* eslint-disable unicorn/consistent-destructuring */
 /* eslint-disable new-cap */
 /* eslint-disable unicorn/no-null */
-import { camelCase, compact, each, get, isEmpty, isObject, isString, isUndefined, join, lowerCase, map, merge, noop, replace, size, sortBy, uniq, upperCase, values } from 'lodash-es';
+import {
+  camelCase,
+  compact,
+  each,
+  get,
+  isEmpty,
+  isObject,
+  isString,
+  isUndefined,
+  join,
+  lowerCase,
+  map,
+  merge,
+  noop,
+  replace,
+  size,
+  sortBy,
+  uniq,
+  upperCase,
+  values,
+} from 'lodash-es';
+import pc from 'picocolors';
 import ts from 'typescript';
 
 import { CodeFormatter } from './code-formatter';
@@ -101,7 +122,7 @@ class CodeGenProcess {
     this.schemaWalker.addSchema('$usage', swagger.usageSchema);
     this.schemaWalker.addSchema('$original', swagger.originalSchema);
 
-    this.logger.event('start generating your typescript api');
+    this.logger.event('Start generating your typescript api');
 
     this.config.update(this.config.hooks.onInit(this.config, this) || this.config);
 
@@ -159,11 +180,11 @@ class CodeGenProcess {
 
     if (this.fileSystem.pathIsExist(this.config.output)) {
       if (this.config.cleanOutput) {
-        this.logger.debug(`cleaning dir ${this.config.output}`);
+        this.logger.debug(`Cleaning dir ${this.config.output}`);
         this.fileSystem.cleanDir(this.config.output);
       }
     } else {
-      this.logger.debug(`path ${this.config.output} is not exist. creating dir by this path`);
+      this.logger.debug(`Path ${this.config.output} is not exist. creating dir by this path`);
       this.fileSystem.createDir(this.config.output);
     }
 
@@ -183,9 +204,9 @@ class CodeGenProcess {
         });
 
         this.logger.success(
-          'api file',
-          `"${file.fileName}${file.fileExtension}"`,
-          `created in ${this.config.output}`,
+          'API file',
+          pc.green(`"${file.fileName}${file.fileExtension}"`),
+          `created in ${pc.green(this.config.output)}`,
         );
       }
     }
@@ -494,7 +515,7 @@ class CodeGenProcess {
     const fileExtension = ts.Extension.Ts;
 
     if (configuration.translateToJavaScript) {
-      this.logger.debug('using js translator for', fileName);
+      this.logger.debug('Using js translator for', fileName);
       return await this.javascriptTranslator.translate({
         fileName,
         fileExtension,
@@ -503,7 +524,7 @@ class CodeGenProcess {
     }
 
     if (configuration.customTranslator) {
-      this.logger.debug('using custom translator for', fileName);
+      this.logger.debug('Using custom translator for', fileName);
       return await configuration.customTranslator.translate({
         fileName,
         fileExtension,
@@ -511,7 +532,7 @@ class CodeGenProcess {
       });
     }
 
-    this.logger.debug('generating output for', `${fileName}${fileExtension}`);
+    this.logger.debug('Generating output for', `${fileName}${fileExtension}`);
 
     return [
       {

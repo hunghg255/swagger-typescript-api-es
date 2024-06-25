@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import pc from 'picocolors';
 import { cac } from 'unprompts';
 import { readConfig } from 'unreadconfig';
 
@@ -7,23 +8,6 @@ import { formatOptions } from './util/formatOptions';
 import { version } from '../package.json';
 
 const cli = cac('swagger-typescript-api-es');
-
-const COLORS = {
-  black: '\u001B[30m',
-  red: '\u001B[31m',
-  green: '\u001B[32m',
-  yellow: '\u001B[33m',
-  blue: '\u001B[34m',
-  magenta: '\u001B[35m',
-  cyan: '\u001B[36m',
-  white: '\u001B[37m',
-  console_color: '\u001B[0m',
-} as const;
-
-const colorConsoleText = (text: string, color: keyof typeof COLORS) => {
-  const coloredText = `${COLORS[color]}${text}${COLORS.console_color}`;
-  return console.log(coloredText);
-};
 
 const FILE_NAME_CONFIG = 'swagger-typescript-api';
 
@@ -146,7 +130,13 @@ export function startCli() {
     });
 
     cli.parse();
+
+    // eslint-disable-next-line unicorn/no-process-exit
+    process.exit(0);
   } catch (error: any) {
-    colorConsoleText('❌ SWAGGER-TYPESCRIPT-API error: ' + error.message, 'red');
+    console.log(pc.red('❌ SWAGGER-TYPESCRIPT-API error: ' + error.message));
+
+    // eslint-disable-next-line unicorn/no-process-exit
+    process.exit(0);
   }
 }

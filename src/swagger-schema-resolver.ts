@@ -1,13 +1,6 @@
 import yaml from 'js-yaml';
-import {
-  cloneDeep,
-  compact,
-  each,
-  find,
-  get,
-  merge,
-  uniq
-} from 'lodash-es';
+import { cloneDeep, compact, each, find, get, merge, uniq } from 'lodash-es';
+import pc from 'picocolors';
 import converter from 'swagger2openapi';
 
 import { Request } from './util/request';
@@ -111,7 +104,7 @@ class SwaggerSchemaResolver {
   }
 
   getSwaggerSchemaByPath = (pathToSwagger: any) => {
-    this.logger.log(`try to get swagger by path "${pathToSwagger}"`);
+    this.logger.log(`Try to get swagger by path "${pathToSwagger}"`);
     return this.fileSystem.getFileContent(pathToSwagger);
   };
 
@@ -125,7 +118,7 @@ class SwaggerSchemaResolver {
     if (this.fileSystem.pathIsExist(pathToSwagger)) {
       return this.getSwaggerSchemaByPath(pathToSwagger);
     } else {
-      this.logger.log(`try to get swagger by URL "${urlToSwagger}"`);
+      this.logger.log(`Try to get swagger by URL ${pc.cyan(`"${urlToSwagger}"`)}`);
       return await this.request.download({
         url: urlToSwagger,
         disableStrictSSL,

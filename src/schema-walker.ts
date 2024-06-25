@@ -34,7 +34,7 @@ class SchemaWalker {
    * @returns {any}
    */
   findByRef = (ref: any) => {
-    this.logger.debug('try to resolve ref by path', ref);
+    this.logger.debug('Try to resolve ref by path', ref);
 
     if (this.caches.has(ref)) {
       return this.caches.get(ref);
@@ -49,7 +49,7 @@ class SchemaWalker {
         }
       }
     } else if (this._isRemoteRef(ref)) {
-      this.logger.debug('remote refs not supported', ref);
+      this.logger.debug('Remote refs not supported', ref);
       return null;
     } else {
       // @ts-ignore
