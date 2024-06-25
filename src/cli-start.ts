@@ -118,7 +118,7 @@ cli
 
 export function startCli() {
   try {
-    cli.command('').action((args) => {
+    cli.command('').action(async (args) => {
       let optionsConfig = args;
 
       optionsConfig =
@@ -126,13 +126,13 @@ export function startCli() {
           ? readConfig(FILE_NAME_CONFIG)
           : formatOptions(optionsConfig);
 
-      generateApi(optionsConfig);
+      await generateApi(optionsConfig);
+
+      // eslint-disable-next-line unicorn/no-process-exit
+      process.exit(0);
     });
 
     cli.parse();
-
-    // eslint-disable-next-line unicorn/no-process-exit
-    process.exit(0);
   } catch (error: any) {
     console.log(pc.red('❌ SWAGGER-TYPESCRIPT-API error: ' + error.message));
 
