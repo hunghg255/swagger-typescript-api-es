@@ -1,6 +1,6 @@
 {
   "name": "swagger-typescript-api-es",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.mjs",
