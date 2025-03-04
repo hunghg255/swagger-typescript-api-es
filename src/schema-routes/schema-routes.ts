@@ -38,6 +38,7 @@ import { SpecificArgNameResolver } from './util/specific-arg-name-resolver';
 import {
   DEFAULT_BODY_ARG_NAME,
   RESERVED_BODY_ARG_NAMES,
+  RESERVED_HEADER_ARG_NAMES,
   RESERVED_PATH_ARG_NAMES,
   RESERVED_QUERY_ARG_NAMES,
 } from '../../src/constants';
