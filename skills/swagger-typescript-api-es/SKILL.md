@@ -4,7 +4,7 @@ description: Guide for using swagger-typescript-api-es — a CLI and Node.js too
 license: MIT
 metadata:
   author: hunghg255
-  version: 0.0.13
+  version: 0.0.14
   source: https://github.com/hunghg255/swagger-typescript-api-es
 ---
 
@@ -33,14 +33,14 @@ npx swagger-typescript-api-es@latest -u https://petstore.swagger.io/v2/swagger.j
 ### Step 1: Create `swagger-typescript-api.config.ts` at project root
 
 ```ts
-import { defaultConfig } from 'swagger-typescript-api-es'
+import { defaultConfig } from 'swagger-typescript-api-es';
 
 export default defaultConfig({
-  name: 'api-axios.ts',                  // output filename
-  output: './src/apis/axios-gentype',     // output directory
-  url: 'http://localhost:5002/api-json',  // swagger schema URL
-  httpClientType: 'axios',               // 'axios' | 'fetch'
-})
+  name: 'api-axios.ts', // output filename
+  output: './src/apis/axios-gentype', // output directory
+  url: 'http://localhost:5002/api-json', // swagger schema URL
+  httpClientType: 'axios', // 'axios' | 'fetch'
+});
 ```
 
 ### Step 2: Add script to `package.json`
@@ -69,13 +69,13 @@ npx swagger-typescript-api-es@latest --help
 
 Key flags:
 
-| Flag | Description |
-|---|---|
-| `-u <url>` | URL to swagger schema |
-| `-o <path>` | Output directory |
-| `-n <name>` | Output filename |
-| `--axios` | Use axios HTTP client |
-| `--fetch` | Use fetch HTTP client |
+| Flag        | Description           |
+| ----------- | --------------------- |
+| `-u <url>`  | URL to swagger schema |
+| `-o <path>` | Output directory      |
+| `-n <name>` | Output filename       |
+| `--axios`   | Use axios HTTP client |
+| `--fetch`   | Use fetch HTTP client |
 
 ## Using a Local Schema File
 
@@ -85,9 +85,9 @@ Instead of `url`, use `input` for a local file:
 export default defaultConfig({
   name: 'api.ts',
   output: './src/api',
-  input: './swagger.json',   // local file path
+  input: './swagger.json', // local file path
   httpClientType: 'fetch',
-})
+});
 ```
 
 ## Gotchas
