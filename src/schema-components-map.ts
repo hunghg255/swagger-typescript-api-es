@@ -67,8 +67,8 @@ class SchemaComponentsMap {
   filter(...componentNames: any) {
     return filter(this._data, (it: any) =>
       componentNames.some((componentName: any) =>
-        startsWith(it.$ref, `#/components/${componentName}`),
-      ),
+        startsWith(it.$ref, `#/components/${componentName}`)
+      )
     );
   }
 

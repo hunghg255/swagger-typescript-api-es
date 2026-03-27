@@ -113,14 +113,14 @@ class TemplatesGenProcess {
     const apiTemplates = this.getTemplateNamesFromDir(apiTemplatesPath);
 
     const usingHttpClientTemplate = httpClientTemplates.find((template: any) =>
-      template.startsWith(`${this.config.httpClientType}-`),
+      template.startsWith(`${this.config.httpClientType}-`)
     );
 
     let httpClientTemplateContent = '';
 
     if (usingHttpClientTemplate) {
       httpClientTemplateContent = this.fixTemplateContent(
-        this.getTemplateContent(`${this.paths.httpClientTemplates}/${usingHttpClientTemplate}`),
+        this.getTemplateContent(`${this.paths.httpClientTemplates}/${usingHttpClientTemplate}`)
       );
     }
 
@@ -139,7 +139,7 @@ class TemplatesGenProcess {
       outputFiles.push({
         name: fileName,
         content: this.fixTemplateContent(
-          this.getTemplateContent(`${apiTemplatesPath}/${fileName}`),
+          this.getTemplateContent(`${apiTemplatesPath}/${fileName}`)
         ),
       });
     }
@@ -151,17 +151,17 @@ class TemplatesGenProcess {
     // includeFile("@base/
     const importsRegExp1 = new RegExp(
       `includeFile\\("(${this.importTemplatePrefixes.map((v) => `(${v})`).join('|')})/`,
-      'g',
+      'g'
     );
     // includeFile(`@base/
     const importsRegExp2 = new RegExp(
       `includeFile\\(\`(${this.importTemplatePrefixes.map((v) => `(${v})`).join('|')})/`,
-      'g',
+      'g'
     );
     // includeFile('@base/
     const importsRegExp3 = new RegExp(
       `includeFile\\('(${this.importTemplatePrefixes.map((v) => `(${v})`).join('|')})/`,
-      'g',
+      'g'
     );
 
     return content

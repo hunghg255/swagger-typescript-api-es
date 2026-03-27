@@ -47,7 +47,7 @@ class SwaggerSchemaResolver {
       url,
       disableStrictSSL,
       disableProxy,
-      authorizationToken,
+      authorizationToken
     );
     const swaggerSchemaObject = this.processSwaggerSchemaFile(swaggerSchemaFile);
     return await this.convertSwaggerObject(swaggerSchemaObject, { patch });
@@ -68,7 +68,7 @@ class SwaggerSchemaResolver {
           title: 'No title',
           version: '',
         },
-        result.info,
+        result.info
       );
 
       if (result.openapi) {
@@ -97,7 +97,7 @@ class SwaggerSchemaResolver {
               usageSchema: parsedSwaggerSchema,
               originalSchema: result,
             });
-          },
+          }
         );
       }
     });
@@ -113,7 +113,7 @@ class SwaggerSchemaResolver {
     urlToSwagger: any,
     disableStrictSSL: any,
     disableProxy: any,
-    authToken: any,
+    authToken: any
   ) {
     if (this.fileSystem.pathIsExist(pathToSwagger)) {
       return this.getSwaggerSchemaByPath(pathToSwagger);
@@ -156,17 +156,17 @@ class SwaggerSchemaResolver {
 
         if (typeof usageRouteInfo === 'object') {
           usageRouteInfo.consumes = uniq(
-            compact([...(usageRouteInfo.consumes || []), ...(originalRouteInfo.consumes || [])]),
+            compact([...(usageRouteInfo.consumes || []), ...(originalRouteInfo.consumes || [])])
           );
           usageRouteInfo.produces = uniq(
-            compact([...(usageRouteInfo.produces || []), ...(originalRouteInfo.produces || [])]),
+            compact([...(usageRouteInfo.produces || []), ...(originalRouteInfo.produces || [])])
           );
         }
 
         each(originalRouteParams, (originalRouteParam) => {
           const existUsageParam = find(
             usageRouteParams,
-            (param) => originalRouteParam.in === param.in && originalRouteParam.name === param.name,
+            (param) => originalRouteParam.in === param.in && originalRouteParam.name === param.name
           );
           if (!existUsageParam) {
             usageRouteParams.push(originalRouteParam);

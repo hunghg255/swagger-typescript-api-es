@@ -154,7 +154,7 @@ class SchemaUtils {
 
     if (refData) {
       const refObjectProperties = keys(
-        (refData.rawTypeData && refData.rawTypeData.properties) || {},
+        (refData.rawTypeData && refData.rawTypeData.properties) || {}
       );
       const existedRequiredKeys = refObjectProperties.filter((key) => required.includes(key));
 
@@ -189,7 +189,7 @@ class SchemaUtils {
 
   resolveTypeName = (
     typeName: any,
-    { suffixes, resolver, prefixes, shouldReserve = true }: any,
+    { suffixes, resolver, prefixes, shouldReserve = true }: any
   ) => {
     return resolver
       ? this.config.componentTypeNameResolver.resolve(null, (reserved: any) => {
@@ -200,7 +200,7 @@ class SchemaUtils {
             ...(prefixes || []).map((prefix: any) => pascalCase(`${prefix} ${typeName}`)),
             ...(suffixes || []).map((suffix: any) => pascalCase(`${typeName} ${suffix}`)),
           ],
-          shouldReserve,
+          shouldReserve
         );
   };
 
@@ -252,7 +252,7 @@ class SchemaUtils {
     if (refTypeInfo) {
       return this.checkAndAddRequiredKeys(
         schema,
-        this.safeAddNullToType(schema, this.typeNameFormatter.format(refTypeInfo.typeName)),
+        this.safeAddNullToType(schema, this.typeNameFormatter.format(refTypeInfo.typeName))
       );
     }
 

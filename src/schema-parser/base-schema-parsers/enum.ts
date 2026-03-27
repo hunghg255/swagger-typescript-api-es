@@ -1,14 +1,6 @@
 /* eslint-disable indent */
 /* eslint-disable eqeqeq */
-import {
-  get,
-  includes,
-  isArray,
-  isObject,
-  isUndefined,
-  map,
-  size,
-} from 'lodash-es';
+import { get, includes, isArray, isObject, isUndefined, map, size } from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../../constants';
 import { MonoSchemaParser } from '../mono-schema-parser';
@@ -33,7 +25,7 @@ class EnumSchemaParser extends MonoSchemaParser {
       this.schemaComponentsMap.createRef(['components', 'schemas', generatedTypeName]),
       {
         ...this.schema,
-      },
+      }
     );
     return this.schemaParserFabric.parseSchema(customComponent);
   };
@@ -65,7 +57,7 @@ class EnumSchemaParser extends MonoSchemaParser {
           })),
         },
         this.typeName,
-        this.schemaPath,
+        this.schemaPath
       );
     }
 

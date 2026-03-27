@@ -14,7 +14,7 @@ class ArraySchemaParser extends MonoSchemaParser {
         tupleContent.push(
           this.schemaParserFabric
             .createSchemaParser({ schema: item, schemaPath: this.schemaPath })
-            .getInlineParseContent(),
+            .getInlineParseContent()
         );
       }
       contentType = this.config.Ts.Tuple(tupleContent);

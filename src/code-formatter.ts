@@ -1,7 +1,4 @@
-/* eslint-disable indent */
-import { reduceRight } from 'lodash-es';
-import prettier from 'prettier';
-import ts from 'typescript';
+import * as oxfmt from 'oxfmt';
 
 class CodeFormatter {
   /**
@@ -13,109 +10,103 @@ class CodeFormatter {
     this.config = config;
   }
 
-  removeUnusedImports = (content: any) => {
-    const tempFileName = 'file.ts';
-
-    const host = new TsLanguageServiceHost(tempFileName, content);
-    const languageService: any = ts.createLanguageService(host);
-
-    const fileTextChanges = languageService.organizeImports(
-      { type: 'file', fileName: tempFileName },
-      { newLineCharacter: ts.sys.newLine },
-    )[0];
-
-    if (fileTextChanges && fileTextChanges.textChanges.length > 0) {
-      return reduceRight(
-        fileTextChanges.textChanges,
-        (content, { span, newText }) =>
-          `${content.slice(0, span.start)}${newText}${content.slice(span.start + span.length)}`,
-        content,
-      );
-    }
-
-    return content;
-  };
-
   /**
    * @param content
    * @returns {Promise<string>}
    */
-  prettierFormat = async (content: any) => {
-    const formatted = await prettier.format(content, this.config.prettierOptions);
-    return formatted;
+  oxcFormat = async (content: any) => {
+    try {
+      const formatted = await oxfmt.format('file.ts', content, {
+        singleQuote: true,
+        jsxSingleQuote: true,
+        printWidth: 100,
+        trailingComma: 'es5',
+        tabWidth: 2,
+        semi: true,
+        sortImports: {
+          groups: [
+            'builtin',
+            'external',
+            ['internal', 'subpath'],
+            ['parent', 'sibling', 'index'],
+            'style',
+            'unknown',
+          ],
+        },
+      });
+
+      return formatted.code;
+    } catch (error) {
+      console.log(error);
+
+      return content;
+    }
   };
 
-  formatCode = async (code: string, { removeUnusedImports = true, prettierFormat = true } = {}) => {
-    if (removeUnusedImports) {
-      code = this.removeUnusedImports(code);
-    }
-    if (prettierFormat) {
-      code = await this.prettierFormat(code);
-    }
-
-    return code;
+  formatCode = async (code: string) => {
+    return this.oxcFormat(code);
   };
 }
 
-class TsLanguageServiceHost {
-  constructor(fileName: any, content: any) {
-    const tsconfig = ts.findConfigFile(fileName, ts.sys.fileExists);
+// class TsLanguageServiceHost {
+//   constructor(fileName: any, content: any) {
+//     const tsconfig = ts.findConfigFile(fileName, ts.sys.fileExists);
 
-    Object.assign(this, {
-      fileName,
-      content,
-      compilerOptions: tsconfig
-        ? (ts as any).convertCompilerOptionsFromJson(
-            ts.readConfigFile(tsconfig, ts.sys.readFile).config.compilerOptions,
-          ).options
-        : ts.getDefaultCompilerOptions(),
-    });
-  }
+//     Object.assign(this, {
+//       fileName,
+//       content,
+//       compilerOptions: tsconfig
+//         ? (ts as any).convertCompilerOptionsFromJson(
+//             ts.readConfigFile(tsconfig, ts.sys.readFile).config.compilerOptions
+//           ).options
+//         : ts.getDefaultCompilerOptions(),
+//     });
+//   }
 
-  getNewLine() {
-    return 'newLine' in ts.sys ? ts.sys.newLine : '\n';
-  }
+//   getNewLine() {
+//     return 'newLine' in ts.sys ? ts.sys.newLine : '\n';
+//   }
 
-  getScriptFileNames() {
-    // @ts-ignore
-    return [this.fileName];
-  }
+//   getScriptFileNames() {
+//     // @ts-ignore
+//     return [this.fileName];
+//   }
 
-  getCompilationSettings() {
-    // @ts-ignore
-    return this.compilerOptions;
-  }
+//   getCompilationSettings() {
+//     // @ts-ignore
+//     return this.compilerOptions;
+//   }
 
-  getDefaultLibFileName() {
-    return ts.getDefaultLibFileName(this.getCompilationSettings());
-  }
+//   getDefaultLibFileName() {
+//     return ts.getDefaultLibFileName(this.getCompilationSettings());
+//   }
 
-  getCurrentDirectory() {
-    return process.cwd();
-  }
+//   getCurrentDirectory() {
+//     return process.cwd();
+//   }
 
-  getScriptVersion() {
-    return ts.version;
-  }
+//   getScriptVersion() {
+//     return ts.version;
+//   }
 
-  getScriptSnapshot() {
-    // @ts-ignore
-    return ts.ScriptSnapshot.fromString(this.content);
-  }
+//   getScriptSnapshot() {
+//     // @ts-ignore
+//     return ts.ScriptSnapshot.fromString(this.content);
+//   }
 
-  readFile(fileName: any, encoding: any) {
-    // @ts-ignore
-    if (fileName === this.fileName) {
-      // @ts-ignore
-      return this.content;
-    }
+//   readFile(fileName: any, encoding: any) {
+//     // @ts-ignore
+//     if (fileName === this.fileName) {
+//       // @ts-ignore
+//       return this.content;
+//     }
 
-    return ts.sys.readFile(fileName, encoding);
-  }
+//     return ts.sys.readFile(fileName, encoding);
+//   }
 
-  fileExists(path: any) {
-    return ts.sys.fileExists(path);
-  }
-}
+//   fileExists(path: any) {
+//     return ts.sys.fileExists(path);
+//   }
+// }
 
 export { CodeFormatter };

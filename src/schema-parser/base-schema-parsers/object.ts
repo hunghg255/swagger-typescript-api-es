@@ -1,11 +1,4 @@
-import {
-  compact,
-  get,
-  isObject,
-  map,
-  some,
-  values
-} from 'lodash-es';
+import { compact, get, isObject, map, some, values } from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../../constants';
 import { MonoSchemaParser } from '../mono-schema-parser';
@@ -55,7 +48,7 @@ class ObjectSchemaParser extends MonoSchemaParser {
           compact(map(property[this.schemaUtils.getComplexType(property)], 'description'))[0] ||
           rawTypeData.description ||
           compact(
-            map(rawTypeData[this.schemaUtils.getComplexType(rawTypeData)], 'description'),
+            map(rawTypeData[this.schemaUtils.getComplexType(rawTypeData)], 'description')
           )[0] ||
           '',
         isRequired: required,
@@ -78,7 +71,7 @@ class ObjectSchemaParser extends MonoSchemaParser {
         isRequired: false,
         field: this.config.Ts.InterfaceDynamicField(
           this.config.Ts.Keyword.String,
-          this.config.Ts.Keyword.Any,
+          this.config.Ts.Keyword.Any
         ),
       });
     }

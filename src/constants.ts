@@ -43,7 +43,7 @@ const FILE_PREFIX = `/* eslint-disable */
 `;
 const DEFAULT_BODY_ARG_NAME = 'data';
 
-const PRETTIER_OPTIONS = {
+const OXC_FORMAT_OPTIONS = {
   printWidth: 120,
   tabWidth: 2,
   trailingComma: 'all',
@@ -64,5 +64,5 @@ export {
   RESERVED_REQ_PARAMS_ARG_NAMES,
   RESERVED_PATH_ARG_NAMES,
   RESERVED_HEADER_ARG_NAMES,
-  PRETTIER_OPTIONS,
+  OXC_FORMAT_OPTIONS,
 };

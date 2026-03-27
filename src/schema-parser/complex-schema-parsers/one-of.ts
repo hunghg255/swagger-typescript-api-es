@@ -10,13 +10,13 @@ class OneOfSchemaParser extends MonoSchemaParser {
       this.schemaParserFabric.getInlineParseContent(
         this.schemaUtils.makeAddRequiredToChildSchema(this.schema, childSchema),
         undefined,
-        this.schemaPath,
-      ),
+        this.schemaPath
+      )
     );
 
     const filtered = this.schemaUtils.filterSchemaContents(
       combined,
-      (content: any) => !ignoreTypes.has(content),
+      (content: any) => !ignoreTypes.has(content)
     );
 
     const type = this.config.Ts.UnionType(filtered);

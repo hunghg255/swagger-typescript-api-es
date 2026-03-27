@@ -1,14 +1,6 @@
 /* eslint-disable indent */
 
-import {
-  compact,
-  get,
-  includes,
-  isString,
-  map,
-  replace,
-  trim
-} from 'lodash-es';
+import { compact, get, includes, isString, map, replace, trim } from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../constants';
 
@@ -76,7 +68,7 @@ class SchemaFormatters {
               compact([
                 ...map(parsedSchema.content, ({ value }) => `${value}`),
                 parsedSchema.nullable && this.config.Ts.Keyword.Null,
-              ]),
+              ])
             ) || this.config.Ts.Keyword.Any,
       };
     },
@@ -96,7 +88,7 @@ class SchemaFormatters {
           parsedSchema,
           parsedSchema.content.length > 0
             ? this.config.Ts.ObjectWrapper(this.formatObjectContent(parsedSchema.content))
-            : this.config.Ts.RecordType(this.config.Ts.Keyword.String, this.config.Ts.Keyword.Any),
+            : this.config.Ts.RecordType(this.config.Ts.Keyword.String, this.config.Ts.Keyword.Any)
         ),
       };
     },
@@ -151,7 +143,7 @@ class SchemaFormatters {
         this.config.templatesToRender.dataContractJsDoc,
         {
           data: part,
-        },
+        }
       );
 
       const routeNameFromTemplate = renderedJsDoc

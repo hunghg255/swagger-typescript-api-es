@@ -132,22 +132,22 @@ class CodeGenProcess {
       each(component, (rawTypeData, typeName) => {
         this.schemaComponentsMap.createComponent(
           this.schemaComponentsMap.createRef(['components', componentName, typeName]),
-          rawTypeData,
+          rawTypeData
         );
-      }),
+      })
     );
 
     /**
      * @type {SchemaComponent[]}
      */
     const componentsToParse = this.schemaComponentsMap.filter(
-      compact(['schemas', this.config.extractResponses && 'responses']),
+      compact(['schemas', this.config.extractResponses && 'responses'])
     );
 
     const parsedSchemas = componentsToParse.map((schemaComponent: any) => {
       const parsed = this.schemaParserFabric.parseSchema(
         schemaComponent.rawTypeData,
-        schemaComponent.typeName,
+        schemaComponent.typeName
       );
       schemaComponent.typeData = parsed;
       return parsed;
@@ -206,7 +206,7 @@ class CodeGenProcess {
         this.logger.success(
           'API file',
           pc.green(`"${file.fileName}${file.fileExtension}"`),
-          `created in ${pc.green(this.config.output)}`,
+          `created in ${pc.green(this.config.output)}`
         );
       }
     }
@@ -313,7 +313,7 @@ class CodeGenProcess {
     if (!typeInfo.typeData) {
       typeInfo.typeData = this.schemaParserFabric.parseSchema(
         typeInfo.rawTypeData,
-        typeInfo.typeName,
+        typeInfo.typeName
       );
     }
     const rawTypeData = typeInfo.typeData;
@@ -361,11 +361,11 @@ class CodeGenProcess {
         // @ts-ignore
         const content = this.templatesWorker.renderTemplate(
           this.fileSystem.getFileContent(extraTemplate.path),
-          configuration,
+          configuration
         );
 
         output.push(
-          ...(await this.createOutputFileInfo(configuration, extraTemplate.name, content)),
+          ...(await this.createOutputFileInfo(configuration, extraTemplate.name, content))
         );
       }
     }
@@ -394,15 +394,15 @@ class CodeGenProcess {
           {
             ...configuration,
             route: configuration.routes.$outOfModule,
-          },
+          }
         );
 
         modularApiFileInfos.push(
           ...(await this.createOutputFileInfo(
             configuration,
             fileNames.outOfModuleApi,
-            outOfModuleRouteContent,
-          )),
+            outOfModuleRouteContent
+          ))
         );
       }
       if (generateClient) {
@@ -416,8 +416,8 @@ class CodeGenProcess {
           ...(await this.createOutputFileInfo(
             configuration,
             fileNames.outOfModuleApi,
-            outOfModuleApiContent,
-          )),
+            outOfModuleApiContent
+          ))
         );
       }
     }
@@ -431,15 +431,15 @@ class CodeGenProcess {
             {
               ...configuration,
               route,
-            },
+            }
           );
 
           modularApiFileInfos.push(
             ...(await this.createOutputFileInfo(
               configuration,
               pascalCase(`${route.moduleName}_Route`),
-              routeModuleContent,
-            )),
+              routeModuleContent
+            ))
           );
         }
 
@@ -454,8 +454,8 @@ class CodeGenProcess {
             ...(await this.createOutputFileInfo(
               configuration,
               pascalCase(route.moduleName),
-              apiModuleContent,
-            )),
+              apiModuleContent
+            ))
           );
         }
       }
@@ -466,14 +466,14 @@ class CodeGenProcess {
         configuration,
         fileNames.dataContracts,
         // @ts-ignore
-        this.templatesWorker.renderTemplate(templatesToRender.dataContracts, configuration),
+        this.templatesWorker.renderTemplate(templatesToRender.dataContracts, configuration)
       )),
       ...(generateClient
         ? await this.createOutputFileInfo(
             configuration,
             fileNames.httpClient,
             // @ts-ignore
-            this.templatesWorker.renderTemplate(templatesToRender.httpClient, configuration),
+            this.templatesWorker.renderTemplate(templatesToRender.httpClient, configuration)
           )
         : []),
       ...modularApiFileInfos,
@@ -499,7 +499,7 @@ class CodeGenProcess {
         generateClient &&
           this.templatesWorker.renderTemplate(templatesToRender.httpClient, configuration),
         generateClient && this.templatesWorker.renderTemplate(templatesToRender.api, configuration),
-      ]).join('\n'),
+      ]).join('\n')
     );
   };
 
@@ -559,7 +559,7 @@ class CodeGenProcess {
           url: '',
           description: '',
         },
-        externalDocs,
+        externalDocs
       ),
       tags: compact(tags),
       baseUrl: serverUrl,

@@ -34,7 +34,6 @@ import {
   uniq,
 } from 'lodash-es';
 
-import { SpecificArgNameResolver } from './util/specific-arg-name-resolver';
 import {
   DEFAULT_BODY_ARG_NAME,
   RESERVED_BODY_ARG_NAMES,
@@ -43,6 +42,7 @@ import {
   RESERVED_QUERY_ARG_NAMES,
 } from '../../src/constants';
 import { generateId } from '../util/id';
+import { SpecificArgNameResolver } from './util/specific-arg-name-resolver';
 
 const CONTENT_KIND = {
   JSON: 'JSON',
@@ -129,7 +129,7 @@ class SchemaRoutes {
 
         return acc;
       },
-      {},
+      {}
     );
   };
 
@@ -137,7 +137,7 @@ class SchemaRoutes {
     const routeName = this.config.hooks.onPreBuildRoutePath(originalRouteName) || originalRouteName;
 
     const pathParamMatches = (routeName || '').match(
-      /({(([A-z])([\dA-Za-z]-?_?\.?)+)(\d+)?})|(:(([A-z])([\dA-Za-z]-?_?\.?)+)(\d+)?:?)/g,
+      /({(([A-z])([\dA-Za-z]-?_?\.?)+)(\d+)?})|(:(([A-z])([\dA-Za-z]-?_?\.?)+)(\d+)?:?)/g
     );
 
     // used in case when path parameters is not declared in requestInfo.parameters ("in": "path")
@@ -168,7 +168,7 @@ class SchemaRoutes {
 
         return pathParams;
       },
-      [],
+      []
     );
 
     let fixedRoute = reduce(
@@ -178,7 +178,7 @@ class SchemaRoutes {
           this.config.hooks.onInsertPathParam(pathParam.name, i, arr, fixedRoute) || pathParam.name;
         return replace(fixedRoute, pathParam.$match, `\${${insertion}}`);
       },
-      routeName || '',
+      routeName || ''
     );
 
     const queryParamMatches = fixedRoute.match(/({\?.*})/g);
@@ -193,7 +193,7 @@ class SchemaRoutes {
         queryParamMatches
           .join(',')
           .replaceAll(/({\?)|(})|\s/g, '')
-          .split(','),
+          .split(',')
       )) {
         if (includes(paramName as any, '-')) {
           this.logger.warn('wrong query param name', paramName);
@@ -226,7 +226,7 @@ class SchemaRoutes {
   getRouteParams = (
     routeInfo: any,
     pathParamsFromRouteName: any,
-    queryParamsFromRouteName: any,
+    queryParamsFromRouteName: any
   ) => {
     const { parameters } = routeInfo;
 
@@ -292,7 +292,7 @@ class SchemaRoutes {
     each(queryParamsFromRouteName, (queryParam) => {
       const alreadyExist = some(
         routeParams.query,
-        (parameter) => parameter.name === queryParam.name,
+        (parameter) => parameter.name === queryParam.name
       );
 
       if (!alreadyExist) {
@@ -309,9 +309,9 @@ class SchemaRoutes {
         ...(extraContentTypes || []),
         ...flatMap(
           requestInfo,
-          (requestInfoData) => requestInfoData && keys(requestInfoData.content),
+          (requestInfoData) => requestInfoData && keys(requestInfoData.content)
         ),
-      ]),
+      ])
     );
 
   getContentKind = (contentTypes: any) => {
@@ -386,10 +386,10 @@ class SchemaRoutes {
       ]);
       const foundedSchemaByName = find(
         parsedSchemas,
-        (parsedSchema) => this.typeNameFormatter.format(parsedSchema.name) === content,
+        (parsedSchema) => this.typeNameFormatter.format(parsedSchema.name) === content
       );
       const foundSchemaByContent = find(parsedSchemas, (parsedSchema) =>
-        isEqual(parsedSchema.content, content),
+        isEqual(parsedSchema.content, content)
       );
 
       const foundSchema = foundedSchemaByName || foundSchemaByContent;
@@ -416,14 +416,14 @@ class SchemaRoutes {
           return this.schemaParserFabric.getInlineParseContent(
             this.getSchemaFromRequestType(refTypeInfo.rawTypeData),
             refTypeInfo.typeName || null,
-            [operationId],
+            [operationId]
           );
         }
         default: {
           return this.schemaParserFabric.getInlineParseContent(
             refTypeInfo.rawTypeData,
             refTypeInfo.typeName || null,
-            [operationId],
+            [operationId]
           );
         }
       }
@@ -452,18 +452,18 @@ class SchemaRoutes {
                 parsedSchemas,
                 operationId,
                 defaultType,
-              }),
+              })
             ),
             description: this.schemaParserFabric.schemaFormatters.formatDescription(
               requestInfo.description || '',
-              true,
+              true
             ),
             status: isNaN(+status) ? status : +status,
             isSuccess: this.isSuccessStatus(status),
           },
         ];
       },
-      [],
+      []
     );
 
   getResponseBodyInfo = (routeInfo: any, parsedSchemas: any) => {
@@ -483,7 +483,7 @@ class SchemaRoutes {
 
     const successResponse = responseInfos.find((response) => response.isSuccess);
     const errorResponses = responseInfos.filter(
-      (response) => !response.isSuccess && response.type !== this.config.Ts.Keyword.Any,
+      (response) => !response.isSuccess && response.type !== this.config.Ts.Keyword.Any
     );
 
     // eslint-disable-next-line unicorn/consistent-function-scoping
@@ -494,7 +494,7 @@ class SchemaRoutes {
       const headerTypes = Object.fromEntries(
         Object.entries(src).map(([k, v]) => {
           return [k, this.schemaUtils.getSchemaType(v)];
-        }),
+        })
       );
       const r = `headers: { ${Object.entries(headerTypes)
         .map(([k, v]) => `"${k}": ${v}`)
@@ -523,9 +523,9 @@ class SchemaRoutes {
       data: ${response.type}, status: ${response.status}, statusCode: ${
         response.status
       }, statusText: "${response.description}", ${handleResponseHeaders(
-        response.headers,
-      )} config: {} }`,
-            ),
+        response.headers
+      )} config: {} }`
+            )
           ) || this.config.Ts.Keyword.Any,
       },
     };
@@ -561,7 +561,7 @@ class SchemaRoutes {
       {
         properties: {},
         type: 'object',
-      },
+      }
     );
   };
 
@@ -572,7 +572,7 @@ class SchemaRoutes {
 
     const contentTypes = this.getContentTypes(
       [requestBody],
-      [...(consumes || []), routeInfo['x-contentType']],
+      [...(consumes || []), routeInfo['x-contentType']]
     );
     let contentKind = this.getContentKind(contentTypes);
 
@@ -601,7 +601,7 @@ class SchemaRoutes {
           parsedSchemas,
           operationId,
           typeName,
-        }),
+        })
       );
 
       // TODO: Refactor that.
@@ -656,7 +656,7 @@ class SchemaRoutes {
 
         return acc;
       },
-      {},
+      {}
     );
 
     const fixedQueryParams = reduce(
@@ -671,7 +671,7 @@ class SchemaRoutes {
 
         return acc;
       },
-      {},
+      {}
     );
 
     const schema = {
@@ -771,11 +771,11 @@ class SchemaRoutes {
             .join('\n'),
         },
         null,
-        [routeInfo.operationId],
+        [routeInfo.operationId]
       );
       const component = this.schemaComponentsMap.createComponent(
         this.schemaComponentsMap.createRef(['components', 'schemas', typeName]),
-        { ...schema },
+        { ...schema }
       );
       responseBodyInfo.error.schemas = [component];
       responseBodyInfo.error.type = this.typeNameFormatter.format(component.typeName);
@@ -800,14 +800,14 @@ class SchemaRoutes {
     if (routeName && routeNameDuplicatesMap.has(duplicateIdentifier)) {
       routeNameDuplicatesMap.set(
         duplicateIdentifier,
-        routeNameDuplicatesMap.get(duplicateIdentifier) + 1,
+        routeNameDuplicatesMap.get(duplicateIdentifier) + 1
       );
 
       this.logger.warn(
         `Module "${moduleName}" already has method "${routeName}()"`,
         `\nThis method has been renamed to "${
           routeName + routeNameDuplicatesMap.get(duplicateIdentifier)
-        }()" to solve conflict names.`,
+        }()" to solve conflict names.`
       );
     } else {
       routeNameDuplicatesMap.set(duplicateIdentifier, 1);
@@ -829,7 +829,7 @@ class SchemaRoutes {
     routeInfo: any,
     method: any,
     usageSchema: any,
-    parsedSchemas: any,
+    parsedSchemas: any
   ) => {
     const { security: globalSecurity } = usageSchema;
     const { moduleNameIndex, moduleNameFirstTag, extractRequestParams } = this.config as any;
@@ -865,7 +865,7 @@ class SchemaRoutes {
     const routeParams = this.getRouteParams(
       routeInfo,
       pathParamsFromRouteName,
-      queryParamsFromRouteName,
+      queryParamsFromRouteName
     );
 
     const pathArgs = routeParams.path.map((pathArgSchema: any) => ({
@@ -906,7 +906,7 @@ class SchemaRoutes {
       routeInfo,
       routeParams,
       parsedSchemas,
-      routeName,
+      routeName
     );
 
     const requestParamsSchema = this.createRequestParamsSchema({
@@ -989,7 +989,7 @@ class SchemaRoutes {
       pathArg.type = this.schemaParserFabric.getInlineParseContent(
         routeParams.path[i].schema,
         null,
-        [typeName],
+        [typeName]
       );
     }
 
@@ -1046,7 +1046,7 @@ class SchemaRoutes {
           routeInfo,
           method,
           usageSchema,
-          parsedSchemas,
+          parsedSchemas
         );
         const processedRouteInfo = this.config.hooks.onCreateRoute(parsedRouteInfo);
         if (processedRouteInfo !== false) {
@@ -1085,7 +1085,7 @@ class SchemaRoutes {
       },
       {
         $outOfModule: [],
-      },
+      }
     );
 
     const routeGroups = reduce(
@@ -1110,7 +1110,7 @@ class SchemaRoutes {
                 usageName !== originalName &&
                 !some(
                   routesGroup,
-                  ({ routeName, id }) => id !== route.id && originalName === routeName.original,
+                  ({ routeName, id }) => id !== route.id && originalName === routeName.original
                 )
               ) {
                 return {
@@ -1128,7 +1128,7 @@ class SchemaRoutes {
         }
         return acc;
       },
-      {},
+      {}
     );
 
     if (this.config.sortRoutes) {
@@ -1147,7 +1147,7 @@ class SchemaRoutes {
 
   sortRoutes = (routes: any) => {
     return slice(routes).sort((routeA: any, routeB: any) =>
-      routeA.routeName.usage.localeCompare(routeB.routeName.usage),
+      routeA.routeName.usage.localeCompare(routeB.routeName.usage)
     );
   };
 }

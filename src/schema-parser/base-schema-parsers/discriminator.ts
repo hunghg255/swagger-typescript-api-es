@@ -1,17 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable unused-imports/no-unused-vars */
 /* eslint-disable indent */
-import {
-  clone,
-  cloneDeep,
-  entries,
-  get,
-  isArray,
-  isObject,
-  keys,
-  omit,
-  reduce,
-} from 'lodash-es';
+import { clone, cloneDeep, entries, get, isArray, isObject, keys, omit, reduce } from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../../constants';
 import { MonoSchemaParser } from '../mono-schema-parser';
@@ -43,7 +33,7 @@ class DiscriminatorSchemaParser extends MonoSchemaParser {
     });
 
     const schemaContent = ts.IntersectionType(
-      [abstractSchemaStruct?.content, discriminatorSchemaStruct?.content].filter(Boolean),
+      [abstractSchemaStruct?.content, discriminatorSchemaStruct?.content].filter(Boolean)
     );
 
     return {
@@ -88,7 +78,7 @@ class DiscriminatorSchemaParser extends MonoSchemaParser {
           ts.TypeField({
             key: ts.StringValue(discriminator.propertyName),
             value: 'Key',
-          }),
+          })
         ),
         'Type',
       ]);
@@ -128,10 +118,10 @@ class DiscriminatorSchemaParser extends MonoSchemaParser {
                 ts.TypeField({
                   key: discriminator.propertyName,
                   value: mappingUsageKey,
-                }),
+                })
               ),
               content,
-            ]),
+            ])
           );
     };
 
@@ -180,7 +170,7 @@ class DiscriminatorSchemaParser extends MonoSchemaParser {
           acc[key] = ts.EnumUsageKey(mappingPropertySchema.rawTypeData.$parsed.typeName, enumKey);
           return acc;
         },
-        {},
+        {}
       );
     }
 
@@ -253,7 +243,7 @@ class DiscriminatorSchemaParser extends MonoSchemaParser {
       {
         ...schema,
         internal: true,
-      },
+      }
     );
     const content = this.schemaParserFabric
       .createSchemaParser({ schema: component, schemaPath: this.schemaPath })
@@ -276,7 +266,7 @@ class DiscriminatorSchemaParser extends MonoSchemaParser {
 
     return {
       content: ts.ExpressionGroup(
-        this.schemaParser._complexSchemaParsers[complexType](this.schema),
+        this.schemaParser._complexSchemaParsers[complexType](this.schema)
       ),
     };
   };

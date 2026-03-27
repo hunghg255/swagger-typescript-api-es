@@ -136,9 +136,9 @@ interface IOptions {
   extractEnums?: boolean;
   unwrapResponseData?: boolean;
   /**
-   * By default prettier config is load from your project
+   * By default oxfmtOptrions config is load from your project
    */
-  prettier?: {
+  oxfmtOptrions?: {
     printWidth?: number;
     tabWidth?: number;
     trailingComma?: 'all' | string;
@@ -167,7 +167,7 @@ interface IOptions {
   anotherArrayType?: boolean;
   fixInvalidTypeNamePrefix?: string;
   fixInvalidEnumKeyPrefix?: string;
-  prettierOptions?: Record<string, any>;
+  oxfmtOptrions?: Record<string, any>;
   constants?: Record<string, any>;
   templateInfos?: any;
   codeGenConstructs?: (constructs: any) => Record<string, any>;

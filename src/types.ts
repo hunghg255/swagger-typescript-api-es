@@ -32,10 +32,10 @@ export interface IOptions {
   extractEnums?: boolean;
   unwrapResponseData?: boolean;
   /**
-   * By default prettier config is load from your project
+   * By default oxc config is load from your project
    */
-  prettier?: {
-    // By default prettier config is load from your project
+  oxfmtOptrions?: {
+    // By default oxc config is load from your project
     printWidth?: number;
     tabWidth?: number;
     trailingComma?: 'all' | string;
@@ -65,7 +65,6 @@ export interface IOptions {
   anotherArrayType?: boolean;
   fixInvalidTypeNamePrefix?: string;
   fixInvalidEnumKeyPrefix?: string;
-  prettierOptions?: Record<string, any>;
   constants?: Record<string, any>;
   templateInfos?: any;
   codeGenConstructs?: (constructs: any) => Record<string, any>;

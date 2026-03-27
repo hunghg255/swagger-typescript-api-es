@@ -1,11 +1,4 @@
-import {
-  clone,
-  compact,
-  isObject,
-  keys,
-  map,
-  omit
-} from 'lodash-es';
+import { clone, compact, isObject, keys, map, omit } from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../../constants';
 import { MonoSchemaParser } from '../mono-schema-parser';
@@ -25,7 +18,7 @@ class ComplexSchemaParser extends MonoSchemaParser {
       typeIdentifier: this.config.Ts.Keyword.Type,
       name: this.typeName,
       description: this.schemaFormatters.formatDescription(
-        this.schema.description || compact(map(this.schema[complexType], 'description'))[0] || '',
+        this.schema.description || compact(map(this.schema[complexType], 'description'))[0] || ''
       ),
       content:
         this.config.Ts.IntersectionType(
@@ -38,9 +31,9 @@ class ComplexSchemaParser extends MonoSchemaParser {
                     schema: simpleSchema,
                     schemaPath: this.schemaPath,
                   })
-                  .getInlineParseContent(),
+                  .getInlineParseContent()
               ),
-          ]),
+          ])
         ) || this.config.Ts.Keyword.Any,
     };
   }

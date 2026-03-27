@@ -4,8 +4,8 @@ import { resolve } from 'node:path';
 import { noop, split } from 'lodash-es';
 import makeDir from 'make-dir';
 
-import { Logger } from './logger';
 import { __dirname_esm } from '../constants';
+import { Logger } from './logger';
 
 const FILE_PREFIX = `/* eslint-disable */
 /*

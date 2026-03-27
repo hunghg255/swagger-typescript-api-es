@@ -25,7 +25,7 @@ class Logger {
       this.log(
         `swagger-typescript-api(${this.config.version}),${
           process.env.npm_config_user_agent || `nodejs(${process.version})`
-        },debug mode ${this.config.debug ? 'ENABLED' : 'DISABLED'}`,
+        },debug mode ${this.config.debug ? 'ENABLED' : 'DISABLED'}`
       );
     }
 
@@ -37,7 +37,7 @@ class Logger {
         .filter(
           (line) =>
             !line.includes('swagger-typescript-api\\node_modules') &&
-            !line.includes('swagger-typescript-api/node_modules'),
+            !line.includes('swagger-typescript-api/node_modules')
         )
         .slice(0, 10);
       // @ts-ignore
@@ -49,8 +49,8 @@ class Logger {
       logFn(
         '[message]',
         ...map(messages, (message) =>
-          startsWith(message, '\n') ? `\n          ${message.replace(/\n/, '')}` : message,
-        ),
+          startsWith(message, '\n') ? `\n          ${message.replace(/\n/, '')}` : message
+        )
       );
       logFn(trace.join('\n') + '\n---');
       return;
@@ -60,8 +60,8 @@ class Logger {
       emoji,
       ' ',
       ...map(messages, (message) =>
-        startsWith(message, '\n') ? `\n${emoji}   ${message.replace(/\n/, '')}` : message,
-      ),
+        startsWith(message, '\n') ? `\n${emoji}   ${message.replace(/\n/, '')}` : message
+      )
     );
   };
 

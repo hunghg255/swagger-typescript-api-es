@@ -1,12 +1,7 @@
 /* eslint-disable unicorn/no-array-for-each */
 /* eslint-disable unicorn/no-null */
 
-import {
-  compact,
-  forEach,
-  some,
-  uniq
-} from 'lodash-es';
+import { compact, forEach, some, uniq } from 'lodash-es';
 
 class NameResolver {
   reservedNames = [];
@@ -93,7 +88,7 @@ class NameResolver {
 
       this.logger.debug(
         'trying to resolve name with using fallback name generator using variants',
-        variants,
+        variants
       );
       return this.resolve(variants, this.getFallbackName, extras);
     }

@@ -19,7 +19,7 @@ class JavascriptTranslator extends Translator {
           sourceFileName,
           languageVersion,
           onError,
-          shouldCreateNewSourceFile,
+          shouldCreateNewSourceFile
         );
       }
 
@@ -28,7 +28,7 @@ class JavascriptTranslator extends Translator {
         input.fileContent,
         languageVersion,
         true,
-        ts.ScriptKind.TS,
+        ts.ScriptKind.TS
       );
     };
 

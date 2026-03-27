@@ -58,7 +58,7 @@ class TypeNameFormatter {
     const formattedName = replace(
       startCase(`${typePrefix}_${fixedModelName}_${typeSuffix}`),
       /\s/g,
-      '',
+      ''
     );
     const formattedResultName =
       this.config.hooks.onFormatTypeName(formattedName, name, schemaType) || formattedName;

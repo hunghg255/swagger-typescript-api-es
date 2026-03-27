@@ -1,17 +1,52 @@
 {
   "editor.tabSize": 2,
   "editor.rulers": [100],
-  "editor.formatOnSave": true,
-  "git.ignoreLimitWarning": true,
+
   "editor.quickSuggestions": {
     "strings": true
-  },
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit"
   },
   "workbench.tree.indent": 14,
   "workbench.tree.renderIndentGuides": "always",
   "workbench.colorCustomizations": {
     "tree.indentGuidesStroke": "#b7b7b7"
+  },
+
+  // OXC Formatter
+  "oxc.fmt.configPath": ".oxfmtrc.json",
+  "editor.defaultFormatter": "oxc.oxc-vscode",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "never" // let oxfmt handle import organization
+  },
+  "[json]": {
+    "editor.quickSuggestions": {
+      "strings": true
+    },
+    "editor.suggest.insertMode": "replace",
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[jsonc]": {
+    "editor.quickSuggestions": {
+      "strings": true
+    },
+    "editor.suggest.insertMode": "replace",
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[css]": {
+    "editor.suggest.insertMode": "replace",
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[scss]": {
+    "editor.suggest.insertMode": "replace",
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
   }
 }

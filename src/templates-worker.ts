@@ -63,13 +63,13 @@ class TemplatesWorker {
   cropExtension = (path: any) =>
     this.config.templateExtensions.reduce(
       (path: any, ext: any) => (endsWith(path, ext) ? path.replace(ext, '') : path),
-      path,
+      path
     );
 
   getTemplateFullPath = (path: any, fileName: any) => {
     const raw = resolve(path, './', this.cropExtension(fileName));
     const pathVariants = this.config.templateExtensions.map(
-      (extension: any) => `${raw}${extension}`,
+      (extension: any) => `${raw}${extension}`
     );
 
     return pathVariants.find((variant: any) => !!this.fileSystem.pathIsExist(variant));
@@ -82,8 +82,8 @@ class TemplatesWorker {
       return require(
         path.resolve(
           this.config.templatePaths.custom || this.config.templatePaths.original,
-          packageOrPath,
-        ),
+          packageOrPath
+        )
       );
     }
 
@@ -117,7 +117,7 @@ class TemplatesWorker {
     } else if (templatePaths.custom) {
       this.logger.warn(
         `"${lowerCase(name)}" template not found in "${templatePaths.custom}"`,
-        '\nCode generator will use the default template',
+        '\nCode generator will use the default template'
       );
     } else {
       this.logger.log(`Code generator will use the default template for "${lowerCase(name)}"`);
@@ -143,25 +143,25 @@ class TemplatesWorker {
         ...acc,
         [name]: this.getTemplate({ fileName, name }),
       }),
-      {},
+      {}
     );
   };
 
   findTemplateWithExt = (path: any) => {
     const raw = this.cropExtension(path);
     const pathVariants = this.config.templateExtensions.map(
-      (extension: any) => `${raw}${extension}`,
+      (extension: any) => `${raw}${extension}`
     );
     return pathVariants.find((variant: any) => this.fileSystem.pathIsExist(variant));
   };
 
   getTemplateContent = (path: any) => {
     const foundTemplatePathKey: any = keys(this.config.templatePaths).find((key) =>
-      startsWith(path, `@${key}`),
+      startsWith(path, `@${key}`)
     );
 
     const rawPath = resolve(
-      replace(path, `@${foundTemplatePathKey}`, this.config.templatePaths[foundTemplatePathKey]),
+      replace(path, `@${foundTemplatePathKey}`, this.config.templatePaths[foundTemplatePathKey])
     );
     const fixedPath = this.findTemplateWithExt(rawPath);
 
@@ -178,7 +178,7 @@ class TemplatesWorker {
     }
 
     const originalPath = this.findTemplateWithExt(
-      resolve(this.config.templatePaths.original, path),
+      resolve(this.config.templatePaths.original, path)
     );
 
     if (originalPath) {
@@ -211,7 +211,7 @@ class TemplatesWorker {
         includeFile: (path: any, configuration: any, options: any) => {
           return this.renderTemplate(this.getTemplateContent(path), configuration, options);
         },
-      },
+      }
     );
   };
 }

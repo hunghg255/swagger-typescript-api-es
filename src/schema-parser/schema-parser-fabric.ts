@@ -77,7 +77,7 @@ class SchemaParserFabric {
     const schemaCopy = cloneDeep(schema);
     const customComponent = this.schemaComponentsMap.createComponent(
       this.schemaComponentsMap.createRef(['components', 'schemas', typeName]),
-      schemaCopy,
+      schemaCopy
     );
     const parsed = this.parseSchema(schemaCopy, undefined, schemaPath);
 

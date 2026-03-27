@@ -33,8 +33,8 @@ class PrimitiveSchemaParser extends MonoSchemaParser {
         items.map((item) =>
           this.schemaParserFabric
             .createSchemaParser({ schema: item, schemaPath: this.schemaPath })
-            .getInlineParseContent(),
-        ),
+            .getInlineParseContent()
+        )
       );
     }
 

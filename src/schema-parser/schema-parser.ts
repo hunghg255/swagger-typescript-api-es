@@ -3,6 +3,8 @@
 /* eslint-disable no-unused-vars */
 import { first, get, merge, omit, values } from 'lodash-es';
 
+import { SCHEMA_TYPES } from '../constants.js';
+import { sortByProperty } from '../util/sort-by-property';
 import { ArraySchemaParser } from './base-schema-parsers/array';
 import { ComplexSchemaParser } from './base-schema-parsers/complex';
 import { DiscriminatorSchemaParser } from './base-schema-parsers/discriminator';
@@ -13,8 +15,6 @@ import { AllOfSchemaParser } from './complex-schema-parsers/all-of';
 import { AnyOfSchemaParser } from './complex-schema-parsers/any-of';
 import { NotSchemaParser } from './complex-schema-parsers/not';
 import { OneOfSchemaParser } from './complex-schema-parsers/one-of';
-import { SCHEMA_TYPES } from '../constants.js';
-import { sortByProperty } from '../util/sort-by-property';
 
 class SchemaParser {
   /** @type {SchemaParserFabric} */
@@ -167,7 +167,7 @@ class SchemaParser {
 
       merge(
         this.schema,
-        this.config.hooks.onPreParseSchema(this.schema, this.typeName, schemaType),
+        this.config.hooks.onPreParseSchema(this.schema, this.typeName, schemaType)
       );
       parsedSchema = this._baseSchemaParsers[schemaType](this.schema, this.typeName);
       this.schema.$parsed =

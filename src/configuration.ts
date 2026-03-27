@@ -5,15 +5,7 @@
 /* eslint-disable no-unused-vars */
 import path from 'node:path';
 
-import { cosmiconfigSync } from 'cosmiconfig';
-import {
-  cloneDeep,
-  compact,
-  join,
-  map,
-  merge,
-  uniq
-} from 'lodash-es';
+import { cloneDeep, compact, join, map, merge, uniq } from 'lodash-es';
 import ts from 'typescript';
 
 import { ComponentTypeNameResolver } from './component-type-name-resolver';
@@ -99,7 +91,7 @@ class CodeGenConfig {
   };
 
   routeNameDuplicatesMap = new Map();
-  prettierOptions = { ...CONSTANTS.PRETTIER_OPTIONS };
+  oxfmtOptrions = { ...CONSTANTS.OXC_FORMAT_OPTIONS };
   hooks = {
     onPreBuildRoutePath: (routePath: any) => void 0,
     onBuildRoutePath: (routeData: any) => void 0,
@@ -374,7 +366,7 @@ class CodeGenConfig {
    * @param config {Partial<GenerateApiConfiguration['config']>}
    */
   constructor({
-    prettierOptions = getDefaultPrettierOptions(),
+    oxfmtOptrions,
     codeGenConstructs,
     primitiveTypeConstructs,
     constants,
@@ -390,8 +382,7 @@ class CodeGenConfig {
 
     this.update({
       ...otherConfig,
-      prettierOptions:
-        prettierOptions === undefined ? getDefaultPrettierOptions() : prettierOptions,
+      oxfmtOptrions,
       hooks: merge(this.hooks, hooks || {}),
       constants: {
         ...CONSTANTS,
@@ -418,18 +409,5 @@ class CodeGenConfig {
     objectAssign(this, update);
   };
 }
-
-const getDefaultPrettierOptions = () => {
-  const prettier = cosmiconfigSync('prettier').search();
-
-  if (prettier) {
-    return {
-      ...prettier.config,
-      parser: 'typescript',
-    };
-  }
-
-  return { ...CONSTANTS.PRETTIER_OPTIONS };
-};
 
 export { CodeGenConfig };

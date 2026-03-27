@@ -35,11 +35,11 @@
 import { CodeGenProcess } from './code-gen-process.js';
 import { IOptions } from './types';
 
-const generateApi = ({ name, prettier, ...config }: IOptions) => {
+const generateApi = ({ name, oxfmtOptrions, ...config }: IOptions) => {
   const codeGenProcess = new CodeGenProcess({
     ...config,
     fileName: name,
-    prettierOptions: prettier,
+    oxfmtOptrions,
   } as any);
   return codeGenProcess.start();
 };
