@@ -47,7 +47,13 @@ export default defaultConfig({
 });
 ```
 
-- Options
+## Add skills
+
+```
+npx skills add hunghg255/swagger-typescript-api-es
+```
+
+## Options
 
 ```ts
 // Options
