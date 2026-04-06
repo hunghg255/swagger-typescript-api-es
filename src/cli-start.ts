@@ -121,14 +121,18 @@ export function startCli() {
     cli.command('').action(async (args) => {
       let optionsConfig = args;
 
-      optionsConfig =
-        Object.keys(optionsConfig).length <= 1
-          ? readConfig(FILE_NAME_CONFIG)
-          : formatOptions(optionsConfig);
+      if (Object.keys(optionsConfig).length <= 1) {
+        optionsConfig = readConfig(FILE_NAME_CONFIG);
+
+        if (optionsConfig['0']) {
+          optionsConfig = Object.values(optionsConfig);
+        }
+      } else {
+        optionsConfig = formatOptions(optionsConfig);
+      }
 
       await generateApi(optionsConfig);
 
-      // eslint-disable-next-line unicorn/no-process-exit
       process.exit(0);
     });
 
