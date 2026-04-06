@@ -1,6 +1,3 @@
-/* eslint-disable unicorn/no-array-for-each */
-/* eslint-disable unicorn/no-null */
-
 import { compact, forEach, some, uniq } from 'lodash-es';
 
 class NameResolver {

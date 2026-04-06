@@ -1,4 +1,3 @@
-/* eslint-disable quotes */
 import path from 'node:path';
 
 import { TemplatesGenConfig } from '../../../src/commands/generate-templates/configuration';

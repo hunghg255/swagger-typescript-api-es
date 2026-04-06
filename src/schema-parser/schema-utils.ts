@@ -1,9 +1,3 @@
-/* eslint-disable indent */
-/* eslint-disable unicorn/no-array-callback-reference */
-/* eslint-disable unicorn/no-null */
-/* eslint-disable valid-typeof */
-/* eslint-disable unicorn/no-nested-ternary */
-
 import {
   camelCase,
   compact,
@@ -263,7 +257,6 @@ class SchemaUtils {
     } else {
       const primitiveType = this.getSchemaPrimitiveType(schema);
 
-      // eslint-disable-next-line eqeqeq
       if (primitiveType == undefined) {
         return this.config.Ts.Keyword.Any;
       }

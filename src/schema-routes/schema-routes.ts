@@ -1,12 +1,3 @@
-/* eslint-disable unicorn/no-array-reduce */
-/* eslint-disable unicorn/no-array-for-each */
-/* eslint-disable no-void */
-/* eslint-disable unicorn/no-array-callback-reference */
-/* eslint-disable indent */
-/* eslint-disable unicorn/prefer-array-some */
-/* eslint-disable unicorn/no-null */
-/* eslint-disable unicorn/prefer-spread */
-
 import {
   assign,
   camelCase,
@@ -486,7 +477,6 @@ class SchemaRoutes {
       (response) => !response.isSuccess && response.type !== this.config.Ts.Keyword.Any
     );
 
-    // eslint-disable-next-line unicorn/consistent-function-scoping
     const handleResponseHeaders = (src: any) => {
       if (!src) {
         return 'headers: {},';

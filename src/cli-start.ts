@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import pc from 'picocolors';
 import { cac } from 'unprompts';
 import { readConfig } from 'unreadconfig';
@@ -140,7 +139,6 @@ export function startCli() {
   } catch (error: any) {
     console.log(pc.red('❌ SWAGGER-TYPESCRIPT-API error: ' + error.message));
 
-    // eslint-disable-next-line unicorn/no-process-exit
     process.exit(0);
   }
 }

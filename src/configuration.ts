@@ -1,8 +1,3 @@
-/* eslint-disable unicorn/no-null */
-/* eslint-disable no-void */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable unused-imports/no-unused-vars */
-/* eslint-disable no-unused-vars */
 import path from 'node:path';
 
 import { cloneDeep, compact, join, map, merge, uniq } from 'lodash-es';

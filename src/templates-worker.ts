@@ -1,6 +1,3 @@
-/* eslint-disable unicorn/prefer-module */
-/* eslint-disable unicorn/no-array-reduce */
-/* eslint-disable unicorn/no-null */
 import path, { resolve } from 'node:path';
 
 import * as Eta from 'eta';

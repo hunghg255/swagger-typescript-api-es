@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/prefer-module */
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 

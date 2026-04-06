@@ -157,7 +157,6 @@ const formatValue = (value: any) => {
 };
 
 export const formatOptions = (options: Record<string, any>) => {
-  // eslint-disable-next-line unicorn/no-array-reduce
   const formattedOptions = Object.keys(options).reduce((acc: any, key) => {
     const value = formatValue(options[key]);
     const newKeys = MAP_KEY[key];

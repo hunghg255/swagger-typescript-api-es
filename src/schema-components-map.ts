@@ -1,5 +1,3 @@
-/* eslint-disable unicorn/no-null */
-
 import { filter, startsWith } from 'lodash-es';
 
 class SchemaComponentsMap {

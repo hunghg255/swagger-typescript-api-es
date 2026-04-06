@@ -1,6 +1,3 @@
-/* eslint-disable eqeqeq */
-/* eslint-disable unicorn/no-null */
-/* eslint-disable no-unused-vars */
 import { first, get, merge, omit, values } from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../constants.js';

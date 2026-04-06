@@ -1,5 +1,3 @@
-/* eslint-disable indent */
-/* eslint-disable eqeqeq */
 import { get, includes, isArray, isObject, isUndefined, map, size } from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../../constants';

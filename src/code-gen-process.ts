@@ -1,7 +1,3 @@
-/* eslint-disable indent */
-/* eslint-disable unicorn/consistent-destructuring */
-/* eslint-disable new-cap */
-/* eslint-disable unicorn/no-null */
 import {
   camelCase,
   compact,

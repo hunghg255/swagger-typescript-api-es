@@ -1,4 +1,3 @@
-/* eslint-disable indent */
 import { isArray, isObject } from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../../constants';

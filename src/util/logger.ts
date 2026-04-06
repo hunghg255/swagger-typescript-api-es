@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/error-message */
 import { map, startsWith } from 'lodash-es';
 import { emojify } from 'node-emoji';
 

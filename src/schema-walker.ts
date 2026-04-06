@@ -1,5 +1,3 @@
-/* eslint-disable unicorn/no-null */
-
 import { get, cloneDeep } from 'lodash-es';
 
 // TODO: WIP

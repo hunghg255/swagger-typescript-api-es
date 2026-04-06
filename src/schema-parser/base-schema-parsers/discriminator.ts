@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable unused-imports/no-unused-vars */
-/* eslint-disable indent */
 import { clone, cloneDeep, entries, get, isArray, isObject, keys, omit, reduce } from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../../constants';
