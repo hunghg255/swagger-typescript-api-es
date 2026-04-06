@@ -10,8 +10,8 @@
     "build": "convert-markdown-to-html"
   },
   "devDependencies": {
-    "convert-markdown-to-html": "^0.0.34",
-    "swagger-typescript-api-es": "^0.0.5",
+    "convert-markdown-to-html": "^0.5.0",
+    "swagger-typescript-api-es": "^0.0.17",
     "typescript": "^5.3.3"
   }
 }

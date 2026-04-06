@@ -88,7 +88,7 @@ bun i swagger-typescript-api-es@latest --save-dev
 
 - Create a file `swagger-typescript-api.config.ts` in the root of the project
 
-```ts twoslash
+```ts
 import { defaultConfig } from 'swagger-typescript-api-es';
 
 export default defaultConfig({
@@ -97,11 +97,27 @@ export default defaultConfig({
   url: 'http://localhost:5002/api-json',
   httpClientType: 'axios',
 });
+
+// Or Array of configs
+export default defaultConfig([
+  {
+    name: 'api-axios.ts',
+    output: './src/apis/axios-gentype',
+    url: 'http://localhost:5002/api-json',
+    httpClientType: 'axios',
+  },
+  {
+    name: 'api-fetch.ts',
+    output: './src/apis/fetch-gentype',
+    url: 'http://localhost:5002/api-json',
+    httpClientType: 'fetch',
+  },
+]);
 ```
 
 - Options
 
-```ts twoslash
+```ts
 // Options
 interface IOptions {
   /**
