@@ -35,7 +35,23 @@
 import { CodeGenProcess } from './code-gen-process.js';
 import { IOptions } from './types';
 
-const generateApi = ({ name, oxfmtOptrions, ...config }: IOptions) => {
+const generateApi = async (options: IOptions | IOptions[]) => {
+  if (Array.isArray(options)) {
+    for (let index = 0; index < options.length; index++) {
+      const { name, oxfmtOptrions, ...config } = options[index];
+
+      const codeGenProcess = new CodeGenProcess({
+        ...config,
+        fileName: name,
+        oxfmtOptrions,
+      } as any);
+      await codeGenProcess.start();
+    }
+    return;
+  }
+
+  const { name, oxfmtOptrions, ...config } = options;
+
   const codeGenProcess = new CodeGenProcess({
     ...config,
     fileName: name,
@@ -44,7 +60,7 @@ const generateApi = ({ name, oxfmtOptrions, ...config }: IOptions) => {
   return codeGenProcess.start();
 };
 
-export const defaultConfig = (options: IOptions) => {
+export const defaultConfig = (options: IOptions | IOptions[]) => {
   return options;
 };
 
