@@ -2,7 +2,6 @@
 /*
  * ----------------------------------------------------------------------
  * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API-ES            ##
- * ## SOURCE: https://github.com/hunghg255/swagger-typescript-api-es   ##
  * ----------------------------------------------------------------------
  */
 
@@ -567,7 +566,7 @@ export class HttpClient<SecurityDataType = unknown> {
     const responseFormat = format || this.format || undefined;
 
     if (type === ContentType.FormData && body && body !== null && typeof body === 'object') {
-      body = this.createFormData(body as Record<string, unknown>);
+      body = body instanceof FormData ? body : this.createFormData(body);
     }
 
     if (type === ContentType.Text && body && body !== null && typeof body !== 'string') {

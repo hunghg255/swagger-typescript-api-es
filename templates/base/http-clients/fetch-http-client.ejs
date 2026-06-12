@@ -32,6 +32,7 @@ export interface ApiConfig<SecurityDataType = unknown> {
     baseApiParams?: Omit<RequestParams, "baseUrl" | "cancelToken" | "signal">;
     securityWorker?: (securityData: SecurityDataType | null) => Promise<RequestParams | void> | RequestParams | void;
     customFetch?: typeof fetch;
+    injectHeaders?: (data: any) => any;
 }
 
 export interface HttpResponse<D extends unknown, E extends unknown = unknown> extends Response {
@@ -56,6 +57,7 @@ export class HttpClient<SecurityDataType = unknown> {
     private securityWorker?: ApiConfig<SecurityDataType>["securityWorker"];
     private abortControllers = new Map<CancelToken, AbortController>();
     private customFetch = (...fetchParams: Parameters<typeof fetch>) => fetch(...fetchParams);
+    private injectHeaders?: (data: any) => any;
 
     private baseApiParams: RequestParams = {
         credentials: 'same-origin',
@@ -178,15 +180,20 @@ export class HttpClient<SecurityDataType = unknown> {
         const queryString = query && this.toQueryString(query);
         const payloadFormatter = this.contentFormatters[type || ContentType.Json];
         const responseFormat = format || requestParams.format;
+        let headers = {
+            ...(requestParams.headers || {}),
+            ...(type && type !== ContentType.FormData ? { 'Content-Type': type } : {}),
+        }
 
+        if (this.injectHeaders) {
+            headers = await this.injectHeaders(headers);
+        }
+            
         return this.customFetch(
         `${baseUrl || this.baseUrl || ""}${path}${queryString ? `?${queryString}` : ""}`,
         {
             ...requestParams,
-            headers: {
-            ...(requestParams.headers || {}),
-            ...(type && type !== ContentType.FormData ? { "Content-Type": type } : {}),
-            },
+            headers,
             signal: (cancelToken ? this.createAbortSignal(cancelToken) : requestParams.signal) || null,
             body: typeof body === "undefined" || body === null ? null : payloadFormatter(body),
         }

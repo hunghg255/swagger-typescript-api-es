@@ -28,6 +28,49 @@ npx swagger-typescript-api-es@latest --help
 npx swagger-typescript-api-es@latest -u https://petstore.swagger.io/v2/swagger.json -o ./src/api
 ```
 
+## CLI Options
+
+| Option | Alias | Description | Default |
+|--------|-------|-------------|---------|
+| `--u <url>` | | Path/url to swagger scheme | - |
+| `--o <output>` | | Output path of typescript api file | `"./"` |
+| `--n <name>` | | Name of output typescript api file | `"Api.ts"` |
+| `--t <templates>` | | Path to folder containing templates | - |
+| `--d <default-as-success>` | | Use "default" response status code as success response too | `false` |
+| `--r <responses>` | | Generate additional information about request responses also add typings for bad responses | `false` |
+| `--union-enums` | | Generate all "enum" types as union types (T1 \| T2 \| TN) | `false` |
+| `--add-readonly` | | Generate readonly properties | `false` |
+| `--route-types` | | Generate type definitions for API routes | `false` |
+| `--noClient` | | Do not generate an API class | `false` |
+| `--enum-names-as-values` | | Use values in "x-enumNames" as enum values (not only as keys) | `false` |
+| `--extract-request-params` | | Extract request params to data contract (Also combine path params and query params into one object) | `false` |
+| `--extract-request-body` | | Extract request body type to data contract | `false` |
+| `--extract-response-body` | | Extract response body type to data contract | `false` |
+| `--extract-response-error` | | Extract response error type to data contract | `false` |
+| `--extract-enums` | | Extract all enums from inline interface/type content to typescript enum construction | `false` |
+| `--modular` | | Generate separated files for http client, data contracts, and routes | `false` |
+| `--js` | | Generate js api module with declaration file | `false` |
+| `--module-name-index` | | Determines which path index should be used for routes separation (example: GET:/fruits/getFruit -> index:0 -> moduleName -> fruits) | `0` |
+| `--module-name-first-tag` | | Splits routes based on the first tag | `false` |
+| `--disableStrictSSL` | | Disable strict SSL | `false` |
+| `--disableProxy` | | Disable proxy | `false` |
+| `--httpClientType` | | HTTP client type | `"fetch"` |
+| `--unwrap-response-data` | | Unwrap the data item from the response | `false` |
+| `--disable-throw-on-error` | | Do not throw an error when response.ok is not true | `false` |
+| `--single-http-client` | | Ability to send HttpClient instance to Api constructor | `false` |
+| `--silent` | | Output only errors to console | `false` |
+| `--default-response` | | Default type for empty response schema | `"void"` |
+| `--type-prefix` | | Data contract name prefix | `""` |
+| `--type-suffix` | | Data contract name suffix | `""` |
+| `--clean-output` | | Clean output folder before generate api. WARNING: May cause data loss | `false` |
+| `--api-class-name` | | Name of the api class | `"Api"` |
+| `--patch` | | Fix up small errors in the swagger source definition | `false` |
+| `--debug` | | Additional information about processes inside this tool | `false` |
+| `--another-array-type` | | Generate array types as Array\<Type\> (by default Type[]) | `false` |
+| `--sort-types` | | Sort fields and types | `false` |
+| `--sort-routes` | | Sort routes in alphabetical order | `false` |
+| `--custom-config` | | Custom config: primitiveTypeConstructs, hooks, ... | `""` |
+
 ## Install
 
 ```bash

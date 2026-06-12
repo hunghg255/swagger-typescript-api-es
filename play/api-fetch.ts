@@ -2,7 +2,6 @@
 /*
  * ----------------------------------------------------------------------
  * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API-ES            ##
- * ## SOURCE: https://github.com/hunghg255/swagger-typescript-api-es   ##
  * ----------------------------------------------------------------------
  */
 
