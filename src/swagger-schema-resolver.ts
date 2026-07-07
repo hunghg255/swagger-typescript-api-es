@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import yaml from 'js-yaml';
 import { cloneDeep, compact, each, find, get, merge, uniq } from 'lodash-es';
 import pc from 'picocolors';
@@ -60,6 +62,10 @@ class SwaggerSchemaResolver {
    * @returns {Promise<{ usageSchema: Record<string, any>, originalSchema: Record<string, any>}>}
    */
   convertSwaggerObject(swaggerSchema: any, converterOptions: any) {
+    if (typeof swaggerSchema !== 'object' || swaggerSchema === null) {
+      throw new Error(`Invalid swagger schema: expected an object, got ${typeof swaggerSchema}`);
+    }
+
     return new Promise((resolve) => {
       const result = cloneDeep(swaggerSchema);
 
@@ -117,15 +123,24 @@ class SwaggerSchemaResolver {
   ) {
     if (this.fileSystem.pathIsExist(pathToSwagger)) {
       return this.getSwaggerSchemaByPath(pathToSwagger);
-    } else {
-      this.logger.log(`Try to get swagger by URL ${pc.cyan(`"${urlToSwagger}"`)}`);
-      return await this.request.download({
-        url: urlToSwagger,
-        disableStrictSSL,
-        authToken,
-        disableProxy,
-      });
     }
+
+    // If urlToSwagger is not an HTTP URL, try to read it as a local file
+    if (urlToSwagger && !/^https?:\/\//i.test(urlToSwagger)) {
+      const resolvedPath = path.resolve(process.cwd(), urlToSwagger);
+      if (this.fileSystem.pathIsExist(resolvedPath)) {
+        this.logger.log(`Try to get swagger by path "${resolvedPath}"`);
+        return this.getSwaggerSchemaByPath(resolvedPath);
+      }
+    }
+
+    this.logger.log(`Try to get swagger by URL ${pc.cyan(`"${urlToSwagger}"`)}`);
+    return await this.request.download({
+      url: urlToSwagger,
+      disableStrictSSL,
+      authToken,
+      disableProxy,
+    });
   }
 
   processSwaggerSchemaFile(file: any) {
