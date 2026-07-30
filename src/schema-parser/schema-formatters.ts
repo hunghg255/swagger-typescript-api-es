@@ -110,7 +110,8 @@ class SchemaFormatters {
 
     let prettified = description;
 
-    prettified = replace(prettified, /\*\//g, '*/');
+    // Prevent schema text from terminating the generated JSDoc block.
+    prettified = replace(prettified, /\*\//g, '*\\/');
 
     const hasMultipleLines = includes(prettified, '\n');
 
