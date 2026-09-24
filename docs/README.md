@@ -1,4 +1,4 @@
-# swagger-typescript-api-es — docs & playground
+# swagger-typescript-api-es — docs & playground 1
 
 Next.js 16 (App Router) site with the documentation and an online playground.
 The playground calls `POST /api/generate`, which runs the generator of this repository
