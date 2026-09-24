@@ -1,0 +1,79 @@
+openapi: 3.0.3
+info:
+  title: Todo API
+  version: 1.0.0
+  description: A tiny spec to get started.
+servers:
+  - url: https://api.example.com
+paths:
+  /todos:
+    get:
+      operationId: listTodos
+      summary: List todos
+      parameters:
+        - name: done
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Todo'
+    post:
+      operationId: createTodo
+      summary: Create a todo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewTodo'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+  /todos/{id}:
+    delete:
+      operationId: deleteTodo
+      summary: Delete a todo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Deleted
+components:
+  schemas:
+    Priority:
+      type: string
+      enum: [low, medium, high]
+    NewTodo:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        priority:
+          $ref: '#/components/schemas/Priority'
+    Todo:
+      allOf:
+        - $ref: '#/components/schemas/NewTodo'
+        - type: object
+          required: [id, done]
+          properties:
+            id:
+              type: integer
+              readOnly: true
+            done:
+              type: boolean

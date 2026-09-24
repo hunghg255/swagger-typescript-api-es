@@ -7,6 +7,7 @@ import { endsWith, lowerCase, reduce, replace, startsWith } from 'lodash-es';
 
 import type { CodeGenConfig } from './configuration';
 import { TEMPLATES_DIR } from './constants';
+import { PrettyError } from './errors';
 import type { TemplateInfo, TemplatePaths } from './types/config';
 import type { FileSystem } from './util/file-system';
 import type { Logger } from './util/logger';
@@ -53,6 +54,14 @@ class TemplatesWorker {
 
   getTemplatePaths = (config: Pick<CodeGenConfig, 'modular' | 'templates'>): TemplatePaths => {
     const baseTemplatesPath = resolve(TEMPLATES_DIR, 'base');
+
+    // e.g. the library was bundled and its templates were not copied next to it:
+    // fail loudly instead of generating empty files
+    if (!this.fileSystem.pathIsExist(baseTemplatesPath)) {
+      throw new PrettyError(
+        `Built-in templates were not found in "${TEMPLATES_DIR}". If swagger-typescript-api-es is bundled, mark it as an external package so its "templates" folder stays next to the code.`
+      );
+    }
     const defaultTemplatesPath = resolve(TEMPLATES_DIR, 'default');
     const modularTemplatesPath = resolve(TEMPLATES_DIR, 'modular');
     const originalTemplatesPath = config.modular ? modularTemplatesPath : defaultTemplatesPath;

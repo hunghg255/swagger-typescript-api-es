@@ -1,0 +1,411 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Petstore",
+    "version": "1.0.0",
+    "description": "A mid-size pet store API with tags, enums, auth and polymorphic schemas."
+  },
+  "servers": [{ "url": "https://petstore.example.com/v1" }],
+  "security": [{ "api_key": [] }],
+  "tags": [{ "name": "pet" }, { "name": "store" }, { "name": "user" }],
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "getRoot",
+        "summary": "API root",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ApiInfo" } }
+            }
+          }
+        }
+      }
+    },
+    "/pets": {
+      "get": {
+        "tags": ["pet"],
+        "operationId": "listPets",
+        "summary": "List pets matching filters",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": { "$ref": "#/components/schemas/PetStatus" }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "style": "form",
+            "explode": true,
+            "schema": { "type": "array", "items": { "type": "string" } }
+          },
+          { "$ref": "#/components/parameters/Limit" },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"] } }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of pets",
+            "headers": {
+              "X-Total-Count": { "description": "total", "schema": { "type": "integer" } }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Pet" } }
+              }
+            }
+          },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["pet"],
+        "operationId": "createPet",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewPet" } } }
+        },
+        "responses": {
+          "2XX": {
+            "description": "created",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Pet" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "422": {
+            "description": "validation",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ValidationError" } }
+            }
+          }
+        }
+      }
+    },
+    "/pets/{petId}": {
+      "parameters": [
+        { "name": "petId", "in": "path", "required": true, "schema": { "type": "string" } },
+        { "name": "X-Request-Id", "in": "header", "schema": { "type": "string" } }
+      ],
+      "get": {
+        "tags": ["pet"],
+        "operationId": "getPet",
+        "parameters": [
+          {
+            "name": "petId",
+            "in": "path",
+            "required": true,
+            "description": "numeric id overrides the path-level string id",
+            "schema": { "type": "integer", "format": "int64" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the pet",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Pet" } } }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "patch": {
+        "tags": ["pet"],
+        "operationId": "updatePet",
+        "requestBody": {
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewPet" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "updated",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Pet" } } }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["pet"],
+        "operationId": "deletePet",
+        "responses": {
+          "204": { "description": "deleted" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/pets/{petId}/photo": {
+      "post": {
+        "tags": ["pet"],
+        "operationId": "uploadPetPhoto",
+        "parameters": [
+          { "name": "petId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": { "type": "string", "format": "binary" },
+                  "caption": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "uploaded",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Photo" } }
+            }
+          }
+        }
+      }
+    },
+    "/store/orders": {
+      "post": {
+        "tags": ["store"],
+        "operationId": "placeOrder",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "petId": { "type": "string" },
+                  "quantity": { "type": "integer", "minimum": 1, "default": 1 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "placed",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Order" } }
+            }
+          }
+        }
+      }
+    },
+    "/store/inventory": {
+      "get": {
+        "tags": ["store"],
+        "operationId": "getInventory",
+        "responses": {
+          "200": {
+            "description": "inventory by status",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "additionalProperties": { "type": "integer" } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{username}": {
+      "get": {
+        "tags": ["user"],
+        "operationId": "getUser",
+        "parameters": [
+          {
+            "name": "username",
+            "in": "path",
+            "required": true,
+            "schema": { "$ref": "#/components/schemas/Username" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "user",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } }
+          },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "put": {
+        "tags": ["user"],
+        "operationId": "replaceUser",
+        "parameters": [
+          { "name": "username", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "replaced user name",
+            "content": { "application/json": { "schema": { "type": "string" } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "api_key": { "type": "apiKey", "name": "api_key", "in": "header" }
+    },
+    "parameters": {
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "description": "max items",
+        "schema": { "type": "integer", "minimum": 1, "maximum": 100 }
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "unexpected error",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "NotFound": {
+        "description": "not found",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "BadRequest": {
+        "description": "bad request",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["message"],
+              "properties": { "message": { "type": "string" }, "field": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ApiInfo": {
+        "type": "object",
+        "properties": { "version": { "type": "string" } }
+      },
+      "Username": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+      "PetStatus": {
+        "type": "string",
+        "description": "pet status in the store",
+        "enum": ["available", "pending", "sold"]
+      },
+      "Category": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "name": { "type": "string", "nullable": true }
+        }
+      },
+      "NewPet": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "example": "doggie" },
+          "status": { "$ref": "#/components/schemas/PetStatus" },
+          "category": { "$ref": "#/components/schemas/Category" },
+          "homepage": {
+            "type": "string",
+            "title": "Home page",
+            "pattern": "^https?://.*/$",
+            "default": "https://example.com/"
+          },
+          "tags": { "type": "array", "items": { "type": "string" }, "nullable": true }
+        }
+      },
+      "Pet": {
+        "allOf": [
+          { "$ref": "#/components/schemas/NewPet" },
+          {
+            "type": "object",
+            "required": ["id", "createdAt"],
+            "properties": {
+              "id": { "type": "string", "readOnly": true },
+              "createdAt": { "type": "string", "format": "date-time" }
+            }
+          }
+        ]
+      },
+      "Photo": {
+        "type": "object",
+        "required": ["url"],
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "caption": { "type": "string", "nullable": true }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "required": ["id", "item"],
+        "properties": {
+          "id": { "type": "string" },
+          "quantity": { "type": "integer" },
+          "item": { "$ref": "#/components/schemas/OrderItem" }
+        }
+      },
+      "OrderItem": {
+        "oneOf": [
+          { "$ref": "#/components/schemas/PetItem" },
+          { "$ref": "#/components/schemas/FoodItem" }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "pet": "#/components/schemas/PetItem",
+            "food": "#/components/schemas/FoodItem"
+          }
+        }
+      },
+      "PetItem": {
+        "type": "object",
+        "required": ["kind", "petId"],
+        "properties": {
+          "kind": { "type": "string", "enum": ["pet"] },
+          "petId": { "type": "string" }
+        }
+      },
+      "FoodItem": {
+        "type": "object",
+        "required": ["kind", "brand"],
+        "properties": {
+          "kind": { "type": "string", "enum": ["food"] },
+          "brand": { "type": "string" },
+          "weightKg": { "type": "number" }
+        }
+      },
+      "User": {
+        "type": "object",
+        "required": ["username", "role"],
+        "properties": {
+          "username": { "$ref": "#/components/schemas/Username" },
+          "email": { "type": "string", "format": "email" },
+          "role": { "type": "string", "enum": ["admin", "member"] },
+          "manager": {
+            "nullable": true,
+            "allOf": [{ "$ref": "#/components/schemas/UserRef" }]
+          }
+        }
+      },
+      "UserRef": {
+        "type": "object",
+        "required": ["username"],
+        "properties": { "username": { "type": "string" } }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "integer" },
+          "message": { "type": "string" }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "required": ["errors"],
+        "properties": {
+          "errors": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}
