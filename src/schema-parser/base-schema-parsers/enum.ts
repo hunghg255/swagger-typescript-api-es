@@ -38,15 +38,17 @@ class EnumSchemaParser extends MonoSchemaParser {
     const refType = this.schemaUtils.getSchemaRefType(this.schema);
     const $ref = (refType && refType.$ref) || undefined;
 
-    // fix schema when enum has length 1+ but value is []
-    if (Array.isArray(this.schema.enum)) {
-      this.schema.enum = this.schema.enum.filter((key: any) => key != undefined);
-    }
+    // `null` can't be an enum member, it is kept as `nullable` instead (e.g. OAS 3.1 `enum: ["a", null]`)
+    // note: the source schema must not be mutated, it can be shared between several usages
+    const hasNullValue = Array.isArray(this.schema.enum) && this.schema.enum.includes(null);
+    const enumValues = Array.isArray(this.schema.enum)
+      ? this.schema.enum.filter((key: any) => key != undefined)
+      : this.schema.enum;
 
-    if (Array.isArray(this.schema.enum) && Array.isArray(this.schema.enum[0])) {
+    if (Array.isArray(enumValues) && Array.isArray(enumValues[0])) {
       return this.schemaParserFabric.parseSchema(
         {
-          oneOf: this.schema.enum.map((enumNames: any) => ({
+          oneOf: enumValues.map((enumNames: any) => ({
             type: 'array',
             items: enumNames.map((enumName: any) => ({
               type: 'string',
@@ -59,7 +61,15 @@ class EnumSchemaParser extends MonoSchemaParser {
       );
     }
 
-    const keyType = this.schemaUtils.getSchemaType(this.schema);
+    // OAS 3.1 `type: ["string", "null"]` - use the first non-null type as key type
+    const keyType = this.schemaUtils.getSchemaType(
+      isArray(this.schema.type)
+        ? {
+            ...this.schema,
+            type: this.schema.type.find((type: any) => type !== this.config.Ts.Keyword.Null),
+          }
+        : this.schema
+    );
     const enumNames = this.schemaUtils.getEnumNames(this.schema);
 
     const formatValue = (value: any) => {
@@ -79,7 +89,7 @@ class EnumSchemaParser extends MonoSchemaParser {
     const content =
       isArray(enumNames) && size(enumNames)
         ? map(enumNames, (enumName, index) => {
-            const enumValue = get(this.schema.enum, index);
+            const enumValue = get(enumValues, index);
             const formattedKey = this.formatEnumKey({
               key: enumName,
               value: enumValue,
@@ -99,7 +109,7 @@ class EnumSchemaParser extends MonoSchemaParser {
               value: formatValue(enumValue),
             };
           })
-        : map(this.schema.enum, (value) => {
+        : map(enumValues, (value) => {
             return {
               key: this.formatEnumKey({ value }),
               type: keyType,
@@ -109,6 +119,8 @@ class EnumSchemaParser extends MonoSchemaParser {
 
     return {
       ...(isObject(this.schema) ? this.schema : {}),
+      ...(hasNullValue ? { nullable: true } : {}),
+      enum: enumValues,
       $ref,
       typeName: this.typeName || ($ref && refType.typeName) || undefined,
       $parsedSchema: true,

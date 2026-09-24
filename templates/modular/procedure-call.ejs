@@ -25,7 +25,8 @@ const rawWrapperArgs = config.extractRequestParams ?
     _.compact([
         requestParams && {
           name: pathParams.length ? `{ ${_.join(pathParamsNames, ", ")}, ...${queryName} }` : queryName,
-          optional: false,
+          // without path params the extracted params only hold query params
+          optional: !pathParams.length && !!query && !!query.optional,
           type: getInlineParseContent(requestParams),
         },
         ...(!requestParams ? pathParams : []),

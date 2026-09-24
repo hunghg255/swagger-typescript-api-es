@@ -2,6 +2,8 @@
 const { config, route, utils } = it;
 const { _, formatDescription, fmtToJSDocLine, pascalCase, require } = utils;
 const { raw, request, routeName } = route;
+// escapes "*/" so schema values cannot terminate the JSDoc comment
+const escapeJSDoc = utils.escapeJSDocContent || ((value) => _.replace(`${value}`, /\*\//g, "*\\/"));
 
 const jsDocDescription = raw.description ?
     ` * @description ${formatDescription(raw.description, true)}` :
@@ -21,7 +23,7 @@ const jsDocLines = _.compact([
             ` * @response \`${status}\` \`${_.replace(_.replace(type, /\/\*/g, "\\*"), /\*\//g, "*\\")}\` ${description}`,
         )
     : []),
-]).map(str => str.trimEnd()).join("\n");
+]).map(str => escapeJSDoc(str).trimEnd()).join("\n");
 
 return {
   description: jsDocDescription,

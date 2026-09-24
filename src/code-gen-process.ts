@@ -24,6 +24,7 @@ import ts from 'typescript';
 
 import { CodeFormatter } from './code-formatter';
 import { CodeGenConfig } from './configuration.js';
+import { PrettyError } from './errors';
 import { SchemaComponentsMap } from './schema-components-map.js';
 import { SchemaParserFabric } from './schema-parser/schema-parser-fabric';
 import { SchemaRoutes } from './schema-routes/schema-routes.js';
@@ -88,6 +89,7 @@ class CodeGenProcess {
     this.fileSystem = new FileSystem(this);
     this.schemaWalker = new SchemaWalker(this);
     this.swaggerSchemaResolver = new SwaggerSchemaResolver(this);
+    this.schemaWalker.swaggerSchemaResolver = this.swaggerSchemaResolver;
     this.schemaComponentsMap = new SchemaComponentsMap(this);
     this.typeNameFormatter = new TypeNameFormatter(this);
     this.templatesWorker = new TemplatesWorker(this);
@@ -137,8 +139,10 @@ class CodeGenProcess {
      * @type {SchemaComponent[]}
      */
     const componentsToParse = this.schemaComponentsMap.filter(
-      compact(['schemas', this.config.extractResponses && 'responses'])
+      ...compact(['schemas', this.config.extractResponses && 'responses'])
     );
+
+    this.reserveComponentTypeNames(componentsToParse);
 
     const parsedSchemas = componentsToParse.map((schemaComponent: any) => {
       const parsed = this.schemaParserFabric.parseSchema(
@@ -174,14 +178,25 @@ class CodeGenProcess {
 
     const configuration = this.config.hooks.onPrepareConfig(rawConfiguration) || rawConfiguration;
 
-    if (this.fileSystem.pathIsExist(this.config.output)) {
-      if (this.config.cleanOutput) {
-        this.logger.debug(`Cleaning dir ${this.config.output}`);
-        this.fileSystem.cleanDir(this.config.output);
+    if (this.config.output) {
+      if (this.fileSystem.pathIsExist(this.config.output)) {
+        if (!this.fileSystem.pathIsDir(this.config.output)) {
+          throw new PrettyError(
+            `Output path "${this.config.output}" is not a directory. The "output" option must point to a directory.`
+          );
+        }
+        if (this.config.cleanOutput) {
+          this.logger.debug(`Cleaning dir ${this.config.output}`);
+          this.fileSystem.cleanDir(this.config.output);
+        }
+      } else {
+        this.logger.debug(`Path ${this.config.output} is not exist. creating dir by this path`);
+        this.fileSystem.createDir(this.config.output);
       }
-    } else {
-      this.logger.debug(`Path ${this.config.output} is not exist. creating dir by this path`);
-      this.fileSystem.createDir(this.config.output);
+
+      if (!this.fileSystem.pathIsDir(this.config.output)) {
+        throw new PrettyError(`Unable to create output directory "${this.config.output}".`);
+      }
     }
 
     const files = await this.generateOutputFiles({
@@ -202,7 +217,7 @@ class CodeGenProcess {
         this.logger.success(
           'API file',
           pc.green(`"${file.fileName}${file.fileExtension}"`),
-          `created in ${pc.green(this.config.output)}`
+          `created in ${pc.green(`${this.config.output}`)}`
         );
       }
     }
@@ -217,11 +232,38 @@ class CodeGenProcess {
     };
   }
 
+  /**
+   * Reserves names of real components up front, so generated (extracted) types
+   * get a unique name instead of overwriting a user-defined component.
+   * Response components (`extractResponses`) which have the same name as a schema
+   * component (e.g. `#/components/responses/Error` and `#/components/schemas/Error`)
+   * are renamed to avoid duplicate identifiers.
+   */
+  reserveComponentTypeNames = (components: any[]) => {
+    const resolver = this.config.componentTypeNameResolver;
+    const getNames = (component: any) =>
+      compact([component.typeName, this.typeNameFormatter.format(component.typeName, {})]);
+
+    const schemaComponents = components.filter((c: any) => c.componentName === 'schemas');
+    const otherComponents = components.filter((c: any) => c.componentName !== 'schemas');
+
+    resolver.reserve(schemaComponents.flatMap(getNames));
+
+    for (const component of otherComponents) {
+      if (getNames(component).some((name: any) => resolver.isReserved(name))) {
+        const suffix = pascalCase(component.componentName.replace(/s$/, ''));
+        component.typeName = resolver.resolve([`${component.typeName}${suffix}`]);
+      }
+      resolver.reserve(getNames(component));
+    }
+  };
+
   getRenderTemplateData = () => {
     return {
       utils: {
         Ts: this.config.Ts,
         formatDescription: this.schemaParserFabric.schemaFormatters.formatDescription,
+        escapeJSDocContent: this.schemaParserFabric.schemaFormatters.escapeJSDocContent,
         internalCase,
         classNameCase: pascalCase,
         pascalCase,
@@ -382,21 +424,30 @@ class CodeGenProcess {
      */
     const modularApiFileInfos = [];
 
-    if (routes.$outOfModule) {
+    // routes without module (e.g. `GET /`) are a flat list of routes,
+    // wrap them into a module-like structure expected by modular templates
+    const outOfModuleRoutes = routes.outOfModule;
+
+    if (outOfModuleRoutes && outOfModuleRoutes.length > 0) {
+      const outOfModuleRoute = {
+        moduleName: fileNames.outOfModuleApi,
+        routes: outOfModuleRoutes,
+      };
+
       if (generateRouteTypes) {
         // @ts-ignore
         const outOfModuleRouteContent = this.templatesWorker.renderTemplate(
           templatesToRender.routeTypes,
           {
             ...configuration,
-            route: configuration.routes.$outOfModule,
+            route: outOfModuleRoute,
           }
         );
 
         modularApiFileInfos.push(
           ...(await this.createOutputFileInfo(
             configuration,
-            fileNames.outOfModuleApi,
+            pascalCase(`${fileNames.outOfModuleApi}_Route`),
             outOfModuleRouteContent
           ))
         );
@@ -405,7 +456,7 @@ class CodeGenProcess {
         // @ts-ignore
         const outOfModuleApiContent = this.templatesWorker.renderTemplate(templatesToRender.api, {
           ...configuration,
-          route: configuration.routes.$outOfModule,
+          route: outOfModuleRoute,
         });
 
         modularApiFileInfos.push(

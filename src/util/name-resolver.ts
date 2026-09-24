@@ -36,7 +36,7 @@ class NameResolver {
   }
 
   unreserve(names: any) {
-    this.reservedNames.filter((reservedName) => !names.includes(reservedName));
+    this.reservedNames = this.reservedNames.filter((reservedName) => !names.includes(reservedName));
   }
 
   isReserved(name: any) {
@@ -51,7 +51,7 @@ class NameResolver {
    * @returns {string | null}
    */
   // @ts-ignore
-  resolve(variants: any, resolver: any, extras: any, shouldReserve = true) {
+  resolve(variants: any, resolver?: any, extras?: any, shouldReserve = true) {
     if (typeof resolver === 'function') {
       let usageName = null;
       while (usageName === null) {
@@ -66,7 +66,9 @@ class NameResolver {
         }
       }
 
-      shouldReserve && this.reserve([usageName]);
+      if (shouldReserve) {
+        this.reserve([usageName]);
+      }
       return usageName;
     } else if (Array.isArray(variants)) {
       let usageName: any = null;
@@ -79,7 +81,9 @@ class NameResolver {
       });
 
       if (usageName) {
-        shouldReserve && this.reserve([usageName]);
+        if (shouldReserve) {
+          this.reserve([usageName]);
+        }
         return usageName;
       }
 
@@ -87,7 +91,7 @@ class NameResolver {
         'trying to resolve name with using fallback name generator using variants',
         variants
       );
-      return this.resolve(variants, this.getFallbackName, extras);
+      return this.resolve(variants, this.getFallbackName, extras, shouldReserve);
     }
 
     this.logger.debug('problem with reserving names. current reserved names: ', this.reservedNames);

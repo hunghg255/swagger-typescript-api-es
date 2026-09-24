@@ -2,14 +2,19 @@
 const { utils, config, route, modelTypes } = it;
 const { _, pascalCase } = utils;
 const { routes, moduleName } = route;
-const dataContracts = config.modular ? _.map(modelTypes, "name") : [];
+// internal contracts (e.g. discriminator mapping types) are not exported from data-contracts
+const dataContracts = config.modular ? _.compact(_.map(modelTypes, (contract) => !contract.internal && contract.name)) : [];
+// avoid conflict of the namespace name with an imported data contract (e.g. module "health" and type "Health")
+const namespaceName = dataContracts.includes(pascalCase(moduleName))
+  ? pascalCase(`${moduleName}_Route`)
+  : pascalCase(moduleName);
 
 %>
 <% if (dataContracts.length) { %>
 import { <%~ dataContracts.join(", ") %> } from "./<%~ config.fileNames.dataContracts %>"
 <% } %>
 
-export namespace <%~ pascalCase(moduleName) %> {
+export namespace <%~ namespaceName %> {
     <% for (const route of routes) { %>
 
         <%~ includeFile('@base/route-type.ejs', { ...it, route }) %>

@@ -77,10 +77,18 @@ class SchemaUtils {
     return isRequired;
   };
 
-  isNullMissingInType = (schema: any, type: any) => {
+  isNullableSchema = (schema: any) => {
     const { nullable, type: schemaType } = schema || {};
+    return !!(
+      nullable ||
+      !!get(schema, 'x-nullable') ||
+      schemaType === this.config.Ts.Keyword.Null
+    );
+  };
+
+  isNullMissingInType = (schema: any, type: any) => {
     return (
-      (nullable || !!get(schema, 'x-nullable') || schemaType === this.config.Ts.Keyword.Null) &&
+      this.isNullableSchema(schema) &&
       isString(type) &&
       !type.includes(` ${this.config.Ts.Keyword.Null}`) &&
       !type.includes(`${this.config.Ts.Keyword.Null} `)
@@ -169,8 +177,8 @@ class SchemaUtils {
       }
 
       return {
-        required: uniq([...this.getRequiredProperties(childSchema), ...existedRequiredKeys]),
         ...childSchema,
+        required: uniq([...this.getRequiredProperties(childSchema), ...existedRequiredKeys]),
       };
     }
 
@@ -185,15 +193,22 @@ class SchemaUtils {
     typeName: any,
     { suffixes, resolver, prefixes, shouldReserve = true }: any
   ) => {
+    const componentTypeNameResolver = this.config.componentTypeNameResolver;
+
     return resolver
-      ? this.config.componentTypeNameResolver.resolve(null, (reserved: any) => {
-          return resolver(pascalCase(typeName), reserved);
-        })
-      : this.config.componentTypeNameResolver.resolve(
+      ? componentTypeNameResolver.resolve(
+          null,
+          () => resolver(pascalCase(typeName), componentTypeNameResolver.reservedNames),
+          undefined,
+          shouldReserve
+        )
+      : componentTypeNameResolver.resolve(
           [
             ...(prefixes || []).map((prefix: any) => pascalCase(`${prefix} ${typeName}`)),
             ...(suffixes || []).map((suffix: any) => pascalCase(`${typeName} ${suffix}`)),
           ],
+          undefined,
+          undefined,
           shouldReserve
         );
   };
@@ -244,9 +259,17 @@ class SchemaUtils {
     const refTypeInfo = this.getSchemaRefType(schema);
 
     if (refTypeInfo) {
+      // referenced enum with `null` value (e.g. OAS 3.1 `enum: ["a", null]`),
+      // `null` can't be a member of TS enum so it is added on the usage side
+      const isEnumWithNull =
+        isArray(get(refTypeInfo, ['rawTypeData', 'enum'])) &&
+        refTypeInfo.rawTypeData.enum.includes(null);
       return this.checkAndAddRequiredKeys(
         schema,
-        this.safeAddNullToType(schema, this.typeNameFormatter.format(refTypeInfo.typeName))
+        this.safeAddNullToType(
+          isEnumWithNull ? { ...schema, nullable: true } : schema,
+          this.typeNameFormatter.format(refTypeInfo.typeName)
+        )
       );
     }
 

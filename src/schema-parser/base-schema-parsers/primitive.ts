@@ -21,9 +21,14 @@ class PrimitiveSchemaParser extends MonoSchemaParser {
     }
 
     if (isArray(type) && type.length > 0) {
+      // OpenAPI 3.1: `type: ["array", "null"]` - keep the rest of the schema
+      // (items, format, additionalProperties, ...) for every type variant
+      const { type: _types, ...schemaWithoutType } = isObject(this.schema)
+        ? (this.schema as any)
+        : ({} as any);
       contentType = this.schemaParser._complexSchemaParsers.oneOf({
-        ...(isObject(this.schema) ? this.schema : {}),
-        oneOf: type.map((type) => ({ type })),
+        ...schemaWithoutType,
+        oneOf: type.map((type) => ({ ...schemaWithoutType, type })),
       });
     }
 

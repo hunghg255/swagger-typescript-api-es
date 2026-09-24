@@ -1,6 +1,8 @@
 <%
 const { data, utils } = it;
 const { formatDescription, require, _ } = utils;
+// escapes "*/" so schema values cannot terminate the JSDoc comment
+const escapeJSDoc = utils.escapeJSDocContent || ((value) => _.replace(`${value}`, /\*\//g, "*\\/"));
 
 const stringify = (value) => _.isObject(value) ? JSON.stringify(value) : _.isString(value) ? `"${value}"` : value
 
@@ -22,7 +24,7 @@ const jsDocLines = _.compact([
     !_.isUndefined(data.default) && `@default ${stringify(data.default)}`,
     !_.isUndefined(data.pattern) && `@pattern ${data.pattern}`,
     !_.isUndefined(data.example) && `@example ${stringify(data.example)}`
-]).join('\n').split('\n');
+]).join('\n').split('\n').map(escapeJSDoc);
 %>
 <% if (jsDocLines.every(_.isEmpty)) { %>
 <% } else if (jsDocLines.length === 1) { %>

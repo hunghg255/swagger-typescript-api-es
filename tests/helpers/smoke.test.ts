@@ -8,7 +8,17 @@ describe('test helpers', () => {
       openapi: '3.0.0',
       info: { title: 't', version: '1' },
       paths: {
-        '/ping': { get: { operationId: 'ping', responses: { 200: { description: 'ok', content: { 'application/json': { schema: { type: 'string' } } } } } } },
+        '/ping': {
+          get: {
+            operationId: 'ping',
+            responses: {
+              200: {
+                description: 'ok',
+                content: { 'application/json': { schema: { type: 'string' } } },
+              },
+            },
+          },
+        },
       },
     });
     expect(Object.keys(files)).toEqual(['api.ts']);

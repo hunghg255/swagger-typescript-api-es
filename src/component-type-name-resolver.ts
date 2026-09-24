@@ -1,5 +1,4 @@
 import { NameResolver } from './util/name-resolver';
-import { getRandomInt } from './util/random';
 
 class ComponentTypeNameResolver extends NameResolver {
   counter = 1;
@@ -13,20 +12,24 @@ class ComponentTypeNameResolver extends NameResolver {
    */
   constructor(config: any, logger: any, reservedNames: any) {
     super(config, logger, reservedNames, (variants: any) => {
-      const randomVariant = variants[getRandomInt(0, variants.length - 1)];
-      if (randomVariant) {
-        if (!this.countersByVariant.has(randomVariant)) {
-          this.countersByVariant.set(randomVariant, 0);
+      // Always use the first (most preferred) variant so the output is deterministic.
+      const variant = variants && variants[0];
+      if (variant) {
+        if (!this.countersByVariant.has(variant)) {
+          this.countersByVariant.set(variant, 0);
         }
-        const variantCounter = this.countersByVariant.get(randomVariant) + 1;
-        this.countersByVariant.set(randomVariant, variantCounter);
-        const dirtyResolvedName = `${randomVariant}${variantCounter}`;
-        this.logger.debug('Generated dirty resolved type name for component - ', dirtyResolvedName);
+        const variantCounter = this.countersByVariant.get(variant) + 1;
+        this.countersByVariant.set(variant, variantCounter);
+        const dirtyResolvedName = `${variant}${variantCounter}`;
+        this.logger?.debug(
+          'Generated dirty resolved type name for component - ',
+          dirtyResolvedName
+        );
         return dirtyResolvedName;
       }
 
-      const fallbackName = `${this.config.componentTypeNameResolver}${this.fallbackNameCounter++}`;
-      this.logger.debug('Generated fallback type name for component - ', fallbackName);
+      const fallbackName = `${this.config.typeNameResolverName}${this.fallbackNameCounter++}`;
+      this.logger?.debug('Generated fallback type name for component - ', fallbackName);
       return fallbackName;
     });
   }

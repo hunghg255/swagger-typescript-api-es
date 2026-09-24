@@ -1,0 +1,1584 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`petstore fixture (OpenAPI 3) > generates the expected modular output > Common.ts 1`] = `
+"/* eslint-disable */
+/*
+ * ----------------------------------------------------------------------
+ * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API-ES            ##
+ * ----------------------------------------------------------------------
+ */
+
+import {
+  ApiInfo,
+  Username,
+  PetStatus,
+  Category,
+  NewPet,
+  Pet,
+  Photo,
+  Order,
+  OrderItem,
+  PetItem,
+  FoodItem,
+  User,
+  UserRef,
+  Error,
+  ValidationError,
+  PetItemKindEnum,
+  FoodItemKindEnum,
+  UserRoleEnum,
+  GetRootData,
+  ListPetsData,
+  ListPetsError,
+  ListPetsParamsSortEnum,
+  ListPetsParams,
+  CreatePetData,
+  CreatePetError,
+  GetPetData,
+  GetPetError,
+  UpdatePetData,
+  DeletePetError,
+  UploadPetPhotoPayload,
+  UploadPetPhotoData,
+  PlaceOrderPayload,
+  PlaceOrderData,
+  GetInventoryData,
+  GetUserData,
+  GetUserError,
+  ReplaceUserData,
+} from './data-contracts';
+import { HttpClient, RequestParams, ContentType } from './http-client';
+
+export class Common<SecurityDataType = unknown> extends HttpClient<SecurityDataType> {
+  /**
+   * No description
+   *
+   * @name GetRoot
+   * @summary API root
+   * @request GET:/
+   */
+  getRoot = (params: RequestParams = {}) =>
+    this.request<GetRootData, any>({
+      path: \`/\`,
+      method: 'GET',
+      ...params,
+    });
+}
+"
+`;
+
+exports[`petstore fixture (OpenAPI 3) > generates the expected modular output > CommonRoute.ts 1`] = `
+"/* eslint-disable */
+/*
+ * ----------------------------------------------------------------------
+ * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API-ES            ##
+ * ----------------------------------------------------------------------
+ */
+
+import {
+  ApiInfo,
+  Username,
+  PetStatus,
+  Category,
+  NewPet,
+  Pet,
+  Photo,
+  Order,
+  OrderItem,
+  PetItem,
+  FoodItem,
+  User,
+  UserRef,
+  Error,
+  ValidationError,
+  PetItemKindEnum,
+  FoodItemKindEnum,
+  UserRoleEnum,
+  GetRootData,
+  ListPetsData,
+  ListPetsError,
+  ListPetsParamsSortEnum,
+  ListPetsParams,
+  CreatePetData,
+  CreatePetError,
+  GetPetData,
+  GetPetError,
+  UpdatePetData,
+  DeletePetError,
+  UploadPetPhotoPayload,
+  UploadPetPhotoData,
+  PlaceOrderPayload,
+  PlaceOrderData,
+  GetInventoryData,
+  GetUserData,
+  GetUserError,
+  ReplaceUserData,
+} from './data-contracts';
+
+export namespace Common {
+  /**
+   * No description
+   * @name GetRoot
+   * @summary API root
+   * @request GET:/
+   */
+  export namespace GetRoot {
+    export type RequestParams = {};
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetRootData;
+  }
+}
+"
+`;
+
+exports[`petstore fixture (OpenAPI 3) > generates the expected modular output > Pets.ts 1`] = `
+"/* eslint-disable */
+/*
+ * ----------------------------------------------------------------------
+ * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API-ES            ##
+ * ----------------------------------------------------------------------
+ */
+
+import {
+  ApiInfo,
+  Username,
+  PetStatus,
+  Category,
+  NewPet,
+  Pet,
+  Photo,
+  Order,
+  OrderItem,
+  PetItem,
+  FoodItem,
+  User,
+  UserRef,
+  Error,
+  ValidationError,
+  PetItemKindEnum,
+  FoodItemKindEnum,
+  UserRoleEnum,
+  GetRootData,
+  ListPetsData,
+  ListPetsError,
+  ListPetsParamsSortEnum,
+  ListPetsParams,
+  CreatePetData,
+  CreatePetError,
+  GetPetData,
+  GetPetError,
+  UpdatePetData,
+  DeletePetError,
+  UploadPetPhotoPayload,
+  UploadPetPhotoData,
+  PlaceOrderPayload,
+  PlaceOrderData,
+  GetInventoryData,
+  GetUserData,
+  GetUserError,
+  ReplaceUserData,
+} from './data-contracts';
+import { HttpClient, RequestParams, ContentType } from './http-client';
+
+export class Pets<SecurityDataType = unknown> extends HttpClient<SecurityDataType> {
+  /**
+   * No description
+   *
+   * @tags pet
+   * @name ListPets
+   * @summary List pets matching *\\\\/ filters
+   * @request GET:/pets
+   * @secure
+   */
+  listPets = (query?: ListPetsParams, params: RequestParams = {}) =>
+    this.request<ListPetsData, ListPetsError>({
+      path: \`/pets\`,
+      method: 'GET',
+      query: query,
+      secure: true,
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags pet
+   * @name CreatePet
+   * @request POST:/pets
+   * @secure
+   */
+  createPet = (data: NewPet, params: RequestParams = {}) =>
+    this.request<CreatePetData, CreatePetError>({
+      path: \`/pets\`,
+      method: 'POST',
+      body: data,
+      secure: true,
+      type: ContentType.Json,
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags pet
+   * @name GetPet
+   * @request GET:/pets/{petId}
+   * @secure
+   */
+  getPet = (petId: number, params: RequestParams = {}) =>
+    this.request<GetPetData, GetPetError>({
+      path: \`/pets/\${petId}\`,
+      method: 'GET',
+      secure: true,
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags pet
+   * @name UpdatePet
+   * @request PATCH:/pets/{petId}
+   * @secure
+   */
+  updatePet = (petId: string, data?: NewPet, params: RequestParams = {}) =>
+    this.request<UpdatePetData, any>({
+      path: \`/pets/\${petId}\`,
+      method: 'PATCH',
+      body: data,
+      secure: true,
+      type: ContentType.Json,
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags pet
+   * @name DeletePet
+   * @request DELETE:/pets/{petId}
+   * @secure
+   */
+  deletePet = (petId: string, params: RequestParams = {}) =>
+    this.request<void, DeletePetError>({
+      path: \`/pets/\${petId}\`,
+      method: 'DELETE',
+      secure: true,
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags pet
+   * @name UploadPetPhoto
+   * @request POST:/pets/{petId}/photo
+   * @secure
+   */
+  uploadPetPhoto = (petId: string, data: UploadPetPhotoPayload, params: RequestParams = {}) =>
+    this.request<UploadPetPhotoData, any>({
+      path: \`/pets/\${petId}/photo\`,
+      method: 'POST',
+      body: data,
+      secure: true,
+      type: ContentType.FormData,
+      ...params,
+    });
+}
+"
+`;
+
+exports[`petstore fixture (OpenAPI 3) > generates the expected modular output > PetsRoute.ts 1`] = `
+"/* eslint-disable */
+/*
+ * ----------------------------------------------------------------------
+ * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API-ES            ##
+ * ----------------------------------------------------------------------
+ */
+
+import {
+  ApiInfo,
+  Username,
+  PetStatus,
+  Category,
+  NewPet,
+  Pet,
+  Photo,
+  Order,
+  OrderItem,
+  PetItem,
+  FoodItem,
+  User,
+  UserRef,
+  Error,
+  ValidationError,
+  PetItemKindEnum,
+  FoodItemKindEnum,
+  UserRoleEnum,
+  GetRootData,
+  ListPetsData,
+  ListPetsError,
+  ListPetsParamsSortEnum,
+  ListPetsParams,
+  CreatePetData,
+  CreatePetError,
+  GetPetData,
+  GetPetError,
+  UpdatePetData,
+  DeletePetError,
+  UploadPetPhotoPayload,
+  UploadPetPhotoData,
+  PlaceOrderPayload,
+  PlaceOrderData,
+  GetInventoryData,
+  GetUserData,
+  GetUserError,
+  ReplaceUserData,
+} from './data-contracts';
+
+export namespace Pets {
+  /**
+   * No description
+   * @tags pet
+   * @name ListPets
+   * @summary List pets matching *\\\\/ filters
+   * @request GET:/pets
+   * @secure
+   */
+  export namespace ListPets {
+    export type RequestParams = {};
+    export type RequestQuery = {
+      /** pet status in the store */
+      status?: PetStatus;
+      tags?: string[];
+      /**
+       * max items
+       * @min 1
+       * @max 100
+       */
+      limit?: number;
+      sort?: ListPetsParamsSortEnum;
+    };
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = ListPetsData;
+  }
+
+  /**
+   * No description
+   * @tags pet
+   * @name CreatePet
+   * @request POST:/pets
+   * @secure
+   */
+  export namespace CreatePet {
+    export type RequestParams = {};
+    export type RequestQuery = {};
+    export type RequestBody = NewPet;
+    export type RequestHeaders = {};
+    export type ResponseBody = CreatePetData;
+  }
+
+  /**
+   * No description
+   * @tags pet
+   * @name GetPet
+   * @request GET:/pets/{petId}
+   * @secure
+   */
+  export namespace GetPet {
+    export type RequestParams = {
+      /**
+       * numeric id overrides the path-level string id
+       * @format int64
+       */
+      petId: number;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {
+      'X-Request-Id'?: string;
+    };
+    export type ResponseBody = GetPetData;
+  }
+
+  /**
+   * No description
+   * @tags pet
+   * @name UpdatePet
+   * @request PATCH:/pets/{petId}
+   * @secure
+   */
+  export namespace UpdatePet {
+    export type RequestParams = {
+      petId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = NewPet;
+    export type RequestHeaders = {
+      'X-Request-Id'?: string;
+    };
+    export type ResponseBody = UpdatePetData;
+  }
+
+  /**
+   * No description
+   * @tags pet
+   * @name DeletePet
+   * @request DELETE:/pets/{petId}
+   * @secure
+   */
+  export namespace DeletePet {
+    export type RequestParams = {
+      petId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {
+      'X-Request-Id'?: string;
+    };
+    export type ResponseBody = void;
+  }
+
+  /**
+   * No description
+   * @tags pet
+   * @name UploadPetPhoto
+   * @request POST:/pets/{petId}/photo
+   * @secure
+   */
+  export namespace UploadPetPhoto {
+    export type RequestParams = {
+      petId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = UploadPetPhotoPayload;
+    export type RequestHeaders = {};
+    export type ResponseBody = UploadPetPhotoData;
+  }
+}
+"
+`;
+
+exports[`petstore fixture (OpenAPI 3) > generates the expected modular output > data-contracts.ts 1`] = `
+"/* eslint-disable */
+/*
+ * ----------------------------------------------------------------------
+ * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API-ES            ##
+ * ----------------------------------------------------------------------
+ */
+
+export interface ApiInfo {
+  version?: string;
+}
+
+/** @pattern ^[a-z0-9_]+$ */
+export type Username = string;
+
+/** pet status in the store */
+export enum PetStatus {
+  Available = 'available',
+  Pending = 'pending',
+  Sold = 'sold',
+}
+
+export interface Category {
+  /** @format int64 */
+  id: number;
+  name?: string | null;
+}
+
+export interface NewPet {
+  /** @example \\"doggie\\" */
+  name: string;
+  /** pet status in the store */
+  status?: PetStatus;
+  category?: Category;
+  /**
+   * Home *\\\\/ page
+   * @default \\"https://example.com/*\\\\/\\"
+   * @pattern ^https?://.*\\\\/$
+   */
+  homepage?: string;
+  tags?: string[] | null;
+}
+
+export type Pet = NewPet & {
+  id: string;
+  /** @format date-time */
+  createdAt: string;
+};
+
+export interface Photo {
+  /** @format uri */
+  url: string;
+  caption?: string | null;
+}
+
+export interface Order {
+  id: string;
+  quantity?: number;
+  item: OrderItem;
+}
+
+export type OrderItem =
+  | ({
+      kind: 'pet';
+    } & PetItem)
+  | ({
+      kind: 'food';
+    } & FoodItem);
+
+export interface PetItem {
+  kind: PetItemKindEnum;
+  petId: string;
+}
+
+export interface FoodItem {
+  kind: FoodItemKindEnum;
+  brand: string;
+  weightKg?: number;
+}
+
+export interface User {
+  username: Username;
+  /** @format email */
+  email?: string;
+  role: UserRoleEnum;
+  manager?: UserRef | null;
+}
+
+export interface UserRef {
+  username: string;
+}
+
+export interface Error {
+  code: number;
+  message: string;
+}
+
+export interface ValidationError {
+  errors: string[];
+}
+
+export enum PetItemKindEnum {
+  Pet = 'pet',
+}
+
+export enum FoodItemKindEnum {
+  Food = 'food',
+}
+
+export enum UserRoleEnum {
+  Admin = 'admin',
+  Member = 'member',
+}
+
+export type GetRootData = ApiInfo;
+
+export type ListPetsData = Pet[];
+
+export type ListPetsError = Error;
+
+export enum ListPetsParamsSortEnum {
+  Asc = 'asc',
+  Desc = 'desc',
+}
+
+export interface ListPetsParams {
+  /** pet status in the store */
+  status?: PetStatus;
+  tags?: string[];
+  /**
+   * max items
+   * @min 1
+   * @max 100
+   */
+  limit?: number;
+  sort?: ListPetsParamsSortEnum;
+}
+
+export type CreatePetData = Pet;
+
+export type CreatePetError =
+  | {
+      message: string;
+      field?: string;
+    }
+  | ValidationError;
+
+export type GetPetData = Pet;
+
+export type GetPetError = Error;
+
+export type UpdatePetData = Pet;
+
+export type DeletePetError = Error;
+
+export interface UploadPetPhotoPayload {
+  /** @format binary */
+  file: File;
+  caption?: string;
+}
+
+export type UploadPetPhotoData = Photo;
+
+export interface PlaceOrderPayload {
+  petId?: string;
+  /**
+   * @min 1
+   * @default 1
+   */
+  quantity?: number;
+}
+
+export type PlaceOrderData = Order;
+
+export type GetInventoryData = Record<string, number>;
+
+export type GetUserData = User;
+
+export type GetUserError = Error;
+
+export type ReplaceUserData = string;
+"
+`;
+
+exports[`petstore fixture (OpenAPI 3) > generates the expected single file client 1`] = `
+"/* eslint-disable */
+/*
+ * ----------------------------------------------------------------------
+ * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API-ES            ##
+ * ----------------------------------------------------------------------
+ */
+
+export interface ApiInfo {
+  version?: string;
+}
+
+/** @pattern ^[a-z0-9_]+$ */
+export type Username = string;
+
+/** pet status in the store */
+export enum PetStatus {
+  Available = 'available',
+  Pending = 'pending',
+  Sold = 'sold',
+}
+
+export interface Category {
+  /** @format int64 */
+  id: number;
+  name?: string | null;
+}
+
+export interface NewPet {
+  /** @example \\"doggie\\" */
+  name: string;
+  /** pet status in the store */
+  status?: PetStatus;
+  category?: Category;
+  /**
+   * Home *\\\\/ page
+   * @default \\"https://example.com/*\\\\/\\"
+   * @pattern ^https?://.*\\\\/$
+   */
+  homepage?: string;
+  tags?: string[] | null;
+}
+
+export type Pet = NewPet & {
+  id: string;
+  /** @format date-time */
+  createdAt: string;
+};
+
+export interface Photo {
+  /** @format uri */
+  url: string;
+  caption?: string | null;
+}
+
+export interface Order {
+  id: string;
+  quantity?: number;
+  item: OrderItem;
+}
+
+export type OrderItem =
+  | ({
+      kind: 'pet';
+    } & PetItem)
+  | ({
+      kind: 'food';
+    } & FoodItem);
+
+export interface PetItem {
+  kind: 'pet';
+  petId: string;
+}
+
+export interface FoodItem {
+  kind: 'food';
+  brand: string;
+  weightKg?: number;
+}
+
+export interface User {
+  username: Username;
+  /** @format email */
+  email?: string;
+  role: 'admin' | 'member';
+  manager?: UserRef | null;
+}
+
+export interface UserRef {
+  username: string;
+}
+
+export interface Error {
+  code: number;
+  message: string;
+}
+
+export interface ValidationError {
+  errors: string[];
+}
+
+export type QueryParamsType = Record<string | number, any>;
+export type ResponseFormat = keyof Omit<Body, 'body' | 'bodyUsed'>;
+
+export interface FullRequestParams extends Omit<RequestInit, 'body'> {
+  /** set parameter to \`true\` for call \`securityWorker\` for this request */
+  secure?: boolean;
+  /** request path */
+  path: string;
+  /** content type of request body */
+  type?: ContentType;
+  /** query params */
+  query?: QueryParamsType;
+  /** format of response (i.e. response.json() -> format: \\"json\\") */
+  format?: ResponseFormat;
+  /** request body */
+  body?: unknown;
+  /** base url */
+  baseUrl?: string;
+  /** request cancellation token */
+  cancelToken?: CancelToken;
+}
+
+export type RequestParams = Omit<FullRequestParams, 'body' | 'method' | 'query' | 'path'>;
+
+export interface ApiConfig<SecurityDataType = unknown> {
+  baseUrl?: string;
+  baseApiParams?: Omit<RequestParams, 'baseUrl' | 'cancelToken' | 'signal'>;
+  securityWorker?: (
+    securityData: SecurityDataType | null
+  ) => Promise<RequestParams | void> | RequestParams | void;
+  customFetch?: typeof fetch;
+  injectHeaders?: (data: any) => any;
+}
+
+export interface HttpResponse<D extends unknown, E extends unknown = unknown> extends Response {
+  data: D;
+  error: E;
+}
+
+type CancelToken = Symbol | string | number;
+
+export const ContentType = {
+  Json: 'application/json',
+  FormData: 'multipart/form-data',
+  UrlEncoded: 'application/x-www-form-urlencoded',
+  Text: 'text/plain',
+} as const;
+
+export type ContentType = (typeof ContentType)[keyof typeof ContentType];
+
+export class HttpClient<SecurityDataType = unknown> {
+  public baseUrl: string = 'https://petstore.example.com/v1';
+  private securityData: SecurityDataType | null = null;
+  private securityWorker?: ApiConfig<SecurityDataType>['securityWorker'];
+  private abortControllers = new Map<CancelToken, AbortController>();
+  private customFetch = (...fetchParams: Parameters<typeof fetch>) => fetch(...fetchParams);
+  private injectHeaders?: (data: any) => any;
+
+  private baseApiParams: RequestParams = {
+    credentials: 'same-origin',
+    headers: {},
+    redirect: 'follow',
+    referrerPolicy: 'no-referrer',
+  };
+
+  constructor(apiConfig: ApiConfig<SecurityDataType> = {}) {
+    Object.assign(this, apiConfig);
+  }
+
+  public setSecurityData = (data: SecurityDataType | null) => {
+    this.securityData = data;
+  };
+
+  protected encodeQueryParam(key: string, value: any) {
+    const encodedKey = encodeURIComponent(key);
+    return \`\${encodedKey}=\${encodeURIComponent(typeof value === 'number' ? value : \`\${value}\`)}\`;
+  }
+
+  protected addQueryParam(query: QueryParamsType, key: string) {
+    return this.encodeQueryParam(key, query[key]);
+  }
+
+  protected addArrayQueryParam(query: QueryParamsType, key: string) {
+    const value = query[key];
+    return value.map((v: any) => this.encodeQueryParam(key, v)).join('&');
+  }
+
+  protected toQueryString(rawQuery?: QueryParamsType): string {
+    const query = rawQuery || {};
+    const keys = Object.keys(query).filter((key) => 'undefined' !== typeof query[key]);
+    return keys
+      .map((key) =>
+        Array.isArray(query[key])
+          ? this.addArrayQueryParam(query, key)
+          : this.addQueryParam(query, key)
+      )
+      .join('&');
+  }
+
+  protected addQueryParams(rawQuery?: QueryParamsType): string {
+    const queryString = this.toQueryString(rawQuery);
+    return queryString ? \`?\${queryString}\` : '';
+  }
+
+  private contentFormatters: Record<ContentType, (input: any) => any> = {
+    [ContentType.Json]: (input: any) =>
+      input !== null && (typeof input === 'object' || typeof input === 'string')
+        ? JSON.stringify(input)
+        : input,
+    [ContentType.Text]: (input: any) =>
+      input !== null && typeof input !== 'string' ? JSON.stringify(input) : input,
+    [ContentType.FormData]: (input: any) =>
+      Object.keys(input || {}).reduce((formData, key) => {
+        const property = input[key];
+        formData.append(
+          key,
+          property instanceof Blob
+            ? property
+            : typeof property === 'object' && property !== null
+              ? JSON.stringify(property)
+              : \`\${property}\`
+        );
+        return formData;
+      }, new FormData()),
+    [ContentType.UrlEncoded]: (input: any) => this.toQueryString(input),
+  };
+
+  protected mergeRequestParams(params1: RequestParams, params2?: RequestParams): RequestParams {
+    return {
+      ...this.baseApiParams,
+      ...params1,
+      ...(params2 || {}),
+      headers: {
+        ...(this.baseApiParams.headers || {}),
+        ...(params1.headers || {}),
+        ...((params2 && params2.headers) || {}),
+      },
+    };
+  }
+
+  protected createAbortSignal = (cancelToken: CancelToken): AbortSignal | undefined => {
+    if (this.abortControllers.has(cancelToken)) {
+      const abortController = this.abortControllers.get(cancelToken);
+      if (abortController) {
+        return abortController.signal;
+      }
+      return void 0;
+    }
+
+    const abortController = new AbortController();
+    this.abortControllers.set(cancelToken, abortController);
+    return abortController.signal;
+  };
+
+  public abortRequest = (cancelToken: CancelToken) => {
+    const abortController = this.abortControllers.get(cancelToken);
+
+    if (abortController) {
+      abortController.abort();
+      this.abortControllers.delete(cancelToken);
+    }
+  };
+
+  public request = async <T = any, E = any>({
+    body,
+    secure,
+    path,
+    type,
+    query,
+    format,
+    baseUrl,
+    cancelToken,
+    ...params
+  }: FullRequestParams): Promise<HttpResponse<T, E>> => {
+    const secureParams =
+      ((typeof secure === 'boolean' ? secure : this.baseApiParams.secure) &&
+        this.securityWorker &&
+        (await this.securityWorker(this.securityData))) ||
+      {};
+    const requestParams = this.mergeRequestParams(params, secureParams);
+    const queryString = query && this.toQueryString(query);
+    const payloadFormatter = this.contentFormatters[type || ContentType.Json];
+    const responseFormat = format || requestParams.format;
+    let headers = {
+      ...(requestParams.headers || {}),
+      ...(type && type !== ContentType.FormData ? { 'Content-Type': type } : {}),
+    };
+
+    if (this.injectHeaders) {
+      headers = await this.injectHeaders(headers);
+    }
+
+    return this.customFetch(
+      \`\${baseUrl || this.baseUrl || ''}\${path}\${queryString ? \`?\${queryString}\` : ''}\`,
+      {
+        ...requestParams,
+        headers,
+        signal: (cancelToken ? this.createAbortSignal(cancelToken) : requestParams.signal) || null,
+        body: typeof body === 'undefined' || body === null ? null : payloadFormatter(body),
+      }
+    ).then(async (response) => {
+      const r = response as HttpResponse<T, E>;
+      r.data = null as unknown as T;
+      r.error = null as unknown as E;
+
+      const data = !responseFormat
+        ? r
+        : await response[responseFormat]()
+            .then((data) => {
+              if (r.ok) {
+                r.data = data;
+              } else {
+                r.error = data;
+              }
+              return r;
+            })
+            .catch((e) => {
+              r.error = e;
+              return r;
+            });
+
+      if (cancelToken) {
+        this.abortControllers.delete(cancelToken);
+      }
+
+      if (!response.ok) throw data;
+      return data;
+    });
+  };
+}
+
+/**
+ * @title Petstore *\\\\/ Test
+ * @version 1.0.0
+ * @baseUrl https://petstore.example.com/v1
+ *
+ * A realistic mid-size spec used by the generation tests.
+ */
+export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
+  /**
+   * No description
+   *
+   * @name GetRoot
+   * @summary API root
+   * @request GET:/
+   */
+  getRoot = (params: RequestParams = {}) =>
+    this.request<ApiInfo, any>({
+      path: \`/\`,
+      method: 'GET',
+      format: 'json',
+      ...params,
+    });
+
+  pets = {
+    /**
+     * No description
+     *
+     * @tags pet
+     * @name ListPets
+     * @summary List pets matching *\\\\/ filters
+     * @request GET:/pets
+     * @secure
+     */
+    listPets: (
+      query?: {
+        /** pet status in the store */
+        status?: PetStatus;
+        tags?: string[];
+        /**
+         * max items
+         * @min 1
+         * @max 100
+         */
+        limit?: number;
+        sort?: 'asc' | 'desc';
+      },
+      params: RequestParams = {}
+    ) =>
+      this.request<Pet[], Error>({
+        path: \`/pets\`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags pet
+     * @name CreatePet
+     * @request POST:/pets
+     * @secure
+     */
+    createPet: (data: NewPet, params: RequestParams = {}) =>
+      this.request<
+        Pet,
+        | {
+            message: string;
+            field?: string;
+          }
+        | ValidationError
+      >({
+        path: \`/pets\`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags pet
+     * @name GetPet
+     * @request GET:/pets/{petId}
+     * @secure
+     */
+    getPet: (petId: number, params: RequestParams = {}) =>
+      this.request<Pet, Error>({
+        path: \`/pets/\${petId}\`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags pet
+     * @name UpdatePet
+     * @request PATCH:/pets/{petId}
+     * @secure
+     */
+    updatePet: (petId: string, data?: NewPet, params: RequestParams = {}) =>
+      this.request<Pet, any>({
+        path: \`/pets/\${petId}\`,
+        method: 'PATCH',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags pet
+     * @name DeletePet
+     * @request DELETE:/pets/{petId}
+     * @secure
+     */
+    deletePet: (petId: string, params: RequestParams = {}) =>
+      this.request<void, Error>({
+        path: \`/pets/\${petId}\`,
+        method: 'DELETE',
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags pet
+     * @name UploadPetPhoto
+     * @request POST:/pets/{petId}/photo
+     * @secure
+     */
+    uploadPetPhoto: (
+      petId: string,
+      data: {
+        /** @format binary */
+        file: File;
+        caption?: string;
+      },
+      params: RequestParams = {}
+    ) =>
+      this.request<Photo, any>({
+        path: \`/pets/\${petId}/photo\`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.FormData,
+        format: 'json',
+        ...params,
+      }),
+  };
+  store = {
+    /**
+     * No description
+     *
+     * @tags store
+     * @name PlaceOrder
+     * @request POST:/store/orders
+     * @secure
+     */
+    placeOrder: (
+      data: {
+        petId?: string;
+        /**
+         * @min 1
+         * @default 1
+         */
+        quantity?: number;
+      },
+      params: RequestParams = {}
+    ) =>
+      this.request<Order, any>({
+        path: \`/store/orders\`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.UrlEncoded,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags store
+     * @name GetInventory
+     * @request GET:/store/inventory
+     * @secure
+     */
+    getInventory: (params: RequestParams = {}) =>
+      this.request<Record<string, number>, any>({
+        path: \`/store/inventory\`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+  };
+  users = {
+    /**
+     * No description
+     *
+     * @tags user
+     * @name GetUser
+     * @request GET:/users/{username}
+     * @secure
+     */
+    getUser: (username: Username, params: RequestParams = {}) =>
+      this.request<User, Error>({
+        path: \`/users/\${username}\`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags user
+     * @name ReplaceUser
+     * @request PUT:/users/{username}
+     * @secure
+     */
+    replaceUser: (username: string, data: User, params: RequestParams = {}) =>
+      this.request<string, any>({
+        path: \`/users/\${username}\`,
+        method: 'PUT',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+  };
+}
+"
+`;
+
+exports[`swagger 2.0 fixture > keeps \`required\` of body parameters 1`] = `
+"/* eslint-disable */
+/*
+ * ----------------------------------------------------------------------
+ * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API-ES            ##
+ * ----------------------------------------------------------------------
+ */
+
+export interface NewItem {
+  name: string;
+  size?: 'small' | 'large';
+  note?: string | null;
+}
+
+export type Item = NewItem & {
+  id: string;
+};
+
+export interface Error {
+  message: string;
+}
+
+export type QueryParamsType = Record<string | number, any>;
+export type ResponseFormat = keyof Omit<Body, 'body' | 'bodyUsed'>;
+
+export interface FullRequestParams extends Omit<RequestInit, 'body'> {
+  /** set parameter to \`true\` for call \`securityWorker\` for this request */
+  secure?: boolean;
+  /** request path */
+  path: string;
+  /** content type of request body */
+  type?: ContentType;
+  /** query params */
+  query?: QueryParamsType;
+  /** format of response (i.e. response.json() -> format: \\"json\\") */
+  format?: ResponseFormat;
+  /** request body */
+  body?: unknown;
+  /** base url */
+  baseUrl?: string;
+  /** request cancellation token */
+  cancelToken?: CancelToken;
+}
+
+export type RequestParams = Omit<FullRequestParams, 'body' | 'method' | 'query' | 'path'>;
+
+export interface ApiConfig<SecurityDataType = unknown> {
+  baseUrl?: string;
+  baseApiParams?: Omit<RequestParams, 'baseUrl' | 'cancelToken' | 'signal'>;
+  securityWorker?: (
+    securityData: SecurityDataType | null
+  ) => Promise<RequestParams | void> | RequestParams | void;
+  customFetch?: typeof fetch;
+  injectHeaders?: (data: any) => any;
+}
+
+export interface HttpResponse<D extends unknown, E extends unknown = unknown> extends Response {
+  data: D;
+  error: E;
+}
+
+type CancelToken = Symbol | string | number;
+
+export const ContentType = {
+  Json: 'application/json',
+  FormData: 'multipart/form-data',
+  UrlEncoded: 'application/x-www-form-urlencoded',
+  Text: 'text/plain',
+} as const;
+
+export type ContentType = (typeof ContentType)[keyof typeof ContentType];
+
+export class HttpClient<SecurityDataType = unknown> {
+  public baseUrl: string = 'https://store.example.com/api';
+  private securityData: SecurityDataType | null = null;
+  private securityWorker?: ApiConfig<SecurityDataType>['securityWorker'];
+  private abortControllers = new Map<CancelToken, AbortController>();
+  private customFetch = (...fetchParams: Parameters<typeof fetch>) => fetch(...fetchParams);
+  private injectHeaders?: (data: any) => any;
+
+  private baseApiParams: RequestParams = {
+    credentials: 'same-origin',
+    headers: {},
+    redirect: 'follow',
+    referrerPolicy: 'no-referrer',
+  };
+
+  constructor(apiConfig: ApiConfig<SecurityDataType> = {}) {
+    Object.assign(this, apiConfig);
+  }
+
+  public setSecurityData = (data: SecurityDataType | null) => {
+    this.securityData = data;
+  };
+
+  protected encodeQueryParam(key: string, value: any) {
+    const encodedKey = encodeURIComponent(key);
+    return \`\${encodedKey}=\${encodeURIComponent(typeof value === 'number' ? value : \`\${value}\`)}\`;
+  }
+
+  protected addQueryParam(query: QueryParamsType, key: string) {
+    return this.encodeQueryParam(key, query[key]);
+  }
+
+  protected addArrayQueryParam(query: QueryParamsType, key: string) {
+    const value = query[key];
+    return value.map((v: any) => this.encodeQueryParam(key, v)).join('&');
+  }
+
+  protected toQueryString(rawQuery?: QueryParamsType): string {
+    const query = rawQuery || {};
+    const keys = Object.keys(query).filter((key) => 'undefined' !== typeof query[key]);
+    return keys
+      .map((key) =>
+        Array.isArray(query[key])
+          ? this.addArrayQueryParam(query, key)
+          : this.addQueryParam(query, key)
+      )
+      .join('&');
+  }
+
+  protected addQueryParams(rawQuery?: QueryParamsType): string {
+    const queryString = this.toQueryString(rawQuery);
+    return queryString ? \`?\${queryString}\` : '';
+  }
+
+  private contentFormatters: Record<ContentType, (input: any) => any> = {
+    [ContentType.Json]: (input: any) =>
+      input !== null && (typeof input === 'object' || typeof input === 'string')
+        ? JSON.stringify(input)
+        : input,
+    [ContentType.Text]: (input: any) =>
+      input !== null && typeof input !== 'string' ? JSON.stringify(input) : input,
+    [ContentType.FormData]: (input: any) =>
+      Object.keys(input || {}).reduce((formData, key) => {
+        const property = input[key];
+        formData.append(
+          key,
+          property instanceof Blob
+            ? property
+            : typeof property === 'object' && property !== null
+              ? JSON.stringify(property)
+              : \`\${property}\`
+        );
+        return formData;
+      }, new FormData()),
+    [ContentType.UrlEncoded]: (input: any) => this.toQueryString(input),
+  };
+
+  protected mergeRequestParams(params1: RequestParams, params2?: RequestParams): RequestParams {
+    return {
+      ...this.baseApiParams,
+      ...params1,
+      ...(params2 || {}),
+      headers: {
+        ...(this.baseApiParams.headers || {}),
+        ...(params1.headers || {}),
+        ...((params2 && params2.headers) || {}),
+      },
+    };
+  }
+
+  protected createAbortSignal = (cancelToken: CancelToken): AbortSignal | undefined => {
+    if (this.abortControllers.has(cancelToken)) {
+      const abortController = this.abortControllers.get(cancelToken);
+      if (abortController) {
+        return abortController.signal;
+      }
+      return void 0;
+    }
+
+    const abortController = new AbortController();
+    this.abortControllers.set(cancelToken, abortController);
+    return abortController.signal;
+  };
+
+  public abortRequest = (cancelToken: CancelToken) => {
+    const abortController = this.abortControllers.get(cancelToken);
+
+    if (abortController) {
+      abortController.abort();
+      this.abortControllers.delete(cancelToken);
+    }
+  };
+
+  public request = async <T = any, E = any>({
+    body,
+    secure,
+    path,
+    type,
+    query,
+    format,
+    baseUrl,
+    cancelToken,
+    ...params
+  }: FullRequestParams): Promise<HttpResponse<T, E>> => {
+    const secureParams =
+      ((typeof secure === 'boolean' ? secure : this.baseApiParams.secure) &&
+        this.securityWorker &&
+        (await this.securityWorker(this.securityData))) ||
+      {};
+    const requestParams = this.mergeRequestParams(params, secureParams);
+    const queryString = query && this.toQueryString(query);
+    const payloadFormatter = this.contentFormatters[type || ContentType.Json];
+    const responseFormat = format || requestParams.format;
+    let headers = {
+      ...(requestParams.headers || {}),
+      ...(type && type !== ContentType.FormData ? { 'Content-Type': type } : {}),
+    };
+
+    if (this.injectHeaders) {
+      headers = await this.injectHeaders(headers);
+    }
+
+    return this.customFetch(
+      \`\${baseUrl || this.baseUrl || ''}\${path}\${queryString ? \`?\${queryString}\` : ''}\`,
+      {
+        ...requestParams,
+        headers,
+        signal: (cancelToken ? this.createAbortSignal(cancelToken) : requestParams.signal) || null,
+        body: typeof body === 'undefined' || body === null ? null : payloadFormatter(body),
+      }
+    ).then(async (response) => {
+      const r = response as HttpResponse<T, E>;
+      r.data = null as unknown as T;
+      r.error = null as unknown as E;
+
+      const data = !responseFormat
+        ? r
+        : await response[responseFormat]()
+            .then((data) => {
+              if (r.ok) {
+                r.data = data;
+              } else {
+                r.error = data;
+              }
+              return r;
+            })
+            .catch((e) => {
+              r.error = e;
+              return r;
+            });
+
+      if (cancelToken) {
+        this.abortControllers.delete(cancelToken);
+      }
+
+      if (!response.ok) throw data;
+      return data;
+    });
+  };
+}
+
+/**
+ * @title Swagger 2 store
+ * @version 1.0.0
+ * @baseUrl https://store.example.com/api
+ */
+export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
+  items = {
+    /**
+     * No description
+     *
+     * @tags items
+     * @name ListItems
+     * @request GET:/items
+     */
+    listItems: (
+      query?: {
+        page?: number;
+        kind?: 'small' | 'large';
+      },
+      params: RequestParams = {}
+    ) =>
+      this.request<Item[], Error>({
+        path: \`/items\`,
+        method: 'GET',
+        query: query,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags items
+     * @name CreateItem
+     * @request POST:/items
+     * @secure
+     */
+    createItem: (item: NewItem, params: RequestParams = {}) =>
+      this.request<Item, any>({
+        path: \`/items\`,
+        method: 'POST',
+        body: item,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags items
+     * @name UpdateItem
+     * @request PUT:/items/{itemId}
+     */
+    updateItem: (itemId: string, item?: NewItem, params: RequestParams = {}) =>
+      this.request<Item, any>({
+        path: \`/items/\${itemId}\`,
+        method: 'PUT',
+        body: item,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags items
+     * @name DeleteItem
+     * @request DELETE:/items/{itemId}
+     */
+    deleteItem: (itemId: string, params: RequestParams = {}) =>
+      this.request<void, any>({
+        path: \`/items/\${itemId}\`,
+        method: 'DELETE',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags items
+     * @name UploadItemImage
+     * @request POST:/items/{itemId}/image
+     */
+    uploadItemImage: (
+      itemId: string,
+      data: {
+        file: File;
+        note?: string;
+      },
+      params: RequestParams = {}
+    ) =>
+      this.request<Item, any>({
+        path: \`/items/\${itemId}/image\`,
+        method: 'POST',
+        body: data,
+        type: ContentType.FormData,
+        format: 'json',
+        ...params,
+      }),
+  };
+}
+"
+`;

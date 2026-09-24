@@ -28,7 +28,12 @@ class SchemaFormatters {
         return {
           ...parsedSchema,
           $content: parsedSchema.content,
-          content: this.config.Ts.UnionType(map(parsedSchema.content, ({ value }) => value)),
+          content: this.config.Ts.UnionType(
+            compact([
+              ...map(parsedSchema.content, ({ value }) => value),
+              parsedSchema.nullable && this.config.Ts.Keyword.Null,
+            ])
+          ),
         };
       }
 
@@ -75,19 +80,23 @@ class SchemaFormatters {
         return {
           ...parsedSchema,
           typeIdentifier: this.config.Ts.Keyword.Type,
-          content: this.schemaUtils.safeAddNullToType(parsedSchema.content),
+          content: this.schemaUtils.safeAddNullToType(parsedSchema, parsedSchema.content),
         };
       }
+
+      const objectType =
+        parsedSchema.content.length > 0
+          ? this.config.Ts.ObjectWrapper(this.formatObjectContent(parsedSchema.content))
+          : this.config.Ts.RecordType(this.config.Ts.Keyword.String, this.config.Ts.Keyword.Any);
 
       return {
         ...parsedSchema,
         typeIdentifier: this.config.Ts.Keyword.Type,
-        content: this.schemaUtils.safeAddNullToType(
-          parsedSchema,
-          parsedSchema.content.length > 0
-            ? this.config.Ts.ObjectWrapper(this.formatObjectContent(parsedSchema.content))
-            : this.config.Ts.RecordType(this.config.Ts.Keyword.String, this.config.Ts.Keyword.Any)
-        ),
+        // `null` of nested fields (`{ a: string | null }`) is not the `null` of the object itself,
+        // so `safeAddNullToType` (which looks for "null" in the type string) can't be used here
+        content: this.schemaUtils.isNullableSchema(parsedSchema)
+          ? this.config.Ts.UnionType([objectType, this.config.Ts.Keyword.Null])
+          : objectType,
       };
     },
   };
@@ -103,15 +112,24 @@ class SchemaFormatters {
     return (formatterFn && formatterFn(parsedSchema)) || parsedSchema;
   };
 
-  formatDescription = (description: any, inline: any) => {
+  /**
+   * Escapes a value that is going to be placed inside a JSDoc block comment,
+   * so it can't terminate the comment (`*\/`).
+   */
+  escapeJSDocContent = (content: any) => {
+    if (content === undefined || content === null) {
+      return '';
+    }
+    return replace(`${content}`, /\*\//g, '*\\/');
+  };
+
+  formatDescription = (description: any, inline?: any) => {
     if (!description) {
       return '';
     }
 
-    let prettified = description;
-
     // Prevent schema text from terminating the generated JSDoc block.
-    prettified = replace(prettified, /\*\//g, '*\\/');
+    const prettified = this.escapeJSDocContent(description);
 
     const hasMultipleLines = includes(prettified, '\n');
 

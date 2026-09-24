@@ -201,6 +201,7 @@ class DiscriminatorSchemaParser extends MonoSchemaParser {
                   if (
                     schemaPropertyName === discPropertyName &&
                     this.schemaUtils.getInternalSchemaType(schemaProperty) === SCHEMA_TYPES.ENUM &&
+                    isArray(schemaProperty.enum) &&
                     schemaProperty.enum.length === 1 &&
                     mappingPropertySchemaEnumKeysMap[schemaProperty.enum[0]]
                   ) {
@@ -219,9 +220,8 @@ class DiscriminatorSchemaParser extends MonoSchemaParser {
   };
 
   createAbstractSchemaStruct = () => {
-    const { discriminator, ...noDiscriminatorSchema } = this.schema;
     const complexSchemaKeys = keys(this.schemaParser._complexSchemaParsers);
-    const schema = omit(clone(noDiscriminatorSchema), complexSchemaKeys);
+    const schema = omit(clone(this.schema), ['discriminator', ...complexSchemaKeys]);
     const schemaIsAny =
       this.schemaParserFabric.getInlineParseContent(cloneDeep(schema)) ===
       this.config.Ts.Keyword.Any;
