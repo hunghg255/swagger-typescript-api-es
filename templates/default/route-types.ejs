@@ -1,7 +1,8 @@
 <%
 const { utils, config, routes, modelTypes } = it;
 const { _, pascalCase } = utils;
-const dataContracts = config.modular ? _.map(modelTypes, "name") : [];
+// internal contracts (e.g. discriminator mapping types) are not exported from data-contracts
+const dataContracts = config.modular ? _.compact(_.map(modelTypes, (contract) => !contract.internal && contract.name)) : [];
 %>
 
 <% if (dataContracts.length) { %>
@@ -13,10 +14,9 @@ import { <%~ dataContracts.join(", ") %> } from "./<%~ config.fileNames.dataCont
 %>
 
 <% if (routes.outOfModule) { %>
- <% for (const { routes: outOfModuleRoutes = [] } of routes.outOfModule) { %>
-   <% for (const route of outOfModuleRoutes) { %>
-     <%~ includeFile('@base/route-type.ejs', { ...it, route }) %>
-   <% } %>
+ <% /* routes.outOfModule is a flat list of routes */ %>
+ <% for (const route of routes.outOfModule) { %>
+   <%~ includeFile('@base/route-type.ejs', { ...it, route }) %>
  <% } %>
 <% } %>
 

@@ -1,13 +1,19 @@
-import { clone, compact, isObject, keys, map, omit } from 'lodash-es';
+import { clone, compact, isObject, omit } from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../../constants';
+import type { ParsedComplexSchema } from '../../types/parsed';
 import { MonoSchemaParser } from '../mono-schema-parser';
+import { COMPLEX_SCHEMA_TYPES } from '../schema-utils';
 
-class ComplexSchemaParser extends MonoSchemaParser {
-  parse() {
+class ComplexSchemaParser extends MonoSchemaParser<ParsedComplexSchema> {
+  parse(): ParsedComplexSchema {
     const complexType = this.schemaUtils.getComplexType(this.schema);
-    const simpleSchema = omit(clone(this.schema), keys(this.schemaParser._complexSchemaParsers));
-    const complexSchemaContent = this.schemaParser._complexSchemaParsers[complexType](this.schema);
+    const simpleSchema = omit(clone(this.schema), COMPLEX_SCHEMA_TYPES);
+    // the complex parser is used for schemas with `allOf` / `oneOf` / `anyOf` / `not` only
+    const complexSchemaContent =
+      complexType === SCHEMA_TYPES.COMPLEX_UNKNOWN
+        ? undefined
+        : this.schemaParser._complexSchemaParsers[complexType](this.schema);
 
     return {
       ...(isObject(this.schema) ? this.schema : {}),
@@ -18,7 +24,7 @@ class ComplexSchemaParser extends MonoSchemaParser {
       typeIdentifier: this.config.Ts.Keyword.Type,
       name: this.typeName,
       description: this.schemaFormatters.formatDescription(
-        this.schema.description || compact(map(this.schema[complexType], 'description'))[0] || ''
+        this.schema.description || this.schemaUtils.getComplexSchemaDescription(this.schema) || ''
       ),
       content:
         this.config.Ts.IntersectionType(

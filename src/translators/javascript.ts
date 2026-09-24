@@ -1,15 +1,15 @@
 import ts from 'typescript';
 
+import type { TranslatorIO } from '../types/config';
 import { Translator } from './translator';
 
 class JavascriptTranslator extends Translator {
   /**
-   * @param {TranslatorIO} input
-   * @returns {Record<string, string>}
+   * @returns emitted files: Record<fileName, content>
    */
-  compileTSCode = (input: any) => {
+  compileTSCode = (input: TranslatorIO) => {
     const fileNameFull = `${input.fileName}${input.fileExtension}`;
-    const output = {};
+    const output: Record<string, string> = {};
     const host = ts.createCompilerHost(this.config.compilerTsConfig, true);
     const fileNames = [fileNameFull];
     const originalSourceFileGet = host.getSourceFile.bind(host);
@@ -32,8 +32,7 @@ class JavascriptTranslator extends Translator {
       );
     };
 
-    host.writeFile = (fileName: any, contents: any) => {
-      // @ts-ignore
+    host.writeFile = (fileName, contents) => {
       output[fileName] = contents;
     };
 
@@ -42,18 +41,16 @@ class JavascriptTranslator extends Translator {
     return output;
   };
 
-  translate = async (input: any) => {
-    const compiled: any = this.compileTSCode(input);
+  translate = async (input: TranslatorIO): Promise<TranslatorIO[]> => {
+    const compiled = this.compileTSCode(input);
 
     const jsFileName = `${input.fileName}${ts.Extension.Js}`;
     const dtsFileName = `${input.fileName}${ts.Extension.Dts}`;
     const sourceContent = compiled[jsFileName];
-    const tsImportRows = input.fileContent
-      .split('\n')
-      .filter((line: any) => line.startsWith('import '));
+    const tsImportRows = input.fileContent.split('\n').filter((line) => line.startsWith('import '));
     const declarationContent = compiled[dtsFileName]
       .split('\n')
-      .map((line: any) => {
+      .map((line) => {
         if (line.startsWith('import ')) {
           return tsImportRows.shift();
         }

@@ -1,36 +1,62 @@
-/**
- * @typedef {"enum-key" | "type-name"} FormattingSchemaType
- */
-
 import { compact, replace, startCase } from 'lodash-es';
 
+import type { CodeGenConfig } from './configuration';
+import type { FormattingSchemaType } from './types/config';
+import type { Logger } from './util/logger';
+
+export interface TypeNameFormatOptions {
+  type?: FormattingSchemaType;
+}
+
+/** config fields used by `TypeNameFormatter` */
+export type TypeNameFormatterConfig = Pick<
+  CodeGenConfig,
+  | 'enumKeyPrefix'
+  | 'enumKeySuffix'
+  | 'typePrefix'
+  | 'typeSuffix'
+  | 'hooks'
+  | 'fixInvalidEnumKeyPrefix'
+  | 'fixInvalidTypeNamePrefix'
+>;
+
 class TypeNameFormatter {
-  /** @type {Map<string, string>} */
-  formattedModelNamesMap = new Map();
+  formattedModelNamesMap = new Map<string, string>();
 
-  /** @type {CodeGenConfig} */
-  config;
+  config: TypeNameFormatterConfig;
 
-  /** @type {Logger} */
-  logger;
+  logger: Pick<Logger, 'warn'>;
 
-  constructor({ config, logger }: any) {
+  constructor({
+    config,
+    logger,
+  }: {
+    config: TypeNameFormatterConfig;
+    logger: Pick<Logger, 'warn'>;
+  }) {
     this.config = config;
     this.logger = logger;
   }
 
   /**
-   * @param name
-   * @param options {{ type?: FormattingSchemaType }}
-   * @return {string}
+   * Formats a type name (applies prefix/suffix, fixes invalid names, `hooks.onFormatTypeName`).
+   * A non-string `name` is returned as is.
+   * (bound, can be passed around as a function, e.g. `utils.formatModelName`)
    */
-  format = (name: any, options: any) => {
+  format = this.formatName.bind(this);
+
+  formatName(name: string, options?: TypeNameFormatOptions | null): string;
+  formatName(
+    name: string | null | undefined,
+    options?: TypeNameFormatOptions | null
+  ): string | null | undefined;
+  formatName(
+    name: string | null | undefined,
+    options?: TypeNameFormatOptions | null
+  ): string | null | undefined {
     options = options || {};
 
-    /**
-     * @type {FormattingSchemaType}
-     */
-    const schemaType = options.type || 'type-name';
+    const schemaType: FormattingSchemaType = options.type || 'type-name';
 
     const typePrefix =
       schemaType === 'enum-key' ? this.config.enumKeyPrefix : this.config.typePrefix;
@@ -49,8 +75,10 @@ class TypeNameFormatter {
       return compact([typePrefix, name, typeSuffix]).join('_');
     }
 
-    if (this.formattedModelNamesMap.has(hashKey)) {
-      return this.formattedModelNamesMap.get(hashKey);
+    const formattedModelName = this.formattedModelNamesMap.get(hashKey);
+
+    if (formattedModelName !== undefined) {
+      return formattedModelName;
     }
 
     const fixedModelName = this.fixModelName(name, { type: schemaType });
@@ -66,16 +94,11 @@ class TypeNameFormatter {
     this.formattedModelNamesMap.set(hashKey, formattedResultName);
 
     return formattedResultName;
-  };
+  }
 
-  isValidName = (name: any) => /^([$A-Z_a-z]+)$/g.test(name);
+  isValidName = (name: string) => /^([$A-Z_a-z]+)$/g.test(name);
 
-  /**
-   * @param name
-   * @param options {{ type?: FormattingSchemaType }}
-   * @return {string}
-   */
-  fixModelName = (name: any, options: any) => {
+  fixModelName = (name: string, options?: TypeNameFormatOptions | null) => {
     const { type } = options || {};
 
     if (!this.isValidName(name)) {

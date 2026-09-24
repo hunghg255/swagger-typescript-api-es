@@ -1,14 +1,24 @@
 <%
 const { utils, route, config, modelTypes } = it;
 const { _, pascalCase, require } = utils;
-const apiClassName = pascalCase(route.moduleName);
 const routes = route.routes;
-const dataContracts = _.map(modelTypes, "name");
+// internal contracts (e.g. discriminator mapping types) are not exported from data-contracts
+const dataContracts = _.compact(_.map(modelTypes, (contract) => !contract.internal && contract.name));
+// avoid conflict of the class name with an imported data contract (e.g. module "health" and type "Health")
+const apiClassName = dataContracts.includes(pascalCase(route.moduleName))
+  ? pascalCase(`${route.moduleName}_Api`)
+  : pascalCase(route.moduleName);
+const isAxios = config.httpClientType === config.constants.HTTP_CLIENT.AXIOS;
+// the axios http client does not declare HttpResponse
+const httpClientImports = _.compact(["HttpClient", "RequestParams", "ContentType", !isAxios && "HttpResponse"]);
 %>
 
 
 
-import { HttpClient, RequestParams, ContentType, HttpResponse } from "./<%~ config.fileNames.httpClient %>";
+import { <%~ httpClientImports.join(", ") %> } from "./<%~ config.fileNames.httpClient %>";
+<% if (isAxios && config.toJS) { %>
+import type { AxiosResponse } from "axios";
+<% } %>
 <% if (dataContracts.length) { %>
 import { <%~ dataContracts.join(", ") %> } from "./<%~ config.fileNames.dataContracts %>"
 <% } %>

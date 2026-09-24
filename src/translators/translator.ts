@@ -1,30 +1,34 @@
-/**
- * @typedef {{ fileName: string, fileExtension: string, fileContent: string }} TranslatorIO
- */
+import type { CodeFormatter } from '../code-formatter';
+import type { CodeGenConfig } from '../configuration';
+import type { TranslatorIO } from '../types/config';
+import type { Logger } from '../util/logger';
 
+/** code generation process fields used by translators */
+export interface TranslatorDeps {
+  logger: Logger;
+  config: CodeGenConfig;
+  codeFormatter: CodeFormatter;
+}
+
+/**
+ * Translates generated TS code (e.g. to JS + d.ts).
+ * Custom translators (`customTranslator` option) extend this class.
+ */
 class Translator {
-  /** @type {Logger} */
-  logger;
-  /** @type {CodeGenConfig} */
-  config;
-  /** @type {CodeFormatter} */
-  codeFormatter;
+  logger: Logger;
+  config: CodeGenConfig;
+  codeFormatter: CodeFormatter;
 
   /**
    * @param codeGenProcess
    */
-  constructor(codeGenProcess: any) {
+  constructor(codeGenProcess: TranslatorDeps) {
     this.logger = codeGenProcess.logger;
     this.config = codeGenProcess.config;
     this.codeFormatter = codeGenProcess.codeFormatter;
   }
 
-  /**
-   *
-   * @param input {TranslatorIO}
-   * @return {Promise<TranslatorIO[]>}
-   */
-  translate(input: any) {
+  translate(_input: TranslatorIO): Promise<TranslatorIO[]> {
     throw new Error('not implemented');
   }
 }

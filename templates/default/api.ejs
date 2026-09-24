@@ -2,6 +2,8 @@
 const { apiConfig, routes, utils, config } = it;
 const { info, servers, externalDocs } = apiConfig;
 const { _, require, formatDescription } = utils;
+// escapes "*/" so schema values cannot terminate the JSDoc comment
+const escapeJSDoc = utils.escapeJSDocContent || ((value) => _.replace(`${value}`, /\*\//g, "*\\/"));
 
 const server = (servers && servers[0]) || { url: "" };
 
@@ -22,7 +24,7 @@ const descriptionLines = _.compact([
   ]).join(" ")}`,
   info.description && " ",
   info.description && _.replace(formatDescription(info.description), /\n/g, "\n * "),
-]);
+]).map(escapeJSDoc);
 
 %>
 

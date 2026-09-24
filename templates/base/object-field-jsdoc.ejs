@@ -1,6 +1,8 @@
 <%
 const { field, utils } = it;
 const { formatDescription, require, _ } = utils;
+// escapes "*/" so schema values cannot terminate the JSDoc comment
+const escapeJSDoc = utils.escapeJSDocContent || ((value) => _.replace(`${value}`, /\*\//g, "*\\/"));
 
 const comments = _.uniq(
     _.compact([
@@ -13,7 +15,7 @@ const comments = _.uniq(
         !_.isUndefined(field.pattern) && `@pattern ${field.pattern}`,
         !_.isUndefined(field.example) &&
         `@example ${_.isObject(field.example) ? JSON.stringify(field.example) : field.example}`,
-    ]).reduce((acc, comment) => [...acc, ...comment.split(/\n/g)], []),
+    ]).reduce((acc, comment) => [...acc, ...comment.split(/\n/g)], []).map(escapeJSDoc),
 );
 %>
 <% if (comments.length === 1) { %>

@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
+import { CodeGenConfig } from '../configuration';
 import { SchemaFormatters } from './schema-formatters';
 
 const createFormatters = () =>
   new SchemaFormatters({
-    config: {},
+    config: new CodeGenConfig({}),
     logger: {},
-    schemaUtils: {},
-    templatesWorker: {},
+    schemaUtils: {
+      safeAddNullToType: (_schema, type) => type,
+      isNullableSchema: () => false,
+    },
+    templatesWorker: { renderTemplate: () => '' },
   });
 
 describe('SchemaFormatters.formatDescription', () => {

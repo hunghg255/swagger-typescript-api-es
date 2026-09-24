@@ -1,26 +1,32 @@
 import path from 'node:path';
 
-import { TemplatesGenConfig } from '../../../src/commands/generate-templates/configuration';
-import { __dirname_esm } from '../../../src/constants';
-import { GenerateTemplatesParams } from '../../../src/types';
-import { FileSystem } from '../../../src/util/file-system';
-import { Logger } from '../../../src/util/logger';
+import { TEMPLATES_DIR } from '../../constants';
+import type { GenerateTemplatesParams } from '../../types';
+import type { CreateFileParams } from '../../util/file-system';
+import { FileSystem } from '../../util/file-system';
+import { Logger } from '../../util/logger';
+import { TemplatesGenConfig } from './configuration';
+
+/** a source template */
+export interface SourceTemplate {
+  name: string;
+  content: string;
+}
+
+/** result of `generateTemplates` */
+export interface GenerateTemplatesOutput {
+  files: SourceTemplate[];
+  configuration: TemplatesGenConfig;
+  createFile: (params: CreateFileParams) => void;
+}
 
 class TemplatesGenProcess {
-  /**
-   * @type {TemplatesGenConfig}
-   */
-  config;
-  /**
-   * @type {FileSystem}
-   */
-  fileSystem;
-  /**
-   * @type {Logger}
-   */
-  logger;
+  config: TemplatesGenConfig;
+  fileSystem: FileSystem;
+  logger: Logger;
 
-  rootDir = path.resolve(__dirname_esm, '../../../');
+  /** directory containing the built-in `templates` folder (repo root from sources, `dist` when built) */
+  rootDir = path.dirname(TEMPLATES_DIR);
 
   paths = {
     baseTemplates: 'templates/base',
@@ -37,10 +43,7 @@ class TemplatesGenProcess {
     this.fileSystem = new FileSystem(this);
   }
 
-  /**
-   * @return {Promise<GenerateTemplatesOutput>}
-   */
-  start() {
+  start(): GenerateTemplatesOutput {
     this.logger.event('start generating source templates ".ejs" for code generator');
 
     const templates = this.getTemplates();
@@ -103,7 +106,7 @@ class TemplatesGenProcess {
   }
 
   getTemplates = () => {
-    const outputFiles = [];
+    const outputFiles: SourceTemplate[] = [];
     const baseTemplates = this.getTemplateNamesFromDir(this.paths.baseTemplates);
     const httpClientTemplates = this.getTemplateNamesFromDir(this.paths.httpClientTemplates);
     const apiTemplatesPath = this.config.modular
@@ -111,7 +114,7 @@ class TemplatesGenProcess {
       : this.paths.defaultApiTemplates;
     const apiTemplates = this.getTemplateNamesFromDir(apiTemplatesPath);
 
-    const usingHttpClientTemplate = httpClientTemplates.find((template: any) =>
+    const usingHttpClientTemplate = httpClientTemplates.find((template) =>
       template.startsWith(`${this.config.httpClientType}-`)
     );
 
@@ -146,7 +149,7 @@ class TemplatesGenProcess {
     return outputFiles;
   };
 
-  fixTemplateContent = (content: any) => {
+  fixTemplateContent = (content: string) => {
     // includeFile("@base/
     const importsRegExp1 = new RegExp(
       `includeFile\\("(${this.importTemplatePrefixes.map((v) => `(${v})`).join('|')})/`,
@@ -169,13 +172,13 @@ class TemplatesGenProcess {
       .replace(importsRegExp3, "includeFile('./");
   };
 
-  getTemplateNamesFromDir = (dir: any) => {
+  getTemplateNamesFromDir = (dir: string) => {
     return this.fileSystem
       .readDir(path.resolve(this.rootDir, dir))
-      .filter((file: any) => file.endsWith('.ejs'));
+      .filter((file) => file.endsWith('.ejs'));
   };
 
-  getTemplateContent = (pathToFile: any) => {
+  getTemplateContent = (pathToFile: string) => {
     return this.fileSystem.getFileContent(path.resolve(this.rootDir, pathToFile));
   };
 }

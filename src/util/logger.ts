@@ -1,25 +1,52 @@
-import { map, startsWith } from 'lodash-es';
-import { emojify } from 'node-emoji';
+import { map } from 'lodash-es';
+
+const EMOJIS: Record<string, string> = {
+  ':sparkles:': '✨',
+  ':star:': '⭐',
+  ':white_check_mark:': '✅',
+  ':exclamation:': '❗',
+  ':no_entry:': '⛔',
+  ':black_large_square:': '⬛',
+};
+
+/** config fields used by the logger (`CodeGenConfig` / `TemplatesGenConfig`) */
+export interface LoggerConfig {
+  silent?: boolean;
+  debug?: boolean;
+  version?: string;
+  /** extra info printed with every debug message */
+  debugExtras?: unknown[];
+}
+
+type LogType = 'log' | 'warn' | 'error' | 'debug';
+
+interface LogMessage {
+  type: LogType;
+  emojiName: string;
+  messages: unknown[];
+}
+
+/** `startsWith(message, '\n')` for every value (only strings can start with a new line) */
+const isMultilineMessage = (message: unknown): message is string =>
+  typeof message === 'string' && message.startsWith('\n');
 
 class Logger {
   firstLog = true;
-  /**
-   * @type {CodeGenConfig}
-   */
-  config;
+  config: LoggerConfig;
 
-  constructor({ config }: any) {
+  constructor({ config }: { config: LoggerConfig }) {
     this.config = config;
   }
 
-  createLogMessage = ({ type, emojiName, messages }: any) => {
-    if (this.config.silent) {
+  createLogMessage = ({ type, emojiName, messages }: LogMessage) => {
+    // `silent` = output only errors to console
+    if (this.config.silent && type !== 'error') {
       return;
     }
 
-    const emoji = emojify(emojiName);
+    const emoji = EMOJIS[emojiName] ?? emojiName;
 
-    if (this.firstLog) {
+    if (this.firstLog && !this.config.silent) {
       this.firstLog = false;
       this.log(
         `swagger-typescript-api(${this.config.version}),${
@@ -29,8 +56,7 @@ class Logger {
     }
 
     if (type === 'debug' || this.config.debug) {
-      // @ts-ignore
-      const trace = new Error().stack
+      const trace = (new Error().stack ?? '')
         .split('\n')
         .splice(3)
         .filter(
@@ -39,7 +65,6 @@ class Logger {
             !line.includes('swagger-typescript-api/node_modules')
         )
         .slice(0, 10);
-      // @ts-ignore
       const logFn = console[type] || console.log;
       logFn(`${emoji}  [${type}]`, new Date().toISOString());
       if (this.config.debugExtras && Array.isArray(this.config.debugExtras)) {
@@ -48,27 +73,26 @@ class Logger {
       logFn(
         '[message]',
         ...map(messages, (message) =>
-          startsWith(message, '\n') ? `\n          ${message.replace(/\n/, '')}` : message
+          isMultilineMessage(message) ? `\n          ${message.replace(/\n/, '')}` : message
         )
       );
       logFn(trace.join('\n') + '\n---');
       return;
     }
-    // @ts-ignore
     console[type](
       emoji,
       ' ',
       ...map(messages, (message) =>
-        startsWith(message, '\n') ? `\n${emoji}   ${message.replace(/\n/, '')}` : message
+        isMultilineMessage(message) ? `\n${emoji}   ${message.replace(/\n/, '')}` : message
       )
     );
   };
 
   /**
    *
-   * @param messages {any[]}
+   * @param messages {unknown[]}
    */
-  log = (...messages: any) =>
+  log = (...messages: unknown[]) =>
     this.createLogMessage({
       type: 'log',
       emojiName: ':sparkles:',
@@ -77,10 +101,10 @@ class Logger {
 
   /**
    *
-   * @param messages {any[]}
+   * @param messages {unknown[]}
    * @return {void}
    */
-  event = (...messages: any) =>
+  event = (...messages: unknown[]) =>
     this.createLogMessage({
       type: 'log',
       emojiName: ':star:',
@@ -89,10 +113,10 @@ class Logger {
 
   /**
    *
-   * @param messages {any[]}
+   * @param messages {unknown[]}
    * @return {void}
    */
-  success = (...messages: any) =>
+  success = (...messages: unknown[]) =>
     this.createLogMessage({
       type: 'log',
       emojiName: ':white_check_mark:',
@@ -101,10 +125,10 @@ class Logger {
 
   /**
    *
-   * @param messages {any[]}
+   * @param messages {unknown[]}
    * @return {void}
    */
-  warn = (...messages: any) =>
+  warn = (...messages: unknown[]) =>
     this.createLogMessage({
       type: 'warn',
       emojiName: ':exclamation:',
@@ -113,10 +137,10 @@ class Logger {
 
   /**
    *
-   * @param messages {any[]}
+   * @param messages {unknown[]}
    * @return {void}
    */
-  error = (...messages: any) =>
+  error = (...messages: unknown[]) =>
     this.createLogMessage({
       type: 'error',
       emojiName: ':no_entry:',
@@ -125,10 +149,10 @@ class Logger {
 
   /**
    *
-   * @param messages {any[]}
+   * @param messages {unknown[]}
    * @return {void}
    */
-  debug = (...messages: any) => {
+  debug = (...messages: unknown[]) => {
     if (!this.config.debug) {
       return;
     }

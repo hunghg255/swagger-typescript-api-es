@@ -1,26 +1,24 @@
-import { get, includes, isArray, isObject, isUndefined, map, size } from 'lodash-es';
+import { includes, isArray, isObject, isUndefined, map, size } from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../../constants';
+import type { EnumFieldContent, ParsedEnumSchema, ParsedSchema } from '../../types/parsed';
 import { MonoSchemaParser } from '../mono-schema-parser';
 import { EnumKeyResolver } from '../util/enum-key-resolver';
 
-class EnumSchemaParser extends MonoSchemaParser {
-  /** @type {EnumKeyResolver} */
-  enumKeyResolver: any;
+/** enum of tuples (`enum: [["a", "b"], ["c", "d"]]`), only the first value is checked */
+const isTupleEnum = (enumValues: unknown[]): enumValues is unknown[][] => isArray(enumValues[0]);
 
-  constructor(...args: any[]) {
-    // @ts-ignore
-    super(...args);
-    this.enumKeyResolver = new EnumKeyResolver(this.config, this.logger, []);
-  }
+class EnumSchemaParser extends MonoSchemaParser<ParsedSchema> {
+  enumKeyResolver: EnumKeyResolver = new EnumKeyResolver(this.config, this.logger, []);
 
-  extractEnum = (pathTypeName: any) => {
+  extractEnum = (pathTypeName: string): ParsedSchema => {
     const generatedTypeName = this.schemaUtils.resolveTypeName(pathTypeName, {
       suffixes: this.config.extractingOptions.enumSuffix,
       resolver: this.config.extractingOptions.enumNameResolver,
     });
     const customComponent = this.schemaComponentsMap.createComponent(
-      this.schemaComponentsMap.createRef(['components', 'schemas', generatedTypeName]),
+      // `null` is joined as an empty string
+      this.schemaComponentsMap.createRef(['components', 'schemas', generatedTypeName ?? '']),
       {
         ...this.schema,
       }
@@ -28,7 +26,7 @@ class EnumSchemaParser extends MonoSchemaParser {
     return this.schemaParserFabric.parseSchema(customComponent);
   };
 
-  parse() {
+  parse(): ParsedSchema {
     const pathTypeName = this.buildTypeNameFromPath();
 
     if (this.config.extractEnums && !this.typeName && pathTypeName != undefined) {
@@ -38,17 +36,19 @@ class EnumSchemaParser extends MonoSchemaParser {
     const refType = this.schemaUtils.getSchemaRefType(this.schema);
     const $ref = (refType && refType.$ref) || undefined;
 
-    // fix schema when enum has length 1+ but value is []
-    if (Array.isArray(this.schema.enum)) {
-      this.schema.enum = this.schema.enum.filter((key: any) => key != undefined);
-    }
+    // `null` can't be an enum member, it is kept as `nullable` instead (e.g. OAS 3.1 `enum: ["a", null]`)
+    // note: the source schema must not be mutated, it can be shared between several usages
+    const hasNullValue = Array.isArray(this.schema.enum) && this.schema.enum.includes(null);
+    const enumValues = Array.isArray(this.schema.enum)
+      ? this.schema.enum.filter((key) => key != undefined)
+      : this.schema.enum;
 
-    if (Array.isArray(this.schema.enum) && Array.isArray(this.schema.enum[0])) {
+    if (Array.isArray(enumValues) && isTupleEnum(enumValues)) {
       return this.schemaParserFabric.parseSchema(
         {
-          oneOf: this.schema.enum.map((enumNames: any) => ({
+          oneOf: enumValues.map((enumNames) => ({
             type: 'array',
-            items: enumNames.map((enumName: any) => ({
+            items: enumNames.map((enumName) => ({
               type: 'string',
               enum: [enumName],
             })),
@@ -59,10 +59,18 @@ class EnumSchemaParser extends MonoSchemaParser {
       );
     }
 
-    const keyType = this.schemaUtils.getSchemaType(this.schema);
+    // OAS 3.1 `type: ["string", "null"]` - use the first non-null type as key type
+    const keyType = this.schemaUtils.getSchemaType(
+      isArray(this.schema.type)
+        ? {
+            ...this.schema,
+            type: this.schema.type.find((type) => type !== this.config.Ts.Keyword.Null),
+          }
+        : this.schema
+    );
     const enumNames = this.schemaUtils.getEnumNames(this.schema);
 
-    const formatValue = (value: any) => {
+    const formatValue = (value: unknown) => {
       if (value === null) {
         return this.config.Ts.NullValue(value);
       }
@@ -76,10 +84,10 @@ class EnumSchemaParser extends MonoSchemaParser {
       return this.config.Ts.StringValue(value);
     };
 
-    const content =
+    const content: EnumFieldContent[] =
       isArray(enumNames) && size(enumNames)
         ? map(enumNames, (enumName, index) => {
-            const enumValue = get(this.schema.enum, index);
+            const enumValue = enumValues?.[index];
             const formattedKey = this.formatEnumKey({
               key: enumName,
               value: enumValue,
@@ -99,7 +107,7 @@ class EnumSchemaParser extends MonoSchemaParser {
               value: formatValue(enumValue),
             };
           })
-        : map(this.schema.enum, (value) => {
+        : map(enumValues, (value) => {
             return {
               key: this.formatEnumKey({ value }),
               type: keyType,
@@ -107,24 +115,34 @@ class EnumSchemaParser extends MonoSchemaParser {
             };
           });
 
-    return {
+    // boolean values can't be members of a TS enum, such enums are generated as union types
+    const hasBooleanValues = content.some(
+      ({ value }) =>
+        value === this.config.Ts.BooleanValue(true) || value === this.config.Ts.BooleanValue(false)
+    );
+
+    const parsed: ParsedEnumSchema = {
       ...(isObject(this.schema) ? this.schema : {}),
+      ...(hasNullValue ? { nullable: true } : {}),
+      enum: enumValues,
       $ref,
-      typeName: this.typeName || ($ref && refType.typeName) || undefined,
+      typeName: this.typeName || ($ref && refType?.typeName) || undefined,
       $parsedSchema: true,
       schemaType: SCHEMA_TYPES.ENUM,
       type: SCHEMA_TYPES.ENUM,
       keyType,
-      typeIdentifier: this.config.generateUnionEnums
-        ? this.config.Ts.Keyword.Type
-        : this.config.Ts.Keyword.Enum,
+      typeIdentifier:
+        this.config.generateUnionEnums || hasBooleanValues
+          ? this.config.Ts.Keyword.Type
+          : this.config.Ts.Keyword.Enum,
       name: this.typeName,
       description: this.schemaFormatters.formatDescription(this.schema.description),
       content,
     };
+    return parsed;
   }
 
-  formatEnumKey = ({ key, value }: any) => {
+  formatEnumKey = ({ key, value }: { key?: string; value: unknown }): string => {
     let formatted;
 
     if (key) {
@@ -139,7 +157,8 @@ class EnumSchemaParser extends MonoSchemaParser {
       });
     }
 
-    return this.enumKeyResolver.resolve([formatted]);
+    // the enum key resolver always resolves a name (it has a fallback)
+    return this.enumKeyResolver.resolve([formatted]) ?? formatted;
   };
 }
 

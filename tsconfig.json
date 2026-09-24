@@ -10,6 +10,8 @@
     "esModuleInterop": true,
     "skipDefaultLibCheck": true,
     "skipLibCheck": true,
-    "rootDir": "."
-  }
+    "rootDir": ".",
+    "noEmit": true
+  },
+  "include": ["src", "tests", "build.config.ts", "vitest.config.ts"]
 }
