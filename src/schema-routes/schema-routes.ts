@@ -622,7 +622,11 @@ class SchemaRoutes {
     }
 
     if (routeParams.formData.length > 0) {
-      contentKind = CONTENT_KIND.FORM_DATA;
+      // swagger 2 `in: formData` params are sent as multipart unless the route consumes
+      // `application/x-www-form-urlencoded`
+      if (contentKind !== CONTENT_KIND.URL_ENCODED) {
+        contentKind = CONTENT_KIND.FORM_DATA;
+      }
       schema = this.convertRouteParamsIntoObject(routeParams.formData);
       content = this.schemaParserFabric.getInlineParseContent(schema, typeName, [operationId]);
     } else if (contentKind === CONTENT_KIND.FORM_DATA) {

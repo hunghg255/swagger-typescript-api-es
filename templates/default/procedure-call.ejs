@@ -57,13 +57,17 @@ const requestContentKind = {
 const responseContentKind = {
     "JSON": '"json"',
     "IMAGE": '"blob"',
-    "FORM_DATA": isFetchTemplate ? '"formData"' : '"document"'
+    "FORM_DATA": isFetchTemplate ? '"formData"' : '"document"',
+    "TEXT": '"text"',
 }
 
 const bodyTmpl = _.get(payload, "name") || null;
 const queryTmpl = (query != null && queryName) || null;
 const bodyContentKindTmpl = requestContentKind[requestBodyInfo.contentKind] || null;
-const responseFormatTmpl = responseContentKind[responseBodyInfo.success && responseBodyInfo.success.schema && responseBodyInfo.success.schema.contentKind] || null;
+const responseSuccessContentKind = responseBodyInfo.success && responseBodyInfo.success.schema && responseBodyInfo.success.schema.contentKind;
+// binary downloads (e.g. `application/octet-stream`): the fetch client reads nothing without a format
+const isBinaryResponse = isFetchTemplate && responseSuccessContentKind === "OTHER" && type === config.Ts.Keyword.File;
+const responseFormatTmpl = responseContentKind[responseSuccessContentKind] || (isBinaryResponse ? '"blob"' : null);
 const securityTmpl = security ? 'true' : null;
 
 const describeReturnType = () => {

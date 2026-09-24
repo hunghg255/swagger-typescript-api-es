@@ -117,6 +117,12 @@ class EnumSchemaParser extends MonoSchemaParser {
             };
           });
 
+    // boolean values can't be members of a TS enum, such enums are generated as union types
+    const hasBooleanValues = content.some(
+      ({ value }: any) =>
+        value === this.config.Ts.BooleanValue(true) || value === this.config.Ts.BooleanValue(false)
+    );
+
     return {
       ...(isObject(this.schema) ? this.schema : {}),
       ...(hasNullValue ? { nullable: true } : {}),
@@ -127,9 +133,10 @@ class EnumSchemaParser extends MonoSchemaParser {
       schemaType: SCHEMA_TYPES.ENUM,
       type: SCHEMA_TYPES.ENUM,
       keyType,
-      typeIdentifier: this.config.generateUnionEnums
-        ? this.config.Ts.Keyword.Type
-        : this.config.Ts.Keyword.Enum,
+      typeIdentifier:
+        this.config.generateUnionEnums || hasBooleanValues
+          ? this.config.Ts.Keyword.Type
+          : this.config.Ts.Keyword.Enum,
       name: this.typeName,
       description: this.schemaFormatters.formatDescription(this.schema.description),
       content,

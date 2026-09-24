@@ -24,7 +24,10 @@ class SchemaFormatters {
 
   base = {
     [SCHEMA_TYPES.ENUM]: (parsedSchema: any) => {
-      if (this.config.generateUnionEnums) {
+      if (
+        this.config.generateUnionEnums ||
+        parsedSchema.typeIdentifier === this.config.Ts.Keyword.Type
+      ) {
         return {
           ...parsedSchema,
           $content: parsedSchema.content,
