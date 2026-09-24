@@ -1,9 +1,7 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "lib": [
-      "ESNext"
-    ],
+    "lib": ["ESNext"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
@@ -15,10 +13,5 @@
     "rootDir": ".",
     "noEmit": true
   },
-  "include": [
-    "src",
-    "tests",
-    "build.config.ts",
-    "vitest.config.ts"
-  ]
+  "include": ["src", "tests", "build.config.ts", "vitest.config.ts"]
 }
