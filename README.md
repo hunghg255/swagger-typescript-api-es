@@ -348,9 +348,6 @@ class. In modular mode they go to `Common.ts`.
 | `codeGenConstructs`       | `(constructs) => Record<string, any>`  | –                  | Override the TypeScript code constructs (`config.Ts`: `Keyword`, `ArrayType`, `UnionType`, `TypeField`, ...).               |
 | `primitiveTypeConstructs` | `(constructs) => Record<string, any>`  | –                  | Override how schema types and formats map to TypeScript types (see the example below).                                      |
 
-`extraTemplates` is typed as `[]` in `IOptions`. If TypeScript complains, cast the array
-(`as any`).
-
 Example: map `date-time` strings to `Date` and `int64` integers to `bigint`.
 
 ```ts
@@ -420,11 +417,17 @@ console.log(results.length); // 2
 ```
 
 `generateApi` rejects on errors: the schema is missing or invalid, the download fails, `output` is
-an existing file, and so on. `IOptions` is not exported from the package entry. To name the type,
-use `Parameters<typeof generateApi>[0]`.
+an existing file, and so on.
 
-To pass a schema object you already have, use `spec`. Its declared type only lists
-`swagger`/`info`, so pass the object through a variable or cast it:
+All public types are exported from the package entry: `IOptions`, `Hooks`, `GenerateApiOutput`,
+`GeneratedFile`, `OpenAPIDocument`, `SchemaObject`, `ParsedRoute`, ...
+
+```ts
+import type { GenerateApiOutput, IOptions } from 'swagger-typescript-api-es';
+```
+
+To pass a schema object you already have, use `spec` (typed as `OpenAPIDocument`, OpenAPI 3.x or
+Swagger 2.0):
 
 ```ts
 import { readFile } from 'node:fs/promises';
@@ -672,8 +675,8 @@ hook returns `undefined`, the original value is kept.
 | `onBuildRoutePath`      | `({ originalRoute, route, pathParams, queryParams }) => same \| void` | Replaces the parsed path                                                |
 | `onInsertPathParam`     | `(paramName, index, allParams, route) => string \| void`              | Expression inserted into `${...}` of the path template                  |
 
-The last three hooks are supported at runtime but are not declared in the `IOptions` type. In a
-`.ts` config you need a cast to use them.
+All hooks are typed (`Hooks` is exported), so a `.ts` config gets autocompletion and type checking
+for their arguments and return values.
 
 ```ts
 import { defaultConfig } from 'swagger-typescript-api-es';
