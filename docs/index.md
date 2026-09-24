@@ -64,7 +64,55 @@ bunx swagger-typescript-api-es@latest -u https://petstore.swagger.io/v2/swagger.
 
 :::code-group-close
 
+## CLI Options
+
+| Option                     | Alias | Description                                                                                                                         | Default    |
+| -------------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `--u <url>`                |       | Path/url to swagger scheme                                                                                                          | -          |
+| `--o <output>`             |       | Output path of typescript api file                                                                                                  | `"./"`     |
+| `--n <name>`               |       | Name of output typescript api file                                                                                                  | `"Api.ts"` |
+| `--t <templates>`          |       | Path to folder containing templates                                                                                                 | -          |
+| `--d <default-as-success>` |       | Use "default" response status code as success response too                                                                          | `false`    |
+| `--r <responses>`          |       | Generate additional information about request responses also add typings for bad responses                                          | `false`    |
+| `--union-enums`            |       | Generate all "enum" types as union types (T1 \| T2 \| TN)                                                                           | `false`    |
+| `--add-readonly`           |       | Generate readonly properties                                                                                                        | `false`    |
+| `--route-types`            |       | Generate type definitions for API routes                                                                                            | `false`    |
+| `--noClient`               |       | Do not generate an API class                                                                                                        | `false`    |
+| `--enum-names-as-values`   |       | Use values in "x-enumNames" as enum values (not only as keys)                                                                       | `false`    |
+| `--extract-request-params` |       | Extract request params to data contract (Also combine path params and query params into one object)                                 | `false`    |
+| `--extract-request-body`   |       | Extract request body type to data contract                                                                                          | `false`    |
+| `--extract-response-body`  |       | Extract response body type to data contract                                                                                         | `false`    |
+| `--extract-response-error` |       | Extract response error type to data contract                                                                                        | `false`    |
+| `--extract-enums`          |       | Extract all enums from inline interface/type content to typescript enum construction                                                | `false`    |
+| `--modular`                |       | Generate separated files for http client, data contracts, and routes                                                                | `false`    |
+| `--js`                     |       | Generate js api module with declaration file                                                                                        | `false`    |
+| `--module-name-index`      |       | Determines which path index should be used for routes separation (example: GET:/fruits/getFruit -> index:0 -> moduleName -> fruits) | `0`        |
+| `--module-name-first-tag`  |       | Splits routes based on the first tag                                                                                                | `false`    |
+| `--disableStrictSSL`       |       | Disable strict SSL                                                                                                                  | `false`    |
+| `--disableProxy`           |       | Disable proxy                                                                                                                       | `false`    |
+| `--httpClientType`         |       | HTTP client type                                                                                                                    | `"fetch"`  |
+| `--unwrap-response-data`   |       | Unwrap the data item from the response                                                                                              | `false`    |
+| `--disable-throw-on-error` |       | Do not throw an error when response.ok is not true                                                                                  | `false`    |
+| `--single-http-client`     |       | Ability to send HttpClient instance to Api constructor                                                                              | `false`    |
+| `--silent`                 |       | Output only errors to console                                                                                                       | `false`    |
+| `--default-response`       |       | Default type for empty response schema                                                                                              | `"void"`   |
+| `--type-prefix`            |       | Data contract name prefix                                                                                                           | `""`       |
+| `--type-suffix`            |       | Data contract name suffix                                                                                                           | `""`       |
+| `--clean-output`           |       | Clean output folder before generate api. WARNING: May cause data loss                                                               | `false`    |
+| `--api-class-name`         |       | Name of the api class                                                                                                               | `"Api"`    |
+| `--patch`                  |       | Fix up small errors in the swagger source definition                                                                                | `false`    |
+| `--debug`                  |       | Additional information about processes inside this tool                                                                             | `false`    |
+| `--another-array-type`     |       | Generate array types as Array\<Type\> (by default Type[])                                                                           | `false`    |
+| `--sort-types`             |       | Sort fields and types                                                                                                               | `false`    |
+| `--sort-routes`            |       | Sort routes in alphabetical order                                                                                                   | `false`    |
+| `--custom-config`          |       | Path to a config file (js/ts/json) with extra options: primitiveTypeConstructs, hooks, ...                                          | `""`       |
+
+Boolean flags accept `true`/`false` (e.g. `--modular true`). CLI flags are merged over the options of
+`swagger-typescript-api.config.ts` (if it exists), CLI flags win. The CLI exits with code `1` on errors.
+
 ## Install
+
+Requires Node.js >= 20.
 
 :::code-group-open
 
@@ -73,7 +121,7 @@ npm i swagger-typescript-api-es@latest --save-dev
 ```
 
 ```bash [yarn]
-yarn dlx swagger-typescript-api-es@latest --save-dev
+yarn add -D swagger-typescript-api-es@latest
 ```
 
 ```bash [pnpm]
@@ -81,7 +129,7 @@ pnpm i swagger-typescript-api-es@latest --save-dev
 ```
 
 ```bash [bun]
-bun i swagger-typescript-api-es@latest --save-dev
+bun add -d swagger-typescript-api-es@latest
 ```
 
 :::code-group-close
@@ -123,15 +171,16 @@ interface IOptions {
   /**
    *  name of output typescript api file (default: "Api.ts")
    */
-  name: string;
+  name?: string;
   /**
-   * output path of typescript api file (default: "./")
+   * output path of typescript api file (default: "./").
+   * `false` - don't write files, only return them from `generateApi`
    */
-  output: string;
+  output?: string | false;
   /**
    * path/url to swagger scheme
    */
-  url: string;
+  url?: string;
   input?: string;
   spec?: {
     swagger?: '2.0' | '3.0';
@@ -141,7 +190,7 @@ interface IOptions {
     };
   };
   templates?: string;
-  httpClientType?: 'axios' | 'fetch';
+  httpClientType?: 'axios' | 'fetch'; // default: 'fetch'
   defaultResponseAsSuccess?: boolean;
   generateClient?: boolean;
   generateRouteTypes?: boolean;
@@ -152,14 +201,10 @@ interface IOptions {
   extractEnums?: boolean;
   unwrapResponseData?: boolean;
   /**
-   * By default oxfmtOptrions config is load from your project
+   * oxfmt options for the generated code, applied over the built-in defaults
+   * and the `.oxfmtrc.json` of your project (cwd), if any
    */
-  oxfmtOptrions?: {
-    printWidth?: number;
-    tabWidth?: number;
-    trailingComma?: 'all' | string;
-    parser?: 'typescript' | string;
-  };
+  oxfmtOptrions?: FormatConfig; // from 'oxfmt'
   singleHttpClient?: boolean;
   cleanOutput?: boolean;
   enumNamesAsValues?: boolean;
@@ -171,7 +216,28 @@ interface IOptions {
   enumKeySuffix?: string;
   addReadonly?: boolean;
   sortTypes?: boolean;
-  sortRouters?: boolean;
+  sortRoutes?: boolean;
+  modular?: boolean;
+  /** output only errors to console */
+  silent?: boolean;
+  debug?: boolean;
+  patch?: boolean;
+  apiClassName?: string; // default: "Api"
+  moduleNameIndex?: number; // default: 0
+  extractResponseBody?: boolean;
+  extractResponseError?: boolean;
+  disableThrowOnError?: boolean;
+  /** default type for empty response schema (default: "void") */
+  defaultResponseType?: string;
+  disableStrictSSL?: boolean;
+  /** no-op, kept for backward compatibility */
+  disableProxy?: boolean;
+  authorizationToken?: string;
+  /**
+   * extra fetch options used to download the schema from `url`,
+   * `timeout` - request timeout in ms (default: 60000)
+   */
+  requestOptions?: Record<string, any> & { timeout?: number };
   extractingOptions?: {
     requestBodySuffix?: string[];
     requestParamsSuffix?: string[];
@@ -183,7 +249,6 @@ interface IOptions {
   anotherArrayType?: boolean;
   fixInvalidTypeNamePrefix?: string;
   fixInvalidEnumKeyPrefix?: string;
-  oxfmtOptrions?: Record<string, any>;
   constants?: Record<string, any>;
   templateInfos?: any;
   codeGenConstructs?: (constructs: any) => Record<string, any>;
@@ -201,6 +266,25 @@ interface IOptions {
     onPrepareConfig?: (currentConfiguration: any) => void;
   };
 }
+```
+
+- Programmatic usage
+
+```ts
+import { generateApi } from 'swagger-typescript-api-es';
+
+// `output: false` - nothing is written to disk, the generated files are only returned
+const { files } = await generateApi({
+  url: 'https://petstore.swagger.io/v2/swagger.json',
+  output: false,
+});
+
+for (const { fileName, fileExtension, fileContent } of files) {
+  console.log(`${fileName}${fileExtension}`, fileContent.length);
+}
+
+// an array of options returns an array of results
+const results = await generateApi([{ url: '...', output: './src/api' }]);
 ```
 
 - Config (file package.json)

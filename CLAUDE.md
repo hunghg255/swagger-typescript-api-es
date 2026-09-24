@@ -29,6 +29,9 @@ npm run lint:fix
 npm run fmt
 npm run fmt:check
 
+# Typecheck
+npm run typecheck
+
 # Run the playground (play/test.ts)
 npm start
 
@@ -82,7 +85,7 @@ Custom templates can be provided via the `--templates` CLI flag or `templates` c
 
 ### Configuration
 
-All configuration options live in `src/configuration.ts` (`CodeGenConfig` class). The public `IOptions` interface is in `src/types.ts` — note the intentional typo `oxfmtOptrions` (public API, do not rename). The CLI reads a `swagger-typescript-api.config.ts` (or `.js`/`.json`, may export an array) config file from the project root via `unreadconfig`; CLI flags (mapped to config keys in `src/util/formatOptions.ts`) are merged over it, with `--custom-config <file>` in between. `output: false` returns the generated files without writing them.
+All configuration options live in `src/configuration.ts` (`CodeGenConfig` class). The public `IOptions` interface is in `src/types.ts` — note the intentional typo `oxfmtOptrions` (public API, do not rename). The CLI reads a `swagger-typescript-api.config.ts` (or `.js`/`.mjs`/`.cjs`, may export an array) config file from the project root via `unreadconfig`; CLI flags (mapped to config keys in `src/util/formatOptions.ts`) are merged over it, with `--custom-config <file>` in between. `output: false` returns the generated files without writing them.
 
 ### Entry Points
 
