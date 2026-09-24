@@ -68,12 +68,17 @@ const securityTmpl = security ? 'true' : null;
 const describeReturnType = () => {
     if (!config.toJS) return "";
 
+    // must match the return type of `HttpClient.request`
+    if (config.unwrapResponseData) {
+        return `Promise<${type}>`;
+    }
+
     switch(config.httpClientType) {
         case HTTP_CLIENT.AXIOS: {
           return `Promise<AxiosResponse<${type}>>`
         }
         default: {
-          return `Promise<HttpResponse<${type}, ${errorType}>`
+          return `Promise<HttpResponse<${type}, ${errorType}>>`
         }
     }
 }

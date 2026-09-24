@@ -1,10 +1,10 @@
 import path from 'node:path';
 
-import { TemplatesGenConfig } from '../../../src/commands/generate-templates/configuration';
-import { __dirname_esm } from '../../../src/constants';
-import { GenerateTemplatesParams } from '../../../src/types';
-import { FileSystem } from '../../../src/util/file-system';
-import { Logger } from '../../../src/util/logger';
+import { TEMPLATES_DIR } from '../../constants';
+import { GenerateTemplatesParams } from '../../types';
+import { FileSystem } from '../../util/file-system';
+import { Logger } from '../../util/logger';
+import { TemplatesGenConfig } from './configuration';
 
 class TemplatesGenProcess {
   /**
@@ -20,7 +20,8 @@ class TemplatesGenProcess {
    */
   logger;
 
-  rootDir = path.resolve(__dirname_esm, '../../../');
+  /** directory containing the built-in `templates` folder (repo root from sources, `dist` when built) */
+  rootDir = path.dirname(TEMPLATES_DIR);
 
   paths = {
     baseTemplates: 'templates/base',

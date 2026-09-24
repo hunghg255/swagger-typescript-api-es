@@ -1,15 +1,24 @@
-import { map, merge } from 'lodash-es';
+import { merge, omitBy } from 'lodash-es';
 
+/**
+ * Deep merges `update` into `target`.
+ * Keys whose value is `undefined` are skipped, so options that were not set
+ * (e.g. `{ name: undefined }`) never wipe out the defaults.
+ */
 const objectAssign = (target: any, updaterFn: any) => {
   if (!updaterFn) {
     return;
   }
   const update = typeof updaterFn === 'function' ? updaterFn(target) : updaterFn;
-  const undefinedKeys = map(update, (value, key) => value === undefined && key).filter(Boolean);
-  Object.assign(target, merge(target, update));
-  for (const key of undefinedKeys) {
-    target[key as any] = undefined;
+
+  if (!update || typeof update !== 'object') {
+    return;
   }
+
+  merge(
+    target,
+    omitBy(update, (value) => value === undefined)
+  );
 };
 
 export { objectAssign };

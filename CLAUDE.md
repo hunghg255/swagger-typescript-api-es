@@ -15,7 +15,7 @@ npm run build
 # Development stub build (fast, no real compilation)
 npm run dev
 
-# Run tests (no test files exist yet — vitest will exit cleanly)
+# Run tests (tests/**/*.test.ts, src/**/*.test.ts)
 npm test
 
 # Run a single test file
@@ -53,7 +53,7 @@ The core flow in `src/code-gen-process.ts`:
 4. **Schema Parsing** (`src/schema-parser/`) — recursively parses schema nodes into internal type representations.
 5. **Route Extraction** (`src/schema-routes/schema-routes.ts`) — converts OpenAPI paths/operations into method descriptors.
 6. **Template Rendering** (`src/templates-worker.ts`) — uses the [Eta](https://eta.js.org/) template engine to emit TypeScript code.
-7. **Code Formatting** (`src/code-formatter.ts`) — formats output with `oxfmt` (Biome-based formatter); config loaded from `.oxfmtrc.json` in the project root.
+7. **Code Formatting** (`src/code-formatter.ts`) — formats output with `oxfmt`. Options = `CONSTANTS.OXC_FORMAT_OPTIONS` < `.oxfmtrc.json` in `process.cwd()` (if present) < user `oxfmtOptrions`.
 8. **File Output** (`src/util/file-system.ts`) — writes files to disk.
 
 `ComponentTypeNameResolver` (`src/component-type-name-resolver.ts`) handles deduplication of generated type names across components. `TypeNameFormatter` (`src/type-name-formatter.ts`) applies prefix/suffix options and casing rules.
@@ -82,7 +82,7 @@ Custom templates can be provided via the `--templates` CLI flag or `templates` c
 
 ### Configuration
 
-All configuration options live in `src/configuration.ts` (`CodeGenConfig` class). The public `IOptions` interface is in `src/types.ts` — note the intentional typo `oxfmtOptrions` (public API, do not rename). The CLI reads a `swagger-typescript-api.config.ts` (or `.js`/`.json`) config file from the project root via `unreadconfig`/`cosmiconfig`.
+All configuration options live in `src/configuration.ts` (`CodeGenConfig` class). The public `IOptions` interface is in `src/types.ts` — note the intentional typo `oxfmtOptrions` (public API, do not rename). The CLI reads a `swagger-typescript-api.config.ts` (or `.js`/`.json`, may export an array) config file from the project root via `unreadconfig`; CLI flags (mapped to config keys in `src/util/formatOptions.ts`) are merged over it, with `--custom-config <file>` in between. `output: false` returns the generated files without writing them.
 
 ### Entry Points
 

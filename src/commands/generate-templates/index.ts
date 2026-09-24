@@ -1,4 +1,4 @@
-import { GenerateTemplatesParams } from '../../../src/types';
+import { GenerateTemplatesParams } from '../../types';
 import { TemplatesGenProcess } from './templates-gen-process';
 
 const generateTemplates = async (config: GenerateTemplatesParams) => {

@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 import yaml from 'js-yaml';
-import { cloneDeep, compact, each, find, get, merge, uniq } from 'lodash-es';
+import { cloneDeep, compact, each, find, get, isPlainObject, merge, uniq } from 'lodash-es';
 import pc from 'picocolors';
 import converter from 'swagger2openapi';
 
@@ -66,7 +66,7 @@ class SwaggerSchemaResolver {
       throw new Error(`Invalid swagger schema: expected an object, got ${typeof swaggerSchema}`);
     }
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const result = cloneDeep(swaggerSchema);
 
       result.info = merge(
@@ -85,26 +85,37 @@ class SwaggerSchemaResolver {
       } else {
         result.paths = merge({}, result.paths);
 
-        converter.convertObj(
-          result,
-          {
-            ...converterOptions,
-            warnOnly: true,
-            refSiblings: 'preserve',
-            rbname: 'requestBodyName',
-          },
-          (err, options) => {
-            const parsedSwaggerSchema = get(err, 'options.openapi', get(options, 'openapi'));
-            if (!parsedSwaggerSchema && err) {
-              throw new Error(err as any);
+        try {
+          converter.convertObj(
+            result,
+            {
+              ...converterOptions,
+              warnOnly: true,
+              refSiblings: 'preserve',
+              rbname: 'requestBodyName',
+            },
+            (err, options) => {
+              const parsedSwaggerSchema = get(err, 'options.openapi', get(options, 'openapi'));
+              if (!parsedSwaggerSchema) {
+                reject(
+                  err instanceof Error
+                    ? err
+                    : new Error(
+                        `Failed to convert swagger schema to OpenAPI 3${err ? `: ${err}` : ''}`
+                      )
+                );
+                return;
+              }
+              this.config.update({ convertedFromSwagger2: true });
+              resolve({
+                usageSchema: parsedSwaggerSchema,
+                originalSchema: result,
+              });
             }
-            this.config.update({ convertedFromSwagger2: true });
-            resolve({
-              usageSchema: parsedSwaggerSchema,
-              originalSchema: result,
-            });
-          }
-        );
+          );
+        } catch (error) {
+          reject(error);
+        }
       }
     });
   }
@@ -132,6 +143,16 @@ class SwaggerSchemaResolver {
         this.logger.log(`Try to get swagger by path "${resolvedPath}"`);
         return this.getSwaggerSchemaByPath(resolvedPath);
       }
+
+      throw new Error(`swagger schema file "${resolvedPath}" does not exist`);
+    }
+
+    if (!urlToSwagger) {
+      throw new Error(
+        pathToSwagger
+          ? `swagger schema file "${path.resolve(process.cwd(), pathToSwagger)}" does not exist`
+          : 'swagger schema is not specified (use `input`, `url` or `spec`)'
+      );
     }
 
     this.logger.log(`Try to get swagger by URL ${pc.cyan(`"${urlToSwagger}"`)}`);
@@ -165,26 +186,30 @@ class SwaggerSchemaResolver {
 
       // walk by methods
       each(usagePathObject, (usageRouteInfo, methodName) => {
-        const originalRouteInfo = get(originalPathObject, methodName);
-        const usageRouteParams = get(usageRouteInfo, 'parameters', []);
-        const originalRouteParams = get(originalRouteInfo, 'parameters', []);
-
-        if (typeof usageRouteInfo === 'object') {
-          usageRouteInfo.consumes = uniq(
-            compact([...(usageRouteInfo.consumes || []), ...(originalRouteInfo.consumes || [])])
-          );
-          usageRouteInfo.produces = uniq(
-            compact([...(usageRouteInfo.produces || []), ...(originalRouteInfo.produces || [])])
-          );
+        // skip path level keys which are not operations (`parameters`, `servers`, ...)
+        if (!isPlainObject(usageRouteInfo)) {
+          return;
         }
 
+        const originalRouteInfo = get(originalPathObject, methodName) || {};
+        const originalRouteParams = get(originalRouteInfo, 'parameters') || [];
+
+        usageRouteInfo.consumes = uniq(
+          compact([...(usageRouteInfo.consumes || []), ...(originalRouteInfo.consumes || [])])
+        );
+        usageRouteInfo.produces = uniq(
+          compact([...(usageRouteInfo.produces || []), ...(originalRouteInfo.produces || [])])
+        );
+
         each(originalRouteParams, (originalRouteParam) => {
+          const usageRouteParams = usageRouteInfo.parameters || [];
           const existUsageParam = find(
             usageRouteParams,
             (param) => originalRouteParam.in === param.in && originalRouteParam.name === param.name
           );
           if (!existUsageParam) {
-            usageRouteParams.push(originalRouteParam);
+            // attach the array, so params are not pushed into a throwaway default value
+            usageRouteInfo.parameters = [...usageRouteParams, originalRouteParam];
           }
         });
       });

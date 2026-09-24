@@ -1,4 +1,5 @@
-import { dirname } from 'node:path';
+import fs from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import packageJson from '../package.json';
@@ -41,15 +42,46 @@ const FILE_PREFIX = `/* eslint-disable */
 `;
 const DEFAULT_BODY_ARG_NAME = 'data';
 
+/**
+ * Default oxfmt options for generated code.
+ * Overridden by the project's `.oxfmtrc.json` (cwd) and then by `oxfmtOptrions`.
+ */
 const OXC_FORMAT_OPTIONS = {
-  printWidth: 120,
+  singleQuote: true,
+  jsxSingleQuote: true,
+  printWidth: 100,
+  trailingComma: 'es5',
   tabWidth: 2,
-  trailingComma: 'all',
-  parser: 'typescript',
+  semi: true,
+  sortImports: {
+    groups: [
+      'builtin',
+      'external',
+      ['internal', 'subpath'],
+      ['parent', 'sibling', 'index'],
+      'style',
+      'unknown',
+    ],
+  },
 };
 
 export const __dirname_esm =
   typeof __dirname === 'undefined' ? dirname(fileURLToPath(import.meta.url)) : __dirname;
+
+/**
+ * Directory with the built-in templates.
+ * - from sources: `src/constants.ts` -> `<root>/templates`
+ * - from the build: `dist/shared/*.mjs` (or `dist/*.mjs`) -> `dist/templates`
+ */
+const TEMPLATES_DIR = (() => {
+  const candidates = [
+    resolve(__dirname_esm, '../templates'),
+    resolve(__dirname_esm, 'templates'),
+    resolve(__dirname_esm, '../../templates'),
+  ];
+
+  return candidates.find((candidate) => fs.existsSync(resolve(candidate, 'base'))) || candidates[0];
+})();
 
 export {
   FILE_PREFIX,
@@ -63,4 +95,5 @@ export {
   RESERVED_PATH_ARG_NAMES,
   RESERVED_HEADER_ARG_NAMES,
   OXC_FORMAT_OPTIONS,
+  TEMPLATES_DIR,
 };

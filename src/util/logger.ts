@@ -13,13 +13,14 @@ class Logger {
   }
 
   createLogMessage = ({ type, emojiName, messages }: any) => {
-    if (this.config.silent) {
+    // `silent` = output only errors to console
+    if (this.config.silent && type !== 'error') {
       return;
     }
 
     const emoji = emojify(emojiName);
 
-    if (this.firstLog) {
+    if (this.firstLog && !this.config.silent) {
       this.firstLog = false;
       this.log(
         `swagger-typescript-api(${this.config.version}),${

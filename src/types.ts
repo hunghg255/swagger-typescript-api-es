@@ -1,16 +1,19 @@
+import type { FormatConfig } from 'oxfmt';
+
 export interface IOptions {
   /**
    *  name of output typescript api file (default: "Api.ts")
    */
-  name: string;
+  name?: string;
   /**
-   * output path of typescript api file (default: "./")
+   * output path of typescript api file (default: "./").
+   * `false` - don't write files, only return them from `generateApi`
    */
-  output: string;
+  output?: string | false;
   /**
    * path/url to swagger scheme
    */
-  url: string;
+  url?: string;
 
   input?: string;
   spec?: {
@@ -32,13 +35,11 @@ export interface IOptions {
   extractEnums?: boolean;
   unwrapResponseData?: boolean;
   /**
-   * By default oxc config is load from your project
+   * oxfmt options for the generated code.
+   * Applied over the built-in defaults and the `.oxfmtrc.json` of your project (cwd), if any.
    */
-  oxfmtOptrions?: {
-    // By default oxc config is load from your project
-    printWidth?: number;
-    tabWidth?: number;
-    trailingComma?: 'all' | string;
+  oxfmtOptrions?: FormatConfig & {
+    /** @deprecated ignored, the parser is inferred from the file extension */
     parser?: 'typescript' | string;
   };
   singleHttpClient?: boolean;
@@ -52,7 +53,28 @@ export interface IOptions {
   enumKeySuffix?: string;
   addReadonly?: boolean;
   sortTypes?: boolean;
+  sortRoutes?: boolean;
+  /** @deprecated use `sortRoutes` */
   sortRouters?: boolean;
+  modular?: boolean;
+  silent?: boolean;
+  debug?: boolean;
+  patch?: boolean;
+  apiClassName?: string;
+  moduleNameIndex?: number;
+  extractResponseBody?: boolean;
+  extractResponseError?: boolean;
+  disableThrowOnError?: boolean;
+  /** default type for empty response schema (default: "void") */
+  defaultResponseType?: string;
+  disableStrictSSL?: boolean;
+  disableProxy?: boolean;
+  authorizationToken?: string;
+  /**
+   * extra `fetch` options used to download the schema from `url`.
+   * `timeout` - request timeout in ms (default: 60000)
+   */
+  requestOptions?: Record<string, any> & { timeout?: number };
   extractingOptions?: {
     requestBodySuffix?: string[];
     requestParamsSuffix?: string[];
@@ -83,12 +105,35 @@ export interface IOptions {
   };
 }
 
+export interface GeneratedFile {
+  fileName: string;
+  fileExtension: string;
+  fileContent: string;
+}
+
+export interface GenerateApiOutput {
+  /** generated files (also returned when `output: false`) */
+  files: GeneratedFile[];
+  configuration: Record<string, any>;
+  getTemplate: (...args: any[]) => any;
+  renderTemplate: (...args: any[]) => any;
+  createFile: (params: {
+    path: string;
+    fileName: string;
+    content: string;
+    withPrefix?: boolean;
+  }) => void;
+  formatTSContent: (code: string) => Promise<string>;
+}
+
 export interface GenerateTemplatesParams {
-  cleanOutput: boolean;
-  output: string;
-  httpClientType: 'axios' | 'fetch';
-  modular: boolean;
-  silent: boolean;
-  version: string;
-  rewrite: boolean;
+  cleanOutput?: boolean;
+  /** output directory for the source templates */
+  output?: string;
+  httpClientType?: 'axios' | 'fetch';
+  modular?: boolean;
+  silent?: boolean;
+  version?: string;
+  /** rewrite templates that already exist in `output` */
+  rewrite?: boolean;
 }

@@ -33,32 +33,31 @@
  */
 
 import { CodeGenProcess } from './code-gen-process.js';
-import { IOptions } from './types';
+import { GenerateApiOutput, IOptions } from './types';
 
-const generateApi = async (options: IOptions | IOptions[]) => {
+const createCodeGenProcess = ({ name, ...config }: IOptions): { start(): Promise<any> } =>
+  new CodeGenProcess({
+    ...config,
+    // `undefined` keeps the default file name ("Api.ts")
+    fileName: name,
+  } as any);
+
+async function generateApi(options: IOptions): Promise<GenerateApiOutput>;
+async function generateApi(options: IOptions[]): Promise<GenerateApiOutput[]>;
+async function generateApi(
+  options: IOptions | IOptions[]
+): Promise<GenerateApiOutput | GenerateApiOutput[]>;
+async function generateApi(options: IOptions | IOptions[]) {
   if (Array.isArray(options)) {
-    for (let index = 0; index < options.length; index++) {
-      const { name, oxfmtOptrions, ...config } = options[index];
-
-      const codeGenProcess = new CodeGenProcess({
-        ...config,
-        fileName: name,
-        oxfmtOptrions,
-      } as any);
-      await codeGenProcess.start();
+    const results: GenerateApiOutput[] = [];
+    for (const option of options) {
+      results.push(await createCodeGenProcess(option).start());
     }
-    return;
+    return results;
   }
 
-  const { name, oxfmtOptrions, ...config } = options;
-
-  const codeGenProcess = new CodeGenProcess({
-    ...config,
-    fileName: name,
-    oxfmtOptrions,
-  } as any);
-  return codeGenProcess.start();
-};
+  return createCodeGenProcess(options).start();
+}
 
 export const defaultConfig = (options: IOptions | IOptions[]) => {
   return options;

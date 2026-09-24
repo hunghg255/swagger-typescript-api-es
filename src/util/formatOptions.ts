@@ -1,168 +1,103 @@
-// cli
-//   .version(version)
-//   .option('--u <url>', 'path/url to swagger scheme')
-//   .option('--o <output>', 'output path of typescript api file (default: "./")')
-//   .option('--n <name>', 'name of output typescript api file (default: "Api.ts")')
-//   .option('--t <templates>', 'path to folder containing templates')
-//   .option('--d <default-as-success>', 'use "default" response status code as success response too.')
-//   .option(
-//     '--r <responses>',
-//     'generate additional information about request responses also add typings for bad responses (default: false)',
-//   )
-//   .option(
-//     '--union-enums <union-enums>',
-//     'generate all "enum" types as union types (T1 | T2 | TN) (default: false)',
-//   )
-//   .option('--add-readonly <add-readonly>', 'generate readonly properties (default: false)')
-//   .option(
-//     '--route-types <route-types>',
-//     'generate type definitions for API routes (default: false)',
-//   )
-//   .option('--noClient <noClient>', 'do not generate an API class')
-//   .option(
-//     '--enum-names-as-values <enum-names-as-values>',
-//     'use values in "x-enumNames" as enum values (not only as keys) (default: false)',
-//   )
-//   .option(
-//     '--extract-request-params <extract-request-params>',
-//     'extract request params to data contract (Also combine path params and query params into one object) (default: false)',
-//   )
-//   .option(
-//     '--extract-request-body <extract-request-body>',
-//     'extract request body type to data contract (default: false)',
-//   )
-//   .option(
-//     '--extract-response-body <extract-response-body>',
-//     'extract response body type to data contract (default: false)',
-//   )
-//   .option(
-//     '--extract-response-error <extract-response-error>',
-//     'extract response error type to data contract (default: false)',
-//   )
-//   .option(
-//     '--modular <modular>',
-//     'generate separated files for http client, data contracts, and routes (default: false)',
-//   )
-//   .option('--js <js>', 'generate js api module with declaration file (default: false)')
-//   .option(
-//     '--module-name-index <module-name-index>',
-//     'determines which path index should be used for routes separation (example: GET:/fruites/getFruit -> index:0 -> moduleName -> fruites) (default: 0)',
-//   )
-//   .option(
-//     '--module-name-first-tag <module-name-first-tag>',
-//     'splits routes based on the first tag (default: false)',
-//   )
-//   .option('--disableStrictSSL <disableStrictSSL>', 'disabled strict SSL (default: false)')
-//   .option('--disableProxy <disableProxy>', 'disabled proxy (default: false)')
-//   .option('--axios <axios>', 'generate axios http client (default: false)')
-//   .option(
-//     '--unwrap-response-data <unwrap-response-data>',
-//     'unwrap the data item from the response (default: false)',
-//   )
-//   .option(
-//     '--disable-throw-on-error <disable-throw-on-error>',
-//     'Do not throw an error when response.ok is not true (default: false)',
-//   )
-//   .option(
-//     '--single-http-client <single-http-client>',
-//     'Ability to send HttpClient instance to Api constructor (default: false)',
-//   )
-//   .option('--silent <silent>', 'Output only errors to console (default: false)')
-//   .option(
-//     '--default-response <default-response>',
-//     'default type for empty response schema (default: "void")',
-//   )
-//   .option('--type-prefix <type-prefix>', 'data contract name prefix (default: "")')
-//   .option('--type-suffix <type-suffix>', 'data contract name suffix (default: "")')
-//   .option(
-//     '--clean-output <clean-output>',
-//     'clean output folder before generate api. WARNING: May cause data loss (default: false)',
-//   )
-//   .option('--api-class-name <api-class-name>', 'name of the api class (default: "Api")')
-//   .option(
-//     '--patch <patch>',
-//     'fix up small errors in the swagger source definition (default: false)',
-//   )
-//   .option(
-//     '--debug <debug>',
-//     'additional information about processes inside this tool (default: false)',
-//   )
-//   .option(
-//     '--another-array-type <another-array-type>',
-//     'generate array types as Array<Type> (by default Type[]) (default: false)',
-//   )
-//   .option('--sort-types <sort-types>', 'sort fields and types (default: false)')
-//   .option('--sort-routes <sort-routes>', 'sort routes in alphabetical order (default: false)')
-//   .option(
-//     '--custom-config <custom-config>',
-//     'custom config: primitiveTypeConstructs, hooks, ...  (default: "")',
-//   )
-//   .option(
-//     '--extract-enums',
-//     'extract all enums from inline interface\type content to typescript enum construction (default: false)',
-//   )
-//   .help();
+type OptionType = 'string' | 'boolean' | 'number';
 
-const MAP_KEY = {
-  u: 'url',
-  o: 'output',
-  n: 'name',
-  t: 'templates',
-  d: 'default-as-success',
-  r: 'responses',
-  'union-enums': 'unionEnums',
-  'add-readonly': 'addReadonly',
-  'route-types': 'routeTypes',
-  noClient: 'generateClient',
-  'enum-names-as-values': 'enumNamesAsValues',
-  'extract-request-params': 'extractRequestParams',
-  'extract-request-body': 'extractRequestBody',
-  'extract-response-body': 'extractResponseBody',
-  'extract-response-error': 'extractResponseError',
-  modular: 'modular',
-  js: 'toJS',
-  'module-name-index': 'moduleNameIndex',
-  'module-name-first-tag': 'moduleNameFirstTag',
-  disableStrictSSL: 'disableStrictSSL',
-  disableProxy: 'disableProxy',
-  httpClientType: 'httpClientType',
-  'unwrap-response-data': 'unwrapResponseData',
-  'disable-throw-on-error': 'disableThrowOnError',
-  'single-http-client': 'singleHttpClient',
-  silent: 'silent',
-  'default-response': 'defaultResponseAsSuccess',
-  'type-prefix': 'typePrefix',
-  'type-suffix': 'typeSuffix',
-  'clean-output': 'cleanOutput',
-  'api-class-name': 'apiClassName',
-  patch: 'patch',
-  debug: 'debug',
-  'another-array-type': 'anotherArrayType',
-  'sort-types': 'sortTypes',
-  'sort-routes': 'sortRoutes',
-  'custom-config': 'customConfig',
-  'extract-enums': 'extractEnums',
-} as any;
+interface OptionInfo {
+  /** CodeGenConfig / IOptions key */
+  key: string;
+  type: OptionType;
+  /** boolean flag with inverted meaning (`--noClient true` -> `generateClient: false`) */
+  invert?: boolean;
+}
 
-const formatValue = (value: any) => {
-  if (value === 'true') {
-    return true;
+/**
+ * CLI option name (as declared in `cli-start.ts`) -> config option.
+ * Keys are normalized with `normalizeKey`, so both kebab-case (`union-enums`) and
+ * camelCase (`unionEnums`, which is what cac hands to the action) are accepted.
+ */
+const MAP_KEY: Record<string, OptionInfo> = {
+  u: { key: 'url', type: 'string' },
+  o: { key: 'output', type: 'string' },
+  n: { key: 'name', type: 'string' },
+  t: { key: 'templates', type: 'string' },
+  d: { key: 'defaultResponseAsSuccess', type: 'boolean' },
+  r: { key: 'generateResponses', type: 'boolean' },
+  'union-enums': { key: 'generateUnionEnums', type: 'boolean' },
+  'add-readonly': { key: 'addReadonly', type: 'boolean' },
+  'route-types': { key: 'generateRouteTypes', type: 'boolean' },
+  noClient: { key: 'generateClient', type: 'boolean', invert: true },
+  'enum-names-as-values': { key: 'enumNamesAsValues', type: 'boolean' },
+  'extract-request-params': { key: 'extractRequestParams', type: 'boolean' },
+  'extract-request-body': { key: 'extractRequestBody', type: 'boolean' },
+  'extract-response-body': { key: 'extractResponseBody', type: 'boolean' },
+  'extract-response-error': { key: 'extractResponseError', type: 'boolean' },
+  modular: { key: 'modular', type: 'boolean' },
+  js: { key: 'toJS', type: 'boolean' },
+  'module-name-index': { key: 'moduleNameIndex', type: 'number' },
+  'module-name-first-tag': { key: 'moduleNameFirstTag', type: 'boolean' },
+  disableStrictSSL: { key: 'disableStrictSSL', type: 'boolean' },
+  disableProxy: { key: 'disableProxy', type: 'boolean' },
+  httpClientType: { key: 'httpClientType', type: 'string' },
+  'unwrap-response-data': { key: 'unwrapResponseData', type: 'boolean' },
+  'disable-throw-on-error': { key: 'disableThrowOnError', type: 'boolean' },
+  'single-http-client': { key: 'singleHttpClient', type: 'boolean' },
+  silent: { key: 'silent', type: 'boolean' },
+  'default-response': { key: 'defaultResponseType', type: 'string' },
+  'type-prefix': { key: 'typePrefix', type: 'string' },
+  'type-suffix': { key: 'typeSuffix', type: 'string' },
+  'clean-output': { key: 'cleanOutput', type: 'boolean' },
+  'api-class-name': { key: 'apiClassName', type: 'string' },
+  patch: { key: 'patch', type: 'boolean' },
+  debug: { key: 'debug', type: 'boolean' },
+  'another-array-type': { key: 'anotherArrayType', type: 'boolean' },
+  'sort-types': { key: 'sortTypes', type: 'boolean' },
+  'sort-routes': { key: 'sortRoutes', type: 'boolean' },
+  /** path to a config file with extra options, loaded by `cli-start.ts` */
+  'custom-config': { key: 'customConfig', type: 'string' },
+  'extract-enums': { key: 'extractEnums', type: 'boolean' },
+};
+
+/** `union-enums`, `unionEnums` -> `unionenums` */
+const normalizeKey = (key: string) => key.replace(/-/g, '').toLowerCase();
+
+const OPTIONS = new Map(
+  Object.entries(MAP_KEY).map(([cliKey, info]) => [normalizeKey(cliKey), { ...info, cliKey }])
+);
+
+const parseBoolean = (value: any) => {
+  if (typeof value === 'string') {
+    return !['false', '0', 'no', 'off', ''].includes(value.trim().toLowerCase());
   }
 
-  if (value === 'false') {
-    return false;
-  }
+  return !!value;
+};
 
-  return value;
+const formatValue = (value: any, { type, invert, cliKey }: OptionInfo & { cliKey: string }) => {
+  // repeated flags are collected into an array by the args parser, the last one wins
+  const rawValue = Array.isArray(value) ? value[value.length - 1] : value;
+
+  switch (type) {
+    case 'boolean': {
+      const bool = parseBoolean(rawValue);
+      return invert ? !bool : bool;
+    }
+    case 'number': {
+      const number = typeof rawValue === 'number' ? rawValue : Number(rawValue);
+      if (rawValue === '' || rawValue === true || Number.isNaN(number)) {
+        throw new Error(`Option --${cliKey} expects a number, got "${rawValue}"`);
+      }
+      return number;
+    }
+    default: {
+      return rawValue === undefined || rawValue === null ? rawValue : String(rawValue);
+    }
+  }
 };
 
 export const formatOptions = (options: Record<string, any>) => {
   const formattedOptions = Object.keys(options).reduce((acc: any, key) => {
-    const value = formatValue(options[key]);
-    const newKeys = MAP_KEY[key];
+    const option = OPTIONS.get(normalizeKey(key));
 
-    if (newKeys) {
-      acc[newKeys] = value;
+    if (option && options[key] !== undefined) {
+      acc[option.key] = formatValue(options[key], option);
     }
 
     return acc;

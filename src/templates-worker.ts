@@ -1,9 +1,13 @@
+import { createRequire } from 'node:module';
 import path, { resolve } from 'node:path';
 
 import * as Eta from 'eta';
 import { endsWith, keys, lowerCase, reduce, replace, startsWith } from 'lodash-es';
 
-import { __dirname_esm } from './constants';
+import { TEMPLATES_DIR } from './constants';
+
+/** `require` for an ESM-only package (works from sources and from `dist`) */
+const packageRequire = createRequire(import.meta.url);
 
 class TemplatesWorker {
   /**
@@ -36,9 +40,9 @@ class TemplatesWorker {
    * @returns {CodeGenConfig.templatePaths}
    */
   getTemplatePaths = (config: any) => {
-    const baseTemplatesPath = resolve(__dirname_esm, '../templates/base');
-    const defaultTemplatesPath = resolve(__dirname_esm, '../templates/default');
-    const modularTemplatesPath = resolve(__dirname_esm, '../templates/modular');
+    const baseTemplatesPath = resolve(TEMPLATES_DIR, 'base');
+    const defaultTemplatesPath = resolve(TEMPLATES_DIR, 'default');
+    const modularTemplatesPath = resolve(TEMPLATES_DIR, 'modular');
     const originalTemplatesPath = config.modular ? modularTemplatesPath : defaultTemplatesPath;
     const customTemplatesPath =
       (config.templates && resolve(process.cwd(), config.templates)) || null;
@@ -76,7 +80,7 @@ class TemplatesWorker {
     const isPath = startsWith(packageOrPath, './') || startsWith(packageOrPath, '../');
 
     if (isPath) {
-      return require(
+      return packageRequire(
         path.resolve(
           this.config.templatePaths.custom || this.config.templatePaths.original,
           packageOrPath
@@ -84,7 +88,16 @@ class TemplatesWorker {
       );
     }
 
-    return require(packageOrPath);
+    // resolve packages from the user's project first, then from this package
+    try {
+      return createRequire(resolve(process.cwd(), 'noop.js'))(packageOrPath);
+    } catch (error: any) {
+      if (error?.code !== 'MODULE_NOT_FOUND') {
+        throw error;
+      }
+
+      return packageRequire(packageOrPath);
+    }
   };
 
   getTemplate = ({ fileName, name, path }: any) => {

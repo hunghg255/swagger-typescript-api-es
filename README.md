@@ -69,7 +69,10 @@ npx swagger-typescript-api-es@latest -u https://petstore.swagger.io/v2/swagger.j
 | `--another-array-type` | | Generate array types as Array\<Type\> (by default Type[]) | `false` |
 | `--sort-types` | | Sort fields and types | `false` |
 | `--sort-routes` | | Sort routes in alphabetical order | `false` |
-| `--custom-config` | | Custom config: primitiveTypeConstructs, hooks, ... | `""` |
+| `--custom-config` | | Path to a config file (js/ts/json) with extra options: primitiveTypeConstructs, hooks, ... | `""` |
+
+Boolean flags accept `true`/`false` (e.g. `--modular true`). CLI flags are merged over the options of
+`swagger-typescript-api.config.ts` (if it exists), CLI flags win. The CLI exits with code `1` on errors.
 
 ## Install
 
@@ -104,15 +107,16 @@ interface IOptions {
   /**
    *  name of output typescript api file (default: "Api.ts")
    */
-  name: string;
+  name?: string;
   /**
-   * output path of typescript api file (default: "./")
+   * output path of typescript api file (default: "./").
+   * `false` - don't write files, only return them from `generateApi`
    */
-  output: string;
+  output?: string | false;
   /**
    * path/url to swagger scheme
    */
-  url: string;
+  url?: string;
   input?: string;
   spec?: {
     swagger?: '2.0' | '3.0';
@@ -133,14 +137,10 @@ interface IOptions {
   extractEnums?: boolean;
   unwrapResponseData?: boolean;
   /**
-   * By default oxfmtOptrions config is load from your project
+   * oxfmt options for the generated code, applied over the built-in defaults
+   * and the `.oxfmtrc.json` of your project (cwd), if any
    */
-  oxfmtOptrions?: {
-    printWidth?: number;
-    tabWidth?: number;
-    trailingComma?: 'all' | string;
-    parser?: 'typescript' | string;
-  };
+  oxfmtOptrions?: FormatConfig; // from 'oxfmt'
   singleHttpClient?: boolean;
   cleanOutput?: boolean;
   enumNamesAsValues?: boolean;
@@ -152,7 +152,7 @@ interface IOptions {
   enumKeySuffix?: string;
   addReadonly?: boolean;
   sortTypes?: boolean;
-  sortRouters?: boolean;
+  sortRoutes?: boolean;
   extractingOptions?: {
     requestBodySuffix?: string[];
     requestParamsSuffix?: string[];
@@ -164,7 +164,11 @@ interface IOptions {
   anotherArrayType?: boolean;
   fixInvalidTypeNamePrefix?: string;
   fixInvalidEnumKeyPrefix?: string;
-  oxfmtOptrions?: Record<string, any>;
+  /**
+   * extra fetch options used to download the schema from `url`,
+   * `timeout` - request timeout in ms (default: 60000)
+   */
+  requestOptions?: Record<string, any> & { timeout?: number };
   constants?: Record<string, any>;
   templateInfos?: any;
   codeGenConstructs?: (constructs: any) => Record<string, any>;

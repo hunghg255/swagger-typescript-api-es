@@ -4,7 +4,6 @@ import { resolve } from 'node:path';
 import { noop, split } from 'lodash-es';
 import makeDir from 'make-dir';
 
-import { __dirname_esm } from '../constants';
 import { Logger } from './logger';
 
 const FILE_PREFIX = `/* eslint-disable */
@@ -21,7 +20,7 @@ class FileSystem {
   logger;
 
   // @ts-ignore
-  constructor({ logger = new Logger('file-system') } = {}) {
+  constructor({ logger = new Logger({ config: {} }) } = {}) {
     this.logger = logger;
   }
 
@@ -69,6 +68,10 @@ class FileSystem {
   };
 
   createDir = (path: any) => {
+    if (!path) {
+      return;
+    }
+
     try {
       makeDir.sync(path);
     } catch (error) {
@@ -86,7 +89,8 @@ class FileSystem {
   };
 
   createFile = ({ path, fileName, content, withPrefix }: any) => {
-    const absolutePath = resolve(__dirname_esm, path, `./${fileName}`);
+    // relative paths are relative to the user's working directory, not to this package
+    const absolutePath = resolve(process.cwd(), path, `./${fileName}`);
     const fileContent = `${withPrefix ? FILE_PREFIX : ''}${content}`;
 
     // @ts-ignore

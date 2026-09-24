@@ -86,7 +86,11 @@ class CodeGenConfig {
   };
 
   routeNameDuplicatesMap = new Map();
-  oxfmtOptrions = { ...CONSTANTS.OXC_FORMAT_OPTIONS };
+  /**
+   * user formatter options, applied over `CONSTANTS.OXC_FORMAT_OPTIONS` and the project's
+   * `.oxfmtrc.json` (see `CodeFormatter`)
+   */
+  oxfmtOptrions = {};
   hooks = {
     onPreBuildRoutePath: (routePath: any) => void 0,
     onBuildRoutePath: (routeData: any) => void 0,
@@ -161,7 +165,8 @@ class CodeGenConfig {
   extraTemplates = [];
   input = '';
   modular = false;
-  output = '';
+  /** absolute output path, or `false` to only return generated files without writing them */
+  output: string | false = '';
   url = '';
   cleanOutput = false;
   spec = null;
@@ -191,8 +196,8 @@ class CodeGenConfig {
     discriminatorAbstractPrefix: ['Base', 'Abstract', 'Discriminator', 'Internal', 'Polymorph'],
   };
 
-  compilerTsConfig = {
-    module: 'ESNext',
+  compilerTsConfig: ts.CompilerOptions = {
+    module: ts.ModuleKind.ESNext,
     noImplicitReturns: true,
     alwaysStrict: true,
     target: ts.ScriptTarget.ESNext,
@@ -384,7 +389,8 @@ class CodeGenConfig {
         ...constants,
       },
       templateInfos: templateInfos || this.templateInfos,
-      output: path.resolve(process.cwd(), output),
+      sortRoutes: otherConfig.sortRoutes ?? otherConfig.sortRouters,
+      output: output === false ? false : path.resolve(process.cwd(), output || './'),
     });
 
     this.jsPrimitiveTypes = [
