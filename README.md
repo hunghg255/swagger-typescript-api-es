@@ -808,7 +808,7 @@ follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `f
 
 ## License
 
-Licensed under the [MIT License](https://github.com/hunghg255/swagger-typescript-api-es/blob/master/LICENSE).
+Licensed under the [MIT License](https://github.com/hunghg255/swagger-typescript-api-es/blob/main/LICENSE).
 
 Based on [swagger-typescript-api](https://github.com/acacode/swagger-typescript-api) by
 [acacode](https://github.com/acacode) (MIT). Rewritten to TypeScript and ES modules by
