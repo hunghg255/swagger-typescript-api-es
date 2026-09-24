@@ -94,7 +94,11 @@ class SchemaParserFabric {
    * @param [schemaPath] {string[]}
    * @return {Record<string, any>}
    */
-  parseSchema = (schema: any, typeName = undefined, schemaPath = []) => {
+  parseSchema = (
+    schema: any,
+    typeName?: string | null,
+    schemaPath: (string | null | undefined)[] = []
+  ) => {
     const schemaParser = this.createSchemaParser({
       schema,
       typeName,

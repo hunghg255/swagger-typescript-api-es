@@ -256,3 +256,18 @@ describe('onCreateRequestParams', () => {
     expect(typeCheck(files)).toEqual([]);
   });
 });
+
+describe('onCreateComponent', () => {
+  it('is not called for primitive vendor extensions of `components`', async () => {
+    const onCreateComponent = vi.fn(() => undefined);
+    const { files } = await generate(
+      oas({}, { Pet: { type: 'string' } }, { components: { 'x-origin': 'abc', 'x-count': 3 } }),
+      { hooks: { onCreateComponent } }
+    );
+    // previously `x-origin: "abc"` was iterated char by char: `#/components/x-origin/0`, ...
+    expect(onCreateComponent.mock.calls.map(([component]: any[]) => component.$ref)).toEqual([
+      '#/components/schemas/Pet',
+    ]);
+    expect(squash(files['api.ts'])).toContain('exporttypePet=string;');
+  });
+});

@@ -2,39 +2,47 @@ import path from 'node:path';
 
 import { cloneDeep, get } from 'lodash-es';
 
+import type { SwaggerSchemaResolver } from './swagger-schema-resolver';
+import type { Logger } from './util/logger';
+
+/** `SwaggerSchemaResolver` methods used to load schemas of file refs */
+export type SchemaWalkerSchemaResolver = Pick<
+  SwaggerSchemaResolver,
+  'getSwaggerSchemaByPath' | 'processSwaggerSchemaFile'
+>;
+
+export interface SchemaWalkerDeps {
+  /** not used yet */
+  config?: object;
+  logger?: Pick<Logger, 'debug'> | null;
+  swaggerSchemaResolver?: SchemaWalkerSchemaResolver | null;
+}
+
 // TODO: WIP
 // this class will be needed to walk by schema everywhere
 class SchemaWalker {
-  /** @type {Logger} */
-  logger;
-  /** @type {CodeGenConfig} */
-  config;
-  /** @type {SwaggerSchemaResolver} */
-  swaggerSchemaResolver: any;
-  /** @type {Map<string, Record<string, any>>} */
-  schemas = new Map();
-  /** @type {Map<string, Record<string, any>>} */
-  caches = new Map();
+  logger: Pick<Logger, 'debug'> | null | undefined;
+  config: object | undefined;
+  swaggerSchemaResolver: SchemaWalkerSchemaResolver | null | undefined;
+  /** schema name (`$usage`, `$original`, file path) -> schema */
+  schemas = new Map<string, unknown>();
+  /** ref -> resolved value */
+  caches = new Map<string, unknown>();
 
-  constructor({ config, logger, swaggerSchemaResolver }: any) {
+  constructor({ config, logger, swaggerSchemaResolver }: SchemaWalkerDeps) {
     this.logger = logger;
     this.config = config;
     this.swaggerSchemaResolver = swaggerSchemaResolver;
   }
 
-  /**
-   * @param name {string}
-   * @param schema {Record<string, any>}
-   */
-  addSchema = (name: any, schema: any) => {
+  addSchema = (name: string, schema: unknown) => {
     this.schemas.set(name, cloneDeep(schema));
   };
 
   /**
-   * @param ref {string}
-   * @returns {any}
+   * @returns value by the ref (`#/components/schemas/Pet`, `./other.json#/components/schemas/Pet`)
    */
-  findByRef = (ref: any) => {
+  findByRef = (ref: string): unknown => {
     this.logger?.debug('Try to resolve ref by path', ref);
 
     if (this.caches.has(ref)) {
@@ -54,7 +62,7 @@ class SchemaWalker {
       return null;
     } else {
       const [address, refPath = ''] = ref.split('#');
-      let swaggerSchemaObject;
+      let swaggerSchemaObject: unknown;
 
       if (this.schemas.has(address)) {
         swaggerSchemaObject = this.schemas.get(address);
@@ -76,27 +84,27 @@ class SchemaWalker {
     return null;
   };
 
-  _isLocalRef = (ref: any) => {
+  _isLocalRef = (ref: string) => {
     return ref.startsWith('#');
   };
 
-  _isRemoteRef = (ref: any) => {
+  _isRemoteRef = (ref: string) => {
     return ref.startsWith('http://') || ref.startsWith('https://');
   };
 
   /**
-   * @param schema {Record<string, any>}
-   * @param ref {string} JSON pointer, e.g. "#/components/schemas/Pet" or "/components/schemas/Pet"
-   * @param [cacheKey] {string}
+   * @param schema
+   * @param ref JSON pointer, e.g. "#/components/schemas/Pet" or "/components/schemas/Pet"
+   * @param [cacheKey]
    */
-  _getRefDataFromSchema = (schema: any, ref: any, cacheKey = ref) => {
+  _getRefDataFromSchema = (schema: unknown, ref: string, cacheKey = ref): unknown => {
     const refPath = ref
       .replace(/^#/, '')
       .split('/')
       .filter(Boolean)
       // JSON pointer escaping (RFC 6901)
       .map((part: string) => decodeURIComponent(part).replaceAll('~1', '/').replaceAll('~0', '~'));
-    const refData = refPath.length > 0 ? get(schema, refPath) : schema;
+    const refData: unknown = refPath.length > 0 ? get(schema, refPath) : schema;
     if (refData) {
       this.caches.set(cacheKey, refData);
     }

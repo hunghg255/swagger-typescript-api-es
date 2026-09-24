@@ -7,7 +7,9 @@ import { loadConf, readConfig } from 'unreadconfig';
 
 import { generateApi } from '.';
 import { version } from '../package.json';
+import type { IOptions } from './types';
 import { formatOptions } from './util/formatOptions';
+import { isObjectRecord } from './util/type-guards';
 
 const FILE_NAME_CONFIG = 'swagger-typescript-api';
 
@@ -121,38 +123,49 @@ const createCli = () =>
     .help();
 
 /**
+ * Options loaded from a config file.
+ * The content of a config file is not validated, it is expected to match `IOptions`.
+ */
+const isConfigObject = (value: unknown): value is IOptions => isObjectRecord(value);
+
+const isConfigList = (value: unknown): value is IOptions[] => Array.isArray(value);
+
+/** `{ 0: {...}, 1: {...} }` */
+const isIndexedConfigs = (value: object): value is Record<string, IOptions> => '0' in value;
+
+/**
  * `unreadconfig` merges the loaded config into `{}`, so a config exporting an
  * array arrives as `{ 0: {...}, 1: {...} }`.
  */
-const normalizeFileConfig = (config: any): Record<string, any> | Record<string, any>[] | null => {
+const normalizeFileConfig = (config: unknown): IOptions | IOptions[] | null => {
   if (!config || typeof config !== 'object') {
     return null;
   }
 
-  if (Array.isArray(config)) {
+  if (isConfigList(config)) {
     return config;
   }
 
-  if ('0' in config) {
+  if (isIndexedConfigs(config)) {
     return Object.keys(config)
       .filter((key) => /^\d+$/.test(key))
       .sort((a, b) => Number(a) - Number(b))
       .map((key) => config[key]);
   }
 
-  return config;
+  return isConfigObject(config) ? config : null;
 };
 
-const loadCustomConfig = (customConfig: string) => {
+const loadCustomConfig = (customConfig: string): IOptions => {
   const configPath = path.resolve(process.cwd(), customConfig);
 
   if (!fs.existsSync(configPath)) {
     throw new Error(`custom config file "${configPath}" does not exist`);
   }
 
-  const config: any = loadConf(configPath);
+  const config = loadConf<unknown>(configPath);
 
-  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+  if (!config || typeof config !== 'object' || !isConfigObject(config)) {
     throw new Error(`custom config file "${configPath}" must export an object`);
   }
 
@@ -162,9 +175,12 @@ const loadCustomConfig = (customConfig: string) => {
 /**
  * Config file (if present) < `--custom-config` file < CLI flags.
  */
-export const resolveCliOptions = (args: Record<string, any>) => {
+export const resolveCliOptions = (args: Record<string, unknown>): IOptions | IOptions[] => {
   const { customConfig, ...cliOptions } = formatOptions(args);
-  const flags = customConfig ? { ...loadCustomConfig(customConfig), ...cliOptions } : cliOptions;
+  // values of CLI flags are converted to the types of the matching options by `formatOptions`
+  const flags: IOptions = customConfig
+    ? { ...loadCustomConfig(String(customConfig)), ...cliOptions }
+    : cliOptions;
   const fileConfig = normalizeFileConfig(readConfig(FILE_NAME_CONFIG, { mustExist: true }));
 
   const options = Array.isArray(fileConfig)
@@ -189,15 +205,16 @@ export async function startCli(argv: string[] = process.argv) {
   try {
     const cli = createCli();
 
-    cli.command('').action(async (args) => {
-      await generateApi(resolveCliOptions(args) as any);
+    cli.command('').action(async (args: Record<string, unknown>) => {
+      await generateApi(resolveCliOptions(args));
     });
 
     cli.parse(argv, { run: false });
     // `run: false` + awaiting here, so rejections of the async action are caught below
     await cli.runMatchedCommand();
-  } catch (error: any) {
-    console.log(pc.red('❌ SWAGGER-TYPESCRIPT-API error: ' + (error?.message ?? error)));
+  } catch (error: unknown) {
+    const message = isObjectRecord(error) ? (error.message ?? error) : error;
+    console.log(pc.red('❌ SWAGGER-TYPESCRIPT-API error: ' + message));
 
     process.exit(1);
     return;

@@ -1,5 +1,5 @@
 import { camelCase, lowerCase } from 'lodash-es';
 
-const internalCase = (value: any) => camelCase(lowerCase(value));
+const internalCase = (value: string | undefined) => camelCase(lowerCase(value));
 
 export { internalCase };

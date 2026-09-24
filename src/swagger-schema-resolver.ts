@@ -1,44 +1,88 @@
 import path from 'node:path';
 
 import yaml from 'js-yaml';
-import { cloneDeep, compact, each, find, get, isPlainObject, merge, uniq } from 'lodash-es';
+import { cloneDeep, compact, each, find, get, merge, uniq } from 'lodash-es';
 import pc from 'picocolors';
 import converter from 'swagger2openapi';
+import type { ConvertInputOptions } from 'swagger2openapi';
 
+import type { CodeGenConfig } from './configuration';
+import type {
+  MaybeRef,
+  OperationObject,
+  ParameterObject,
+  ResolvedSwaggerSchema,
+} from './types/openapi';
+import type { FileSystem } from './util/file-system';
+import type { Logger } from './util/logger';
 import { Request } from './util/request';
+import {
+  isOpenAPIV3Document,
+  isOperationObject,
+  isRecord,
+  isSwaggerV2Document,
+} from './util/type-guards';
+
+/** options of the swagger 2 -> OpenAPI 3 conversion */
+export interface ConverterOptions {
+  /** fix up small errors in the swagger source definition */
+  patch?: boolean;
+}
+
+/**
+ * `swagger2openapi.convertObj` accepting every object:
+ * unsupported documents are rejected by the converter itself.
+ */
+interface SwaggerConverter {
+  convertObj(
+    schema: object,
+    options: Partial<ConvertInputOptions>,
+    callback: (error: unknown, options: unknown) => void
+  ): void;
+}
+
+const swaggerConverter: SwaggerConverter = converter;
+
+/** config fields used by `SwaggerSchemaResolver` */
+export type SwaggerSchemaResolverConfig = Pick<
+  CodeGenConfig,
+  | 'spec'
+  | 'patch'
+  | 'input'
+  | 'url'
+  | 'disableStrictSSL'
+  | 'disableProxy'
+  | 'authorizationToken'
+  | 'requestOptions'
+  | 'update'
+>;
+
+export interface SwaggerSchemaResolverDeps {
+  config: SwaggerSchemaResolverConfig;
+  logger: Pick<Logger, 'log' | 'warn'>;
+  fileSystem: Pick<FileSystem, 'getFileContent' | 'pathIsExist'>;
+}
+
+/** `in` + `name` of a parameter (`undefined` for `$ref` parameters) */
+const getParameterLocation = (parameter: MaybeRef<ParameterObject>) =>
+  'in' in parameter ? [parameter.in, parameter.name] : [undefined, undefined];
 
 class SwaggerSchemaResolver {
-  /**
-   * @type {CodeGenConfig}
-   */
-  config;
-  /**
-   * @type {Logger}
-   */
-  logger;
-  /**
-   * @type {FileSystem}
-   */
-  fileSystem;
-  /**
-   * @type {Request}
-   */
-  request;
+  config: SwaggerSchemaResolverConfig;
+  logger: SwaggerSchemaResolverDeps['logger'];
+  fileSystem: SwaggerSchemaResolverDeps['fileSystem'];
+  request: Request;
 
-  constructor({ config, logger, fileSystem }: any) {
+  constructor({ config, logger, fileSystem }: SwaggerSchemaResolverDeps) {
     this.config = config;
     this.logger = logger;
     this.fileSystem = fileSystem;
     this.request = new Request(config, logger);
   }
 
-  /**
-   *
-   * @returns {Promise<{usageSchema: Record<string, *>, originalSchema: Record<string, *>}>}
-   */
-  async create() {
-    const { spec, patch, input, url, disableStrictSSL, disableProxy, authorizationToken } = this
-      .config as any;
+  async create(): Promise<ResolvedSwaggerSchema> {
+    const { spec, patch, input, url, disableStrictSSL, disableProxy, authorizationToken } =
+      this.config;
 
     if (this.config.spec) {
       return await this.convertSwaggerObject(spec, { patch });
@@ -56,13 +100,13 @@ class SwaggerSchemaResolver {
   }
 
   /**
-   *
-   * @param swaggerSchema {Record<string, any>}
-   * @param converterOptions {{ patch?: boolean }}
-   * @returns {Promise<{ usageSchema: Record<string, any>, originalSchema: Record<string, any>}>}
+   * Converts a Swagger 2 document to OpenAPI 3 (OpenAPI 3 documents are used as is).
    */
-  convertSwaggerObject(swaggerSchema: any, converterOptions: any) {
-    if (typeof swaggerSchema !== 'object' || swaggerSchema === null) {
+  convertSwaggerObject(
+    swaggerSchema: unknown,
+    converterOptions: ConverterOptions
+  ): Promise<ResolvedSwaggerSchema> {
+    if (!isRecord(swaggerSchema)) {
       throw new Error(`Invalid swagger schema: expected an object, got ${typeof swaggerSchema}`);
     }
 
@@ -77,7 +121,7 @@ class SwaggerSchemaResolver {
         result.info
       );
 
-      if (result.openapi) {
+      if (isOpenAPIV3Document(result)) {
         resolve({
           usageSchema: result,
           originalSchema: cloneDeep(result),
@@ -86,7 +130,7 @@ class SwaggerSchemaResolver {
         result.paths = merge({}, result.paths);
 
         try {
-          converter.convertObj(
+          swaggerConverter.convertObj(
             result,
             {
               ...converterOptions,
@@ -95,8 +139,13 @@ class SwaggerSchemaResolver {
               rbname: 'requestBodyName',
             },
             (err, options) => {
-              const parsedSwaggerSchema = get(err, 'options.openapi', get(options, 'openapi'));
-              if (!parsedSwaggerSchema) {
+              const parsedSwaggerSchema: unknown = get(
+                err,
+                'options.openapi',
+                get(options, 'openapi')
+              );
+              // the converter accepts swagger 2 documents only
+              if (!isOpenAPIV3Document(parsedSwaggerSchema) || !isSwaggerV2Document(result)) {
                 reject(
                   err instanceof Error
                     ? err
@@ -120,19 +169,19 @@ class SwaggerSchemaResolver {
     });
   }
 
-  getSwaggerSchemaByPath = (pathToSwagger: any) => {
+  getSwaggerSchemaByPath = (pathToSwagger: string) => {
     this.logger.log(`Try to get swagger by path "${pathToSwagger}"`);
     return this.fileSystem.getFileContent(pathToSwagger);
   };
 
   async fetchSwaggerSchemaFile(
-    pathToSwagger: any,
-    urlToSwagger: any,
-    disableStrictSSL: any,
-    disableProxy: any,
-    authToken: any
-  ) {
-    if (this.fileSystem.pathIsExist(pathToSwagger)) {
+    pathToSwagger: string | undefined,
+    urlToSwagger: string | undefined,
+    disableStrictSSL?: boolean,
+    disableProxy?: boolean,
+    authToken?: string
+  ): Promise<string> {
+    if (pathToSwagger && this.fileSystem.pathIsExist(pathToSwagger)) {
       return this.getSwaggerSchemaByPath(pathToSwagger);
     }
 
@@ -164,7 +213,10 @@ class SwaggerSchemaResolver {
     });
   }
 
-  processSwaggerSchemaFile(file: any) {
+  /**
+   * Parses a JSON / YAML document (non-string values are returned as is).
+   */
+  processSwaggerSchemaFile(file: unknown): unknown {
     if (typeof file !== 'string') {
       return file;
     }
@@ -176,23 +228,36 @@ class SwaggerSchemaResolver {
     }
   }
 
-  fixSwaggerSchema({ usageSchema, originalSchema }: any) {
-    const usagePaths = get(usageSchema, 'paths');
-    const originalPaths = get(originalSchema, 'paths');
+  /**
+   * Copies Swagger 2 `consumes` / `produces` and parameters lost by the conversion
+   * from the original schema into the usage schema.
+   */
+  fixSwaggerSchema({
+    usageSchema,
+    originalSchema,
+  }: {
+    usageSchema: Pick<ResolvedSwaggerSchema['usageSchema'], 'paths'>;
+    originalSchema: Pick<ResolvedSwaggerSchema['originalSchema'], 'paths'>;
+  }) {
+    const usagePaths = usageSchema.paths;
+    const originalPaths = originalSchema.paths;
 
     // walk by routes
     each(usagePaths, (usagePathObject, route) => {
-      const originalPathObject = get(originalPaths, route);
+      const originalPathObject: unknown = get(originalPaths, route);
 
       // walk by methods
-      each(usagePathObject, (usageRouteInfo, methodName) => {
+      each(usagePathObject, (usageRouteInfo: unknown, methodName) => {
         // skip path level keys which are not operations (`parameters`, `servers`, ...)
-        if (!isPlainObject(usageRouteInfo)) {
+        if (!isOperationObject(usageRouteInfo)) {
           return;
         }
 
-        const originalRouteInfo = get(originalPathObject, methodName) || {};
-        const originalRouteParams = get(originalRouteInfo, 'parameters') || [];
+        const originalRouteInfoValue: unknown = get(originalPathObject, methodName);
+        const originalRouteInfo: OperationObject = isOperationObject(originalRouteInfoValue)
+          ? originalRouteInfoValue
+          : {};
+        const originalRouteParams = originalRouteInfo.parameters || [];
 
         usageRouteInfo.consumes = uniq(
           compact([...(usageRouteInfo.consumes || []), ...(originalRouteInfo.consumes || [])])
@@ -203,10 +268,11 @@ class SwaggerSchemaResolver {
 
         each(originalRouteParams, (originalRouteParam) => {
           const usageRouteParams = usageRouteInfo.parameters || [];
-          const existUsageParam = find(
-            usageRouteParams,
-            (param) => originalRouteParam.in === param.in && originalRouteParam.name === param.name
-          );
+          const [originalIn, originalName] = getParameterLocation(originalRouteParam);
+          const existUsageParam = find(usageRouteParams, (param) => {
+            const [paramIn, paramName] = getParameterLocation(param);
+            return originalIn === paramIn && originalName === paramName;
+          });
           if (!existUsageParam) {
             // attach the array, so params are not pushed into a throwaway default value
             usageRouteInfo.parameters = [...usageRouteParams, originalRouteParam];

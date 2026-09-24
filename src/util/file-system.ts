@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { resolve } from 'node:path';
 
-import { noop, split } from 'lodash-es';
+import { split } from 'lodash-es';
 
 import { Logger } from './logger';
 
@@ -14,24 +14,35 @@ const FILE_PREFIX = `/* eslint-disable */
 
 `;
 
-class FileSystem {
-  /** @type {Logger} */
-  logger;
+/** params of `FileSystem.createFile` */
+export interface CreateFileParams {
+  /** output directory (relative paths are resolved against `process.cwd()`) */
+  path: string;
+  fileName: string;
+  content: string;
+  /** add the "generated file" banner */
+  withPrefix?: boolean;
+}
 
-  // @ts-ignore
-  constructor({ logger = new Logger({ config: {} }) } = {}) {
+/** a path, or a falsy value (ignored) */
+type MaybePath = string | false | null | undefined;
+
+class FileSystem {
+  logger: Pick<Logger, 'debug'>;
+
+  constructor({ logger = new Logger({ config: {} }) }: { logger?: Pick<Logger, 'debug'> } = {}) {
     this.logger = logger;
   }
 
-  getFileContent = (path: any) => {
-    return fs.readFileSync(path, { encoding: 'utf8' } as any);
+  getFileContent = (path: string) => {
+    return fs.readFileSync(path, { encoding: 'utf8' });
   };
 
-  readDir = (path: any) => {
+  readDir = (path: string) => {
     return fs.readdirSync(path);
   };
 
-  pathIsDir = (path: any) => {
+  pathIsDir = (path: MaybePath) => {
     if (!path) {
       return false;
     }
@@ -44,7 +55,7 @@ class FileSystem {
     }
   };
 
-  cropExtension = (fileName: any) => {
+  cropExtension = (fileName: string) => {
     const fileNameParts = split(fileName, '.');
 
     if (fileNameParts.length > 1) {
@@ -54,7 +65,7 @@ class FileSystem {
     return fileNameParts.join('.');
   };
 
-  removeDir = (path: any) => {
+  removeDir = (path: string) => {
     try {
       if (typeof fs.rmSync === 'function') {
         fs.rmSync(path, { recursive: true });
@@ -66,7 +77,7 @@ class FileSystem {
     }
   };
 
-  createDir = (path: any) => {
+  createDir = (path: MaybePath) => {
     if (!path) {
       return;
     }
@@ -78,22 +89,22 @@ class FileSystem {
     }
   };
 
-  cleanDir = (path: any) => {
+  cleanDir = (path: string) => {
     this.removeDir(path);
     this.createDir(path);
   };
 
-  pathIsExist = (path: any) => {
+  pathIsExist = (path: MaybePath) => {
     return !!path && fs.existsSync(path);
   };
 
-  createFile = ({ path, fileName, content, withPrefix }: any) => {
+  createFile = ({ path, fileName, content, withPrefix }: CreateFileParams) => {
     // relative paths are relative to the user's working directory, not to this package
     const absolutePath = resolve(process.cwd(), path, `./${fileName}`);
     const fileContent = `${withPrefix ? FILE_PREFIX : ''}${content}`;
 
-    // @ts-ignore
-    return fs.writeFileSync(absolutePath, fileContent, noop);
+    // note: the third argument of `writeFileSync` is `options`, a function there is ignored
+    return fs.writeFileSync(absolutePath, fileContent);
   };
 }
 

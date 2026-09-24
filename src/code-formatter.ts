@@ -2,25 +2,34 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import * as oxfmt from 'oxfmt';
+import type { FormatConfig } from 'oxfmt';
 
 import { OXC_FORMAT_OPTIONS } from './constants';
+import type { OxfmtOptions } from './types/config';
+import type { Logger } from './util/logger';
+import { isObjectRecord } from './util/type-guards';
+
+/** config fields used by `CodeFormatter` */
+export interface CodeFormatterConfig {
+  oxfmtOptrions?: OxfmtOptions | null;
+}
 
 /** `.oxfmtrc.json` keys that are not format options */
 const NON_FORMAT_RC_KEYS = ['$schema', 'ignorePatterns', 'overrides'];
 
 class CodeFormatter {
-  /**
-   * @type {CodeGenConfig}
-   */
-  config;
-  /**
-   * @type {Logger}
-   */
-  logger;
+  config: CodeFormatterConfig;
+  logger: Pick<Logger, 'warn' | 'error'> | null | undefined;
 
-  projectOptions: Record<string, any> | null = null;
+  projectOptions: FormatConfig | null = null;
 
-  constructor({ config, logger }: any) {
+  constructor({
+    config,
+    logger,
+  }: {
+    config: CodeFormatterConfig;
+    logger?: Pick<Logger, 'warn' | 'error'> | null;
+  }) {
     this.config = config;
     this.logger = logger;
   }
@@ -28,7 +37,7 @@ class CodeFormatter {
   /**
    * Reads format options from `.oxfmtrc.json` in the current working directory (if any).
    */
-  getProjectOptions = () => {
+  getProjectOptions = (): FormatConfig => {
     const rcPath = path.resolve(process.cwd(), '.oxfmtrc.json');
 
     if (!fs.existsSync(rcPath)) {
@@ -36,7 +45,10 @@ class CodeFormatter {
     }
 
     try {
-      const rc = JSON.parse(fs.readFileSync(rcPath, 'utf8'));
+      const rc: unknown = JSON.parse(fs.readFileSync(rcPath, 'utf8'));
+      if (!isObjectRecord(rc)) {
+        throw new TypeError('expected an object');
+      }
       for (const key of NON_FORMAT_RC_KEYS) {
         delete rc[key];
       }
@@ -50,9 +62,9 @@ class CodeFormatter {
   /**
    * defaults < `.oxfmtrc.json` < `config.oxfmtOptrions`
    */
-  getFormatOptions = () => {
+  getFormatOptions = (): FormatConfig => {
     // `parser` is not an oxfmt option (kept in the public type for backward compatibility)
-    const { parser: _parser, ...userOptions } = (this.config.oxfmtOptrions || {}) as any;
+    const { parser: _parser, ...userOptions } = this.config.oxfmtOptrions || {};
 
     return {
       ...OXC_FORMAT_OPTIONS,
@@ -61,18 +73,14 @@ class CodeFormatter {
     };
   };
 
-  /**
-   * @param content
-   * @returns {Promise<string>}
-   */
-  oxcFormat = async (content: any) => {
+  oxcFormat = async (content: string): Promise<string> => {
     try {
-      const formatted = await oxfmt.format('file.ts', content, this.getFormatOptions() as any);
+      const formatted = await oxfmt.format('file.ts', content, this.getFormatOptions());
 
       if (formatted.errors?.length) {
         this.logger?.warn(
           'failed to format generated code, it is written unformatted:',
-          ...formatted.errors.map((error: any) => error.codeframe || error.message)
+          ...formatted.errors.map((error) => error.codeframe || error.message)
         );
       }
 
@@ -88,66 +96,5 @@ class CodeFormatter {
     return this.oxcFormat(code);
   };
 }
-
-// class TsLanguageServiceHost {
-//   constructor(fileName: any, content: any) {
-//     const tsconfig = ts.findConfigFile(fileName, ts.sys.fileExists);
-
-//     Object.assign(this, {
-//       fileName,
-//       content,
-//       compilerOptions: tsconfig
-//         ? (ts as any).convertCompilerOptionsFromJson(
-//             ts.readConfigFile(tsconfig, ts.sys.readFile).config.compilerOptions
-//           ).options
-//         : ts.getDefaultCompilerOptions(),
-//     });
-//   }
-
-//   getNewLine() {
-//     return 'newLine' in ts.sys ? ts.sys.newLine : '\n';
-//   }
-
-//   getScriptFileNames() {
-//     // @ts-ignore
-//     return [this.fileName];
-//   }
-
-//   getCompilationSettings() {
-//     // @ts-ignore
-//     return this.compilerOptions;
-//   }
-
-//   getDefaultLibFileName() {
-//     return ts.getDefaultLibFileName(this.getCompilationSettings());
-//   }
-
-//   getCurrentDirectory() {
-//     return process.cwd();
-//   }
-
-//   getScriptVersion() {
-//     return ts.version;
-//   }
-
-//   getScriptSnapshot() {
-//     // @ts-ignore
-//     return ts.ScriptSnapshot.fromString(this.content);
-//   }
-
-//   readFile(fileName: any, encoding: any) {
-//     // @ts-ignore
-//     if (fileName === this.fileName) {
-//       // @ts-ignore
-//       return this.content;
-//     }
-
-//     return ts.sys.readFile(fileName, encoding);
-//   }
-
-//   fileExists(path: any) {
-//     return ts.sys.fileExists(path);
-//   }
-// }
 
 export { CodeFormatter };

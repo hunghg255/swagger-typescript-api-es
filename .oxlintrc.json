@@ -45,5 +45,42 @@
     "builtin": true
   },
   "globals": {},
-  "ignorePatterns": []
+  "ignorePatterns": [],
+  "overrides": [
+    {
+      "files": [
+        "src/types.ts",
+        "src/types/**/*.ts",
+        "src/index.ts",
+        "src/cli.ts",
+        "src/cli-start.ts",
+        "src/configuration.ts",
+        "src/code-gen-process.ts",
+        "src/constants.ts",
+        "src/errors.ts",
+        "src/code-formatter.ts",
+        "src/templates-worker.ts",
+        "src/swagger-schema-resolver.ts",
+        "src/schema-components-map.ts",
+        "src/schema-walker.ts",
+        "src/type-name-formatter.ts",
+        "src/component-type-name-resolver.ts",
+        "src/util/**/*.ts",
+        "src/translators/**/*.ts",
+        "src/commands/**/*.ts"
+      ],
+      "rules": {
+        "typescript/no-explicit-any": "error",
+        "typescript/ban-ts-comment": [
+          "error",
+          {
+            "ts-expect-error": true,
+            "ts-ignore": true,
+            "ts-nocheck": true,
+            "ts-check": false
+          }
+        ]
+      }
+    }
+  ]
 }

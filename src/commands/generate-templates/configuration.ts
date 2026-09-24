@@ -1,14 +1,12 @@
 import { HTTP_CLIENT, PROJECT_VERSION } from '../../constants';
-import { GenerateTemplatesParams } from '../../types';
+import type { GenerateTemplatesParams } from '../../types';
+import type { HttpClientType } from '../../types/config';
 import { objectAssign } from '../../util/object-assign';
 
-/**
- * @type {GenerateTemplatesParams}}
- */
 class TemplatesGenConfig {
   cleanOutput = false;
-  output = undefined;
-  httpClientType = HTTP_CLIENT.FETCH;
+  output: string | undefined = undefined;
+  httpClientType: HttpClientType = HTTP_CLIENT.FETCH;
   modular = false;
   silent = false;
   version = PROJECT_VERSION;
@@ -21,10 +19,7 @@ class TemplatesGenConfig {
     this.update(config);
   }
 
-  /**
-   * @param update {Partial<GenerateTemplatesParams>}
-   */
-  update = (update: any) => {
+  update = (update: GenerateTemplatesParams) => {
     objectAssign(this, update);
   };
 }

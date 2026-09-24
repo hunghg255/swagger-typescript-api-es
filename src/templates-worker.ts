@@ -2,44 +2,56 @@ import { createRequire } from 'node:module';
 import path, { resolve } from 'node:path';
 
 import * as Eta from 'eta';
-import { endsWith, keys, lowerCase, reduce, replace, startsWith } from 'lodash-es';
+import type { EtaConfig } from 'eta';
+import { endsWith, lowerCase, reduce, replace, startsWith } from 'lodash-es';
 
+import type { CodeGenConfig } from './configuration';
 import { TEMPLATES_DIR } from './constants';
+import type { TemplateInfo, TemplatePaths } from './types/config';
+import type { FileSystem } from './util/file-system';
+import type { Logger } from './util/logger';
+import { isRecord } from './util/type-guards';
+
+/** options of `Eta.render` */
+export type TemplateRenderOptions = Partial<EtaConfig>;
+
+/** template to read: by `path`, or by `fileName` from the templates folders */
+export interface GetTemplateParams {
+  fileName?: string;
+  /** template name (for logs) */
+  name?: string;
+  path?: string;
+}
+
+/** code generation process fields used by `TemplatesWorker` */
+export interface TemplatesWorkerDeps {
+  config: CodeGenConfig;
+  logger: Pick<Logger, 'log' | 'warn'>;
+  fileSystem: Pick<FileSystem, 'getFileContent' | 'pathIsExist'>;
+  /** base template data (`utils`, `config`) */
+  getRenderTemplateData: () => object;
+}
 
 /** `require` for an ESM-only package (works from sources and from `dist`) */
 const packageRequire = createRequire(import.meta.url);
 
 class TemplatesWorker {
-  /**
-   * @type {CodeGenConfig}
-   */
-  config;
+  config: CodeGenConfig;
 
-  /**
-   * @type {Logger}
-   */
-  logger;
+  logger: TemplatesWorkerDeps['logger'];
 
-  /**
-   * @type {FileSystem}
-   */
-  fileSystem;
+  fileSystem: TemplatesWorkerDeps['fileSystem'];
 
-  getRenderTemplateData;
+  getRenderTemplateData: TemplatesWorkerDeps['getRenderTemplateData'];
 
-  constructor({ config, logger, fileSystem, getRenderTemplateData }: any) {
+  constructor({ config, logger, fileSystem, getRenderTemplateData }: TemplatesWorkerDeps) {
     this.config = config;
     this.logger = logger;
     this.fileSystem = fileSystem;
     this.getRenderTemplateData = getRenderTemplateData;
   }
 
-  /**
-   *
-   * @param config {CodeGenConfig}
-   * @returns {CodeGenConfig.templatePaths}
-   */
-  getTemplatePaths = (config: any) => {
+  getTemplatePaths = (config: Pick<CodeGenConfig, 'modular' | 'templates'>): TemplatePaths => {
     const baseTemplatesPath = resolve(TEMPLATES_DIR, 'base');
     const defaultTemplatesPath = resolve(TEMPLATES_DIR, 'default');
     const modularTemplatesPath = resolve(TEMPLATES_DIR, 'modular');
@@ -61,22 +73,21 @@ class TemplatesWorker {
     };
   };
 
-  cropExtension = (path: any) =>
+  cropExtension = (path: string) =>
     this.config.templateExtensions.reduce(
-      (path: any, ext: any) => (endsWith(path, ext) ? path.replace(ext, '') : path),
+      (path, ext) => (endsWith(path, ext) ? path.replace(ext, '') : path),
       path
     );
 
-  getTemplateFullPath = (path: any, fileName: any) => {
+  getTemplateFullPath = (path: string, fileName: string) => {
     const raw = resolve(path, './', this.cropExtension(fileName));
-    const pathVariants = this.config.templateExtensions.map(
-      (extension: any) => `${raw}${extension}`
-    );
+    const pathVariants = this.config.templateExtensions.map((extension) => `${raw}${extension}`);
 
-    return pathVariants.find((variant: any) => !!this.fileSystem.pathIsExist(variant));
+    return pathVariants.find((variant) => !!this.fileSystem.pathIsExist(variant));
   };
 
-  requireFnFromTemplate = (packageOrPath: any) => {
+  /** `require` available in templates */
+  requireFnFromTemplate = (packageOrPath: string): unknown => {
     const isPath = startsWith(packageOrPath, './') || startsWith(packageOrPath, '../');
 
     if (isPath) {
@@ -91,8 +102,8 @@ class TemplatesWorker {
     // resolve packages from the user's project first, then from this package
     try {
       return createRequire(resolve(process.cwd(), 'noop.js'))(packageOrPath);
-    } catch (error: any) {
-      if (error?.code !== 'MODULE_NOT_FOUND') {
+    } catch (error: unknown) {
+      if (!isRecord(error) || error.code !== 'MODULE_NOT_FOUND') {
         throw error;
       }
 
@@ -100,7 +111,10 @@ class TemplatesWorker {
     }
   };
 
-  getTemplate = ({ fileName, name, path }: any) => {
+  /**
+   * @returns template content (`null` / `undefined` if it is not found)
+   */
+  getTemplate = ({ fileName, name, path }: GetTemplateParams): string | null | undefined => {
     const { templatePaths } = this.config;
 
     if (path) {
@@ -142,12 +156,17 @@ class TemplatesWorker {
     return fileContent;
   };
 
-  getTemplates = ({ templatePaths }: any) => {
+  /**
+   * @returns Record<templateName, templateContent>
+   */
+  getTemplates = ({
+    templatePaths,
+  }: Pick<CodeGenConfig, 'templatePaths'>): Record<string, string | null | undefined> => {
     if (templatePaths.custom) {
       this.logger.log(`try to read templates from directory "${templatePaths.custom}"`);
     }
 
-    return reduce(
+    return reduce<TemplateInfo, Record<string, string | null | undefined>>(
       this.config.templateInfos,
       (acc, { fileName, name }) => ({
         ...acc,
@@ -157,21 +176,29 @@ class TemplatesWorker {
     );
   };
 
-  findTemplateWithExt = (path: any) => {
+  findTemplateWithExt = (path: string) => {
     const raw = this.cropExtension(path);
-    const pathVariants = this.config.templateExtensions.map(
-      (extension: any) => `${raw}${extension}`
-    );
-    return pathVariants.find((variant: any) => this.fileSystem.pathIsExist(variant));
+    const pathVariants = this.config.templateExtensions.map((extension) => `${raw}${extension}`);
+    return pathVariants.find((variant) => this.fileSystem.pathIsExist(variant));
   };
 
-  getTemplateContent = (path: any) => {
-    const foundTemplatePathKey: any = keys(this.config.templatePaths).find((key) =>
+  /**
+   * Reads a template included from another template (`includeFile("@base/route-docs", data)`).
+   * `@base`, `@default`, `@modular`, `@original` and `@custom` prefixes are replaced with the template paths.
+   */
+  getTemplateContent = (path: string) => {
+    const templatePaths: Record<string, string | null | undefined> = this.config.templatePaths;
+    const foundTemplatePathKey = Object.keys(templatePaths).find((key) =>
       startsWith(path, `@${key}`)
     );
 
     const rawPath = resolve(
-      replace(path, `@${foundTemplatePathKey}`, this.config.templatePaths[foundTemplatePathKey])
+      replace(
+        path,
+        `@${foundTemplatePathKey}`,
+        // `String()`: the same conversion as the one of `String.prototype.replace` (`"undefined"`, `"null"`)
+        String(templatePaths[`${foundTemplatePathKey}`])
+      )
     );
     const fixedPath = this.findTemplateWithExt(rawPath);
 
@@ -199,16 +226,16 @@ class TemplatesWorker {
   };
 
   /**
-   * @param template
-   * @param configuration
-   * @param options
-   * @returns {Promise<string|string|void>}
+   * Renders a template (synchronously) with the base template data (`utils`, `config`) and `configuration`.
    */
-  renderTemplate = (template: string, configuration: any, options: any) => {
+  renderTemplate = (
+    template: string | undefined | null,
+    configuration: object = {},
+    options?: TemplateRenderOptions
+  ): string => {
     if (!template) {
       return '';
     }
-    // @ts-ignore
     return Eta.render(
       template,
       {
@@ -218,7 +245,7 @@ class TemplatesWorker {
       {
         async: false,
         ...options,
-        includeFile: (path: any, configuration: any, options: any) => {
+        includeFile: (path: string, configuration?: object, options?: TemplateRenderOptions) => {
           return this.renderTemplate(this.getTemplateContent(path), configuration, options);
         },
       }

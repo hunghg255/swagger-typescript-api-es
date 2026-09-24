@@ -1,6 +1,7 @@
 import { first, get, merge, omit, values } from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../constants.js';
+import type { BaseSchemaType } from '../types/parsed';
 import { sortByProperty } from '../util/sort-by-property';
 import { ArraySchemaParser } from './base-schema-parsers/array';
 import { ComplexSchemaParser } from './base-schema-parsers/complex';
@@ -117,7 +118,7 @@ class SchemaParser {
       return this._baseSchemaParsers[SCHEMA_TYPES.PRIMITIVE](null, this.typeName);
     }
 
-    let schemaType = null;
+    let schemaType: BaseSchemaType;
     let parsedSchema = null;
 
     if (typeof this.schema === 'string') {

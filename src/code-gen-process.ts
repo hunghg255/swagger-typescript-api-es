@@ -33,13 +33,37 @@ import { SwaggerSchemaResolver } from './swagger-schema-resolver.js';
 import { TemplatesWorker } from './templates-worker';
 import { JavascriptTranslator } from './translators/javascript';
 import { TypeNameFormatter } from './type-name-formatter.js';
-import { IOptions } from './types';
+import type { CodeGenProcessOptions, GenerateApiOutput } from './types';
+import type {
+  ApiConfig,
+  GenerateApiConfiguration,
+  RenderTemplateData,
+  TemplatesToRender,
+  TranslatorIO,
+} from './types/config';
+import type { ComponentName, OpenAPIV3Document } from './types/openapi';
+import type {
+  ComponentRawTypeData,
+  FormattedSchema,
+  ModelType,
+  ModuleRoutes,
+  ParsedSchema,
+  SchemaComponent,
+} from './types/parsed';
 import { FileSystem } from './util/file-system';
 import { internalCase } from './util/internal-case';
 import { Logger } from './util/logger.js';
 import { NameResolver } from './util/name-resolver';
 import { pascalCase } from './util/pascal-case';
 import { sortByProperty } from './util/sort-by-property';
+import { isRecord } from './util/type-guards';
+
+/** a `#/components/<componentName>` section (trusted to contain component values) */
+const isComponentsSection = (value: unknown): value is Record<string, ComponentRawTypeData> =>
+  isRecord(value);
+
+/** formats a parsed schema (`SchemaFormatters.base`) */
+type BaseSchemaFormatter = (parsedSchema: ParsedSchema) => FormattedSchema;
 
 const PATCHABLE_INSTANCES = [
   'schemaWalker',
@@ -51,39 +75,23 @@ const PATCHABLE_INSTANCES = [
   'schemaParserFabric',
   'schemaRoutes',
   'javascriptTranslator',
-];
+] as const;
 
 class CodeGenProcess {
-  /** @type {CodeGenConfig} */
-  config;
-  /** @type {SwaggerSchemaResolver} */
-  swaggerSchemaResolver;
-  /** @type {SchemaComponentsMap} */
-  schemaComponentsMap;
-  /** @type {Logger} */
-  logger;
-  /** @type {TypeNameFormatter} */
-  typeNameFormatter;
-  /** @type {SchemaParserFabric} */
-  schemaParserFabric;
-  /** @type {SchemaRoutes} */
-  schemaRoutes;
-  /** @type {FileSystem} */
-  fileSystem;
-  /** @type {CodeFormatter} */
-  codeFormatter;
-  /** type {TemplatesWorker} */
-  templatesWorker: any;
-  /** @type {SchemaWalker} */
-  schemaWalker;
-  /** @type {JavascriptTranslator} */
-  javascriptTranslator;
+  config: CodeGenConfig;
+  swaggerSchemaResolver: SwaggerSchemaResolver;
+  schemaComponentsMap: SchemaComponentsMap;
+  logger: Logger;
+  typeNameFormatter: TypeNameFormatter;
+  schemaParserFabric: SchemaParserFabric;
+  schemaRoutes: SchemaRoutes;
+  fileSystem: FileSystem;
+  codeFormatter: CodeFormatter;
+  templatesWorker: TemplatesWorker;
+  schemaWalker: SchemaWalker;
+  javascriptTranslator: JavascriptTranslator;
 
-  /**
-   *
-   * @param config {Partial<import("../index.d.ts").GenerateApiConfiguration['config']>}
-   */
-  constructor(config: IOptions) {
+  constructor(config: CodeGenProcessOptions) {
     this.config = new CodeGenConfig(config);
     this.logger = new Logger(this);
     this.fileSystem = new FileSystem(this);
@@ -100,7 +108,7 @@ class CodeGenProcess {
     this.config.componentTypeNameResolver.logger = this.logger;
   }
 
-  async start() {
+  async start(): Promise<GenerateApiOutput> {
     this.config.update({
       templatePaths: this.templatesWorker.getTemplatePaths(this.config),
     });
@@ -108,7 +116,7 @@ class CodeGenProcess {
       templatesToRender: this.templatesWorker.getTemplates(this.config),
     });
 
-    const swagger: any = await this.swaggerSchemaResolver.create();
+    const swagger = await this.swaggerSchemaResolver.create();
 
     this.swaggerSchemaResolver.fixSwaggerSchema(swagger);
 
@@ -126,26 +134,27 @@ class CodeGenProcess {
 
     this.schemaComponentsMap.clear();
 
-    each(swagger.usageSchema.components, (component, componentName) =>
+    each(swagger.usageSchema.components, (component: unknown, componentName) => {
+      // vendor extensions with primitive values (`x-foo: "bar"`) are not components
+      if (!isComponentsSection(component)) {
+        return;
+      }
       each(component, (rawTypeData, typeName) => {
         this.schemaComponentsMap.createComponent(
           this.schemaComponentsMap.createRef(['components', componentName, typeName]),
           rawTypeData
         );
-      })
-    );
+      });
+    });
 
-    /**
-     * @type {SchemaComponent[]}
-     */
     const componentsToParse = this.schemaComponentsMap.filter(
       ...compact(['schemas', this.config.extractResponses && 'responses'])
     );
 
     this.reserveComponentTypeNames(componentsToParse);
 
-    const parsedSchemas = componentsToParse.map((schemaComponent: any) => {
-      const parsed = this.schemaParserFabric.parseSchema(
+    const parsedSchemas = componentsToParse.map((schemaComponent) => {
+      const parsed: ParsedSchema = this.schemaParserFabric.parseSchema(
         schemaComponent.rawTypeData,
         schemaComponent.typeName
       );
@@ -158,7 +167,7 @@ class CodeGenProcess {
       parsedSchemas,
     });
 
-    const rawConfiguration = {
+    const rawConfiguration: GenerateApiConfiguration = {
       apiConfig: this.createApiConfig(swagger.usageSchema),
       config: this.config,
       modelTypes: this.collectModelTypes(),
@@ -203,12 +212,13 @@ class CodeGenProcess {
       configuration,
     });
 
-    const isDirPath = this.fileSystem.pathIsDir(this.config.output);
+    const outputDir = this.config.output;
+    const isDirPath = this.fileSystem.pathIsDir(outputDir);
 
-    if (isDirPath) {
+    if (outputDir && isDirPath) {
       for (const file of files) {
         this.fileSystem.createFile({
-          path: this.config.output,
+          path: outputDir,
           fileName: `${file.fileName}${file.fileExtension}`,
           content: file.fileContent,
           withPrefix: true,
@@ -239,26 +249,28 @@ class CodeGenProcess {
    * component (e.g. `#/components/responses/Error` and `#/components/schemas/Error`)
    * are renamed to avoid duplicate identifiers.
    */
-  reserveComponentTypeNames = (components: any[]) => {
+  reserveComponentTypeNames = (components: SchemaComponent[]) => {
     const resolver = this.config.componentTypeNameResolver;
-    const getNames = (component: any) =>
+    const getNames = (component: SchemaComponent) =>
       compact([component.typeName, this.typeNameFormatter.format(component.typeName, {})]);
 
-    const schemaComponents = components.filter((c: any) => c.componentName === 'schemas');
-    const otherComponents = components.filter((c: any) => c.componentName !== 'schemas');
+    const schemaComponents = components.filter((c) => c.componentName === 'schemas');
+    const otherComponents = components.filter((c) => c.componentName !== 'schemas');
 
     resolver.reserve(schemaComponents.flatMap(getNames));
 
     for (const component of otherComponents) {
-      if (getNames(component).some((name: any) => resolver.isReserved(name))) {
+      if (getNames(component).some((name) => resolver.isReserved(name))) {
         const suffix = pascalCase(component.componentName.replace(/s$/, ''));
-        component.typeName = resolver.resolve([`${component.typeName}${suffix}`]);
+        // the component type name resolver always resolves a name (it has a fallback)
+        component.typeName =
+          resolver.resolve([`${component.typeName}${suffix}`]) ?? component.typeName;
       }
       resolver.reserve(getNames(component));
     }
   };
 
-  getRenderTemplateData = () => {
+  getRenderTemplateData = (): RenderTemplateData => {
     return {
       utils: {
         Ts: this.config.Ts,
@@ -277,7 +289,7 @@ class CodeGenProcess {
         inlineExtraFormatters: this.schemaParserFabric.schemaFormatters.inline,
         formatters: this.schemaParserFabric.schemaFormatters.base,
         formatModelName: this.typeNameFormatter.format,
-        fmtToJSDocLine: function fmtToJSDocLine(line: any, { eol = true }) {
+        fmtToJSDocLine: function fmtToJSDocLine(line: string, { eol = true }: { eol?: boolean }) {
           return ` * ${line}${eol ? '\n' : ''}`;
         },
         NameResolver,
@@ -311,9 +323,12 @@ class CodeGenProcess {
 
   collectModelTypes = () => {
     const components = this.schemaComponentsMap.getComponents();
-    let modelTypes = [];
+    let modelTypes: ModelType[] = [];
 
-    const modelTypeComponents = compact(['schemas', this.config.extractResponses && 'responses']);
+    const modelTypeComponents: ComponentName[] = compact([
+      'schemas',
+      this.config.extractResponses && 'responses',
+    ]);
 
     const getSchemaComponentsCount = () =>
       this.schemaComponentsMap.filter(...modelTypeComponents).length;
@@ -325,7 +340,7 @@ class CodeGenProcess {
       modelTypes = [];
       processedCount = 0;
       for (const component of components) {
-        if (modelTypeComponents.includes((component as any).componentName)) {
+        if (modelTypeComponents.includes(component.componentName)) {
           const modelType = this.prepareModelType(component);
           if (modelType) {
             modelTypes.push(modelType);
@@ -343,30 +358,33 @@ class CodeGenProcess {
     return modelTypes;
   };
 
-  prepareModelType = (typeInfo: any) => {
+  prepareModelType = (typeInfo: SchemaComponent): ModelType | null => {
     if (typeInfo.$prepared) {
       return typeInfo.$prepared;
     }
 
-    if (!typeInfo.typeData) {
-      typeInfo.typeData = this.schemaParserFabric.parseSchema(
+    let rawTypeData = typeInfo.typeData;
+
+    if (!rawTypeData) {
+      const parsed: ParsedSchema = this.schemaParserFabric.parseSchema(
         typeInfo.rawTypeData,
         typeInfo.typeName
       );
+      rawTypeData = parsed;
+      typeInfo.typeData = parsed;
     }
-    const rawTypeData = typeInfo.typeData;
-    const typeData = this.schemaParserFabric.schemaFormatters.base[rawTypeData.type]
-      ? this.schemaParserFabric.schemaFormatters.base[rawTypeData.type](rawTypeData)
-      : rawTypeData;
+    const baseFormatters: Partial<Record<string, BaseSchemaFormatter>> =
+      this.schemaParserFabric.schemaFormatters.base;
+    const formatter = baseFormatters[rawTypeData.type];
+    const typeData = formatter ? formatter(rawTypeData) : rawTypeData;
     const { typeIdentifier, name: originalName, content, description } = typeData;
-    // @ts-ignore
     const name = this.typeNameFormatter.format(originalName);
 
     if (name === null) {
       return null;
     }
 
-    const preparedModelType = {
+    const preparedModelType: ModelType = {
       ...typeData,
       typeIdentifier,
       name,
@@ -382,12 +400,11 @@ class CodeGenProcess {
     return preparedModelType;
   };
 
-  /**
-   *
-   * @param configuration
-   * @returns {Promise<TranslatorIO[]>}
-   */
-  generateOutputFiles = async ({ configuration }: any) => {
+  generateOutputFiles = async ({
+    configuration,
+  }: {
+    configuration: GenerateApiConfiguration;
+  }): Promise<TranslatorIO[]> => {
     const { modular, templatesToRender } = this.config;
 
     const output = modular
@@ -396,7 +413,6 @@ class CodeGenProcess {
 
     if (!isEmpty(configuration.extraTemplates)) {
       for (const extraTemplate of configuration.extraTemplates) {
-        // @ts-ignore
         const content = this.templatesWorker.renderTemplate(
           this.fileSystem.getFileContent(extraTemplate.path),
           configuration
@@ -408,34 +424,28 @@ class CodeGenProcess {
       }
     }
 
-    return output.filter((fileInfo: any) => !!fileInfo && !!fileInfo.fileContent);
+    return output.filter((fileInfo) => !!fileInfo && !!fileInfo.fileContent);
   };
 
-  /**
-   * @param templatesToRender
-   * @param configuration
-   * @returns {Promise<TranslatorIO[]>}
-   */
-  createMultipleFileInfos = async (templatesToRender: any, configuration: any) => {
+  createMultipleFileInfos = async (
+    templatesToRender: TemplatesToRender,
+    configuration: GenerateApiConfiguration
+  ): Promise<TranslatorIO[]> => {
     const { routes } = configuration;
     const { fileNames, generateRouteTypes, generateClient } = configuration.config;
-    /**
-     * @type {TranslatorIO[]}
-     */
-    const modularApiFileInfos = [];
+    const modularApiFileInfos: TranslatorIO[] = [];
 
     // routes without module (e.g. `GET /`) are a flat list of routes,
     // wrap them into a module-like structure expected by modular templates
     const outOfModuleRoutes = routes.outOfModule;
 
     if (outOfModuleRoutes && outOfModuleRoutes.length > 0) {
-      const outOfModuleRoute = {
+      const outOfModuleRoute: ModuleRoutes = {
         moduleName: fileNames.outOfModuleApi,
         routes: outOfModuleRoutes,
       };
 
       if (generateRouteTypes) {
-        // @ts-ignore
         const outOfModuleRouteContent = this.templatesWorker.renderTemplate(
           templatesToRender.routeTypes,
           {
@@ -453,7 +463,6 @@ class CodeGenProcess {
         );
       }
       if (generateClient) {
-        // @ts-ignore
         const outOfModuleApiContent = this.templatesWorker.renderTemplate(templatesToRender.api, {
           ...configuration,
           route: outOfModuleRoute,
@@ -472,7 +481,6 @@ class CodeGenProcess {
     if (routes.combined) {
       for (const route of routes.combined) {
         if (generateRouteTypes) {
-          // @ts-ignore
           const routeModuleContent = this.templatesWorker.renderTemplate(
             templatesToRender.routeTypes,
             {
@@ -491,7 +499,6 @@ class CodeGenProcess {
         }
 
         if (generateClient) {
-          // @ts-ignore
           const apiModuleContent = this.templatesWorker.renderTemplate(templatesToRender.api, {
             ...configuration,
             route,
@@ -512,14 +519,12 @@ class CodeGenProcess {
       ...(await this.createOutputFileInfo(
         configuration,
         fileNames.dataContracts,
-        // @ts-ignore
         this.templatesWorker.renderTemplate(templatesToRender.dataContracts, configuration)
       )),
       ...(generateClient
         ? await this.createOutputFileInfo(
             configuration,
             fileNames.httpClient,
-            // @ts-ignore
             this.templatesWorker.renderTemplate(templatesToRender.httpClient, configuration)
           )
         : []),
@@ -527,13 +532,10 @@ class CodeGenProcess {
     ];
   };
 
-  /**
-   *
-   * @param templatesToRender
-   * @param configuration
-   * @returns {Promise<TranslatorIO[]>}
-   */
-  createSingleFileInfo = (templatesToRender: any, configuration: any) => {
+  createSingleFileInfo = (
+    templatesToRender: TemplatesToRender,
+    configuration: GenerateApiConfiguration
+  ): Promise<TranslatorIO[]> => {
     const { generateRouteTypes, generateClient } = configuration.config;
 
     return this.createOutputFileInfo(
@@ -550,14 +552,11 @@ class CodeGenProcess {
     );
   };
 
-  /**
-   *
-   * @param configuration
-   * @param fileNameFull
-   * @param content
-   * @returns {Promise<TranslatorIO[]>}
-   */
-  createOutputFileInfo = async (configuration: any, fileNameFull: any, content: any) => {
+  createOutputFileInfo = async (
+    configuration: GenerateApiConfiguration,
+    fileNameFull: string,
+    content: string
+  ): Promise<TranslatorIO[]> => {
     const fileName = this.fileSystem.cropExtension(fileNameFull);
     const fileExtension = ts.Extension.Ts;
 
@@ -590,7 +589,7 @@ class CodeGenProcess {
     ];
   };
 
-  createApiConfig = (swaggerSchema: any) => {
+  createApiConfig = (swaggerSchema: OpenAPIV3Document): ApiConfig => {
     const { info, servers, host, basePath, externalDocs, tags } = swaggerSchema;
     const server = (servers && servers[0]) || { url: '' };
     const { title = 'No title', version } = info || {};
@@ -615,14 +614,15 @@ class CodeGenProcess {
     };
   };
 
-  injectClassInstance = (key: any, value: any) => {
-    // @ts-ignore
+  /**
+   * Replaces an instance (e.g. `logger`) in the process and in every patchable instance using it.
+   */
+  injectClassInstance = <K extends keyof this>(key: K, value: this[K]) => {
     this[key] = value;
     for (const instanceKey of PATCHABLE_INSTANCES) {
-      // @ts-ignore
-      if (instanceKey !== key && key in this[instanceKey]) {
-        // @ts-ignore
-        this[instanceKey][key] = value;
+      const instance: object = this[instanceKey];
+      if (instanceKey !== key && key in instance) {
+        Reflect.set(instance, key, value);
       }
     }
   };

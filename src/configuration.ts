@@ -5,10 +5,29 @@ import ts from 'typescript';
 
 import { ComponentTypeNameResolver } from './component-type-name-resolver';
 import * as CONSTANTS from './constants';
-import { IOptions } from './types';
+import type { CodeGenProcessOptions } from './types';
+import type {
+  DeepPartial,
+  ExtraTemplate,
+  ExtractingOptions,
+  FileNames,
+  Hooks,
+  HttpClientType,
+  OxfmtOptions,
+  PrimitiveTypeStruct,
+  RequestOptions,
+  SchemaParsers,
+  TemplateInfo,
+  TemplatePaths,
+  TemplatesToRender,
+  TranslatorConstructor,
+  TsConstructs,
+} from './types/config';
+import type { OpenAPIDocument, OpenAPIV3Document } from './types/openapi';
+import type { SchemaComponent } from './types/parsed';
 import { objectAssign } from './util/object-assign';
 
-const TsKeyword = {
+const TsKeyword: TsConstructs['Keyword'] = {
   Number: 'number',
   String: 'string',
   Boolean: 'boolean',
@@ -29,13 +48,17 @@ const TsKeyword = {
   Union: '|',
 };
 
-const TsCodeGenKeyword = {
+const TsCodeGenKeyword: TsConstructs['CodeGenKeyword'] = {
   UtilRequiredKeys: 'UtilRequiredKeys',
 };
 
-/**
- * @type {GenerateApiConfiguration["config"]}}
- */
+/** changes applied with `CodeGenConfig.update` (deep-merged, `undefined` values are skipped) */
+export type CodeGenConfigUpdate = {
+  [K in keyof CodeGenConfig]?: CodeGenConfig[K] extends Map<unknown, unknown>
+    ? CodeGenConfig[K]
+    : DeepPartial<CodeGenConfig[K]>;
+};
+
 class CodeGenConfig {
   version = CONSTANTS.PROJECT_VERSION;
   /** CLI flag */
@@ -56,12 +79,12 @@ class CodeGenConfig {
   /** parsed swagger schema from getSwaggerObject() */
 
   /** parsed swagger schema ref */
-  swaggerSchema = null;
+  swaggerSchema: OpenAPIV3Document | null = null;
   /** original (converted to json) swagger schema ref */
-  originalSchema = null;
+  originalSchema: OpenAPIDocument | null = null;
 
   /** { "#/components/schemas/Foo": @TypeInfo, ... } */
-  componentsMap = {};
+  componentsMap: Record<string, SchemaComponent> = {};
   /** flag for catching convertion from swagger 2.0 */
   convertedFromSwagger2 = false;
 
@@ -78,43 +101,44 @@ class CodeGenConfig {
   extractResponseError = false;
   extractResponses = false;
   extractEnums = false;
-  fileNames = {
+  fileNames: FileNames = {
     dataContracts: 'data-contracts',
     routeTypes: 'route-types',
     httpClient: 'http-client',
     outOfModuleApi: 'Common',
   };
 
-  routeNameDuplicatesMap = new Map();
+  /** `moduleName|routeName` -> number of routes with this name */
+  routeNameDuplicatesMap = new Map<string, number>();
   /**
    * user formatter options, applied over `CONSTANTS.OXC_FORMAT_OPTIONS` and the project's
    * `.oxfmtrc.json` (see `CodeFormatter`)
    */
-  oxfmtOptrions = {};
-  hooks = {
-    onPreBuildRoutePath: (routePath: any) => void 0,
-    onBuildRoutePath: (routeData: any) => void 0,
-    onInsertPathParam: (pathParam: any) => void 0,
-    onCreateComponent: (schema: any) => schema,
-    onPreParseSchema: (originalSchema: any, typeName: any, schemaType: any) => void 0,
-    onParseSchema: (originalSchema: any, parsedSchema: any) => parsedSchema,
-    onCreateRoute: (routeData: any) => routeData,
-    onInit: (config: any, codeGenProcess: any) => config,
-    onPrepareConfig: (apiConfig: any) => apiConfig,
-    onCreateRequestParams: (rawType: any) => {},
+  oxfmtOptrions: OxfmtOptions = {};
+  hooks: Hooks = {
+    onPreBuildRoutePath: () => void 0,
+    onBuildRoutePath: () => void 0,
+    onInsertPathParam: () => void 0,
+    onCreateComponent: (schema) => schema,
+    onPreParseSchema: () => void 0,
+    onParseSchema: (_originalSchema, parsedSchema) => parsedSchema,
+    onCreateRoute: (routeData) => routeData,
+    onInit: (config) => config,
+    onPrepareConfig: (apiConfig) => apiConfig,
+    onCreateRequestParams: () => {},
     onCreateRouteName: () => {},
-    onFormatTypeName: (typeName: any, rawTypeName: any, schemaType: any) => {},
-    onFormatRouteName: (routeInfo: any, templateRouteName: any) => {},
+    onFormatTypeName: () => {},
+    onFormatRouteName: () => {},
   };
 
-  defaultResponseType;
+  defaultResponseType: string;
   singleHttpClient = false;
-  httpClientType = CONSTANTS.HTTP_CLIENT.FETCH;
+  httpClientType: HttpClientType = CONSTANTS.HTTP_CLIENT.FETCH;
   unwrapResponseData = false;
   disableThrowOnError = false;
   sortTypes = false;
   sortRoutes = false;
-  templatePaths = {
+  templatePaths: TemplatePaths = {
     /** `templates/base` */
     base: '',
     /** `templates/default` */
@@ -128,7 +152,7 @@ class CodeGenConfig {
   };
 
   /** Record<templateName, templateContent> */
-  templatesToRender = {
+  templatesToRender: TemplatesToRender = {
     api: '',
     dataContracts: '',
     dataContractJsDoc: '',
@@ -141,10 +165,8 @@ class CodeGenConfig {
     routeName: '',
   };
 
-  /**
-   * @type {Record<string, (...args: any[]) => MonoSchemaParser>}
-   */
-  schemaParsers = {};
+  /** custom schema parsers */
+  schemaParsers: SchemaParsers = {};
   toJS = false;
   silent = false;
   typePrefix = '';
@@ -152,8 +174,7 @@ class CodeGenConfig {
   enumKeyPrefix = '';
   enumKeySuffix = '';
   patch = false;
-  /** @type {ComponentTypeNameResolver} */
-  componentTypeNameResolver;
+  componentTypeNameResolver: ComponentTypeNameResolver;
   /** name of the main exported class */
   apiClassName = 'Api';
   debug = false;
@@ -162,20 +183,20 @@ class CodeGenConfig {
     addUtilRequiredKeysType: false,
   };
 
-  extraTemplates = [];
+  extraTemplates: ExtraTemplate[] = [];
   input = '';
   modular = false;
   /** absolute output path, or `false` to only return generated files without writing them */
   output: string | false = '';
   url = '';
   cleanOutput = false;
-  spec = null;
+  spec: OpenAPIDocument | null = null;
   fileName = 'Api.ts';
-  authorizationToken = void 0;
-  requestOptions = null;
+  authorizationToken: string | undefined = void 0;
+  requestOptions: RequestOptions | null = null;
 
-  jsPrimitiveTypes = [];
-  jsEmptyTypes = [];
+  jsPrimitiveTypes: string[] = [];
+  jsEmptyTypes: string[] = [];
   fixInvalidTypeNamePrefix = 'Type';
   fixInvalidEnumKeyPrefix = 'Value';
 
@@ -183,10 +204,9 @@ class CodeGenConfig {
   typeNameResolverName = 'ComponentType';
   specificArgNameResolverName = 'arg';
 
-  successResponseStatusRange = [200, 299];
+  successResponseStatusRange: [number, number] = [200, 299];
 
-  /** @type {ExtractingOptions} */
-  extractingOptions = {
+  extractingOptions: ExtractingOptions = {
     requestBodySuffix: ['Payload', 'Body', 'Input'],
     requestParamsSuffix: ['Params'],
     responseBodySuffix: ['Data', 'Result', 'Output'],
@@ -211,15 +231,18 @@ class CodeGenConfig {
     skipLibCheck: true,
   };
 
-  customTranslator: any;
+  customTranslator?: TranslatorConstructor;
 
-  Ts = {
+  /** `CONSTANTS` merged with the `constants` option (set in the constructor) */
+  declare constants: typeof CONSTANTS & Record<string, unknown>;
+
+  Ts: TsConstructs = {
     Keyword: cloneDeep(TsKeyword),
     CodeGenKeyword: cloneDeep(TsCodeGenKeyword),
     /**
      * $A[] or Array<$A>
      */
-    ArrayType: (content: any) => {
+    ArrayType: (content) => {
       if (this.anotherArrayType) {
         return this.Ts.TypeWithGeneric(this.Ts.Keyword.Array, [content]);
       }
@@ -229,84 +252,83 @@ class CodeGenConfig {
     /**
      * "$A"
      */
-    StringValue: (content: any) => `"${content}"`,
+    StringValue: (content) => `"${content}"`,
     /**
      * $A
      */
-    BooleanValue: (content: any) => `${content}`,
+    BooleanValue: (content) => `${content}`,
     /**
      * $A
      */
-    NumberValue: (content: any) => `${content}`,
+    NumberValue: (content) => `${content}`,
     /**
      * $A
      */
-    NullValue: (content: any) => 'null',
+    NullValue: () => 'null',
     /**
      * $A1 | $A2
      */
-    UnionType: (contents: any) => join(uniq(contents), ` ${this.Ts.Keyword.Union} `),
+    UnionType: (contents) => join(uniq(contents), ` ${this.Ts.Keyword.Union} `),
     /**
      * ($A1)
      */
-    ExpressionGroup: (content: any) => (content ? `(${content})` : ''),
+    ExpressionGroup: (content) => (content ? `(${content})` : ''),
     /**
      * $A1 & $A2
      */
-    IntersectionType: (contents: any) => join(uniq(contents), ` ${this.Ts.Keyword.Intersection} `),
+    IntersectionType: (contents) => join(uniq(contents), ` ${this.Ts.Keyword.Intersection} `),
     /**
      * Record<$A1, $A2>
      */
-    RecordType: (key: any, value: any) =>
-      this.Ts.TypeWithGeneric(this.Ts.Keyword.Record, [key, value]),
+    RecordType: (key, value) => this.Ts.TypeWithGeneric(this.Ts.Keyword.Record, [key, value]),
     /**
      * readonly $key?:$value
      */
-    TypeField: ({ readonly, key, optional, value }: any) =>
+    TypeField: ({ readonly, key, optional, value }) =>
       compact([readonly && 'readonly ', key, optional && '?', ': ', value]).join(''),
     /**
      * [key: $A1]: $A2
      */
-    InterfaceDynamicField: (key: any, value: any) => `[key: ${key}]: ${value}`,
+    InterfaceDynamicField: (key, value) => `[key: ${key}]: ${value}`,
 
     /**
      * EnumName.EnumKey
      */
-    EnumUsageKey: (enumStruct: any, key: any) => `${enumStruct}.${key}`,
+    EnumUsageKey: (enumStruct, key) => `${enumStruct}.${key}`,
     /**
      * $A1 = $A2
      */
-    EnumField: (key: any, value: any) => `${key} = ${value}`,
+    EnumField: (key, value) => `${key} = ${value}`,
     /**
      * $A0.key = $A0.value,
      * $A1.key = $A1.value,
      * $AN.key = $AN.value,
      */
-    EnumFieldsWrapper: (contents: any) =>
+    EnumFieldsWrapper: (contents) =>
       map(contents, ({ key, value }) => `  ${this.Ts.EnumField(key, value)}`).join(',\n'),
     /**
      * {\n $A \n}
      */
-    ObjectWrapper: (content: any) => `{\n${content}\n}`,
+    ObjectWrapper: (content) => `{\n${content}\n}`,
     /**
      * /** $A *\/
      */
-    MultilineComment: (contents: any, formatFn: any) =>
+    MultilineComment: (contents, formatFn) =>
       [
         ...(contents.length === 1
           ? [`/** ${contents[0]} */`]
-          : ['/**', ...contents.map((content: any) => ` * ${content}`), ' */']),
+          : ['/**', ...contents.map((content) => ` * ${content}`), ' */']),
       ].map((part) => `${formatFn ? formatFn(part) : part}\n`),
     /**
      * $A1<...$A2.join(,)>
      */
-    TypeWithGeneric: (typeName: any, genericArgs: any) => {
+    TypeWithGeneric: (typeName, genericArgs) => {
       return `${typeName}${genericArgs.length > 0 ? `<${genericArgs.join(',')}>` : ''}`;
     },
     /**
      * [$A1, $A2, ...$AN]
      */
-    Tuple: (values: any) => {
+    Tuple: (values) => {
       return `[${values.join(', ')}]`;
     },
   };
@@ -314,9 +336,8 @@ class CodeGenConfig {
   /**
    * swagger schema type -> typescript type
    * https://json-schema.org/understanding-json-schema/reference/string.html#dates-and-times
-   * @type {Record<string, string | ((schema: any, parser: SchemaParser) => string) | ({ $default: string } & Record<string, string | ((schema: any, parser: SchemaParser) => string)>)>}
    */
-  primitiveTypes = {
+  primitiveTypes: PrimitiveTypeStruct = {
     integer: () => this.Ts.Keyword.Number,
     number: () => this.Ts.Keyword.Number,
     boolean: () => this.Ts.Keyword.Boolean,
@@ -347,7 +368,7 @@ class CodeGenConfig {
     },
   };
 
-  templateInfos = [
+  templateInfos: TemplateInfo[] = [
     { name: 'api', fileName: 'api' },
     { name: 'dataContracts', fileName: 'data-contracts' },
     { name: 'dataContractJsDoc', fileName: 'data-contract-jsdoc' },
@@ -362,9 +383,6 @@ class CodeGenConfig {
 
   templateExtensions = ['.eta', '.ejs'];
 
-  /**
-   * @param config {Partial<GenerateApiConfiguration['config']>}
-   */
   constructor({
     oxfmtOptrions,
     codeGenConstructs,
@@ -374,7 +392,7 @@ class CodeGenConfig {
     hooks,
     output,
     ...otherConfig
-  }: IOptions) {
+  }: CodeGenProcessOptions) {
     objectAssign(this.Ts, codeGenConstructs);
     objectAssign(this.primitiveTypes, primitiveTypeConstructs);
 
@@ -397,16 +415,12 @@ class CodeGenConfig {
       this.Ts.Keyword.Number,
       this.Ts.Keyword.String,
       this.Ts.Keyword.Boolean,
-    ] as any;
-    this.jsEmptyTypes = [this.Ts.Keyword.Null, this.Ts.Keyword.Undefined] as any;
+    ];
+    this.jsEmptyTypes = [this.Ts.Keyword.Null, this.Ts.Keyword.Undefined];
     this.componentTypeNameResolver = new ComponentTypeNameResolver(this, null, []);
   }
 
-  /**
-   *
-   * @param update {Partial<GenerateApiConfiguration["config"]>}
-   */
-  update = (update: any) => {
+  update = (update: CodeGenConfigUpdate) => {
     objectAssign(this, update);
   };
 }

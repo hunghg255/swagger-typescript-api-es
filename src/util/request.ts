@@ -1,20 +1,33 @@
 import { merge, startsWith } from 'lodash-es';
 import { Agent, EnvHttpProxyAgent, fetch, type Dispatcher } from 'undici';
 
+import type { RequestOptions } from '../types/config';
+import type { Logger } from './logger';
+import { isRecord } from './type-guards';
+
 /** default timeout (ms) for downloading the swagger schema */
 const DEFAULT_REQUEST_TIMEOUT = 60_000;
 
-class Request {
-  /**
-   * @type {CodeGenConfig}
-   */
-  config;
-  /**
-   * @type {Logger}
-   */
-  logger;
+export interface DispatcherParams {
+  url: string;
+  disableStrictSSL?: boolean;
+  disableProxy?: boolean;
+}
 
-  constructor(config: any, logger: any) {
+export interface DownloadParams extends DispatcherParams, RequestOptions {
+  authToken?: string;
+}
+
+/** config fields used by `Request` */
+export interface RequestConfig {
+  requestOptions?: RequestOptions | null;
+}
+
+class Request {
+  config: RequestConfig;
+  logger: Pick<Logger, 'warn'>;
+
+  constructor(config: RequestConfig, logger: Pick<Logger, 'warn'>) {
     this.config = config;
     this.logger = logger;
   }
@@ -25,7 +38,7 @@ class Request {
    * - `disableStrictSSL` skips TLS certificate validation (for https urls)
    * - a custom undici `dispatcher` in `requestOptions` replaces all of the above
    */
-  createDispatcher({ url, disableStrictSSL, disableProxy }: any): Dispatcher {
+  createDispatcher({ url, disableStrictSSL, disableProxy }: DispatcherParams): Dispatcher {
     const tls =
       disableStrictSSL && !startsWith(url, 'http://') ? { rejectUnauthorized: false } : {};
 
@@ -39,16 +52,16 @@ class Request {
   }
 
   /**
-   *
-   * @param url {string}
-   * @param disableStrictSSL
-   * @param disableProxy
-   * @param authToken
-   * @param options {Partial<RequestInit> & { timeout?: number, dispatcher?: Dispatcher }}
-   * @return {Promise<string>}
+   * @returns downloaded text
    */
-  async download({ url, disableStrictSSL, disableProxy, authToken, ...options }: any) {
-    const requestOptions: any = {};
+  async download({
+    url,
+    disableStrictSSL,
+    disableProxy,
+    authToken,
+    ...options
+  }: DownloadParams): Promise<string> {
+    const requestOptions: RequestOptions = {};
 
     if (authToken) {
       requestOptions.headers = {
@@ -86,11 +99,13 @@ class Request {
     try {
       response = await fetch(url, fetchOptions);
       body = await response.text();
-    } catch (error: any) {
-      const isTimeout = !!timeoutSignal?.aborted || error?.name === 'TimeoutError';
+    } catch (error: unknown) {
+      const errorRecord = isRecord(error) ? error : undefined;
+      const cause = isRecord(errorRecord?.cause) ? errorRecord.cause : undefined;
+      const isTimeout = !!timeoutSignal?.aborted || errorRecord?.name === 'TimeoutError';
       const reason = isTimeout
         ? `request timed out after ${timeout}ms`
-        : error?.cause?.message || error?.message || String(error);
+        : cause?.message || errorRecord?.message || String(error);
       throw new Error(`Failed to fetch swagger schema from "${url}": ${reason}`);
     } finally {
       ownDispatcher?.destroy().catch(() => {});

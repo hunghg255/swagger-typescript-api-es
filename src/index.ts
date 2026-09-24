@@ -33,21 +33,23 @@
  */
 
 import { CodeGenProcess } from './code-gen-process.js';
-import { GenerateApiOutput, IOptions } from './types';
+import type { GenerateApiOutput, IOptions } from './types';
 
-const createCodeGenProcess = ({ name, ...config }: IOptions): { start(): Promise<any> } =>
+const createCodeGenProcess = ({ name, ...config }: IOptions): CodeGenProcess =>
   new CodeGenProcess({
     ...config,
     // `undefined` keeps the default file name ("Api.ts")
     fileName: name,
-  } as any);
+  });
 
 async function generateApi(options: IOptions): Promise<GenerateApiOutput>;
 async function generateApi(options: IOptions[]): Promise<GenerateApiOutput[]>;
 async function generateApi(
   options: IOptions | IOptions[]
 ): Promise<GenerateApiOutput | GenerateApiOutput[]>;
-async function generateApi(options: IOptions | IOptions[]) {
+async function generateApi(
+  options: IOptions | IOptions[]
+): Promise<GenerateApiOutput | GenerateApiOutput[]> {
   if (Array.isArray(options)) {
     const results: GenerateApiOutput[] = [];
     for (const option of options) {
@@ -59,11 +61,21 @@ async function generateApi(options: IOptions | IOptions[]) {
   return createCodeGenProcess(options).start();
 }
 
-export const defaultConfig = (options: IOptions | IOptions[]) => {
+/** identity function giving types to a config file (`swagger-typescript-api.config.ts`) */
+function defaultConfig(options: IOptions): IOptions;
+function defaultConfig(options: IOptions[]): IOptions[];
+function defaultConfig(options: IOptions | IOptions[]): IOptions | IOptions[];
+function defaultConfig(options: IOptions | IOptions[]) {
   return options;
-};
+}
 
-export { generateApi };
+export { generateApi, defaultConfig };
 export * as constants from './constants';
 
 export { generateTemplates } from './commands/generate-templates';
+export type { GenerateTemplatesOutput, SourceTemplate } from './commands/generate-templates';
+
+export type * from './types';
+
+/** base class of custom translators (`customTranslator` option) */
+export { Translator } from './translators/translator';

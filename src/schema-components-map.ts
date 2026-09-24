@@ -1,12 +1,14 @@
 import { filter, startsWith } from 'lodash-es';
 
-class SchemaComponentsMap {
-  /** @type {SchemaComponent[]} */
-  _data = [];
-  /** @type {CodeGenConfig} */
-  config;
+import type { CodeGenConfig } from './configuration';
+import type { ComponentName } from './types/openapi';
+import type { ComponentRawTypeData, SchemaComponent } from './types/parsed';
 
-  constructor({ config }: any) {
+class SchemaComponentsMap {
+  _data: SchemaComponent[] = [];
+  config: Pick<CodeGenConfig, 'hooks'>;
+
+  constructor({ config }: { config: Pick<CodeGenConfig, 'hooks'> }) {
     this.config = config;
   }
 
@@ -14,19 +16,20 @@ class SchemaComponentsMap {
     this._data = [];
   }
 
-  createRef = (paths: any) => {
+  /** `["components", "schemas", "Pet"]` -> `#/components/schemas/Pet` */
+  createRef = (paths: string[]) => {
     return ['#', ...paths].join('/');
   };
 
-  parseRef = (ref: any) => {
+  parseRef = (ref: string) => {
     return ref.split('/');
   };
 
-  createComponent($ref: any, rawTypeData: any) {
+  createComponent($ref: string, rawTypeData: ComponentRawTypeData): SchemaComponent {
     const parsed = this.parseRef($ref);
-    const typeName = parsed.at(-1);
-    const componentName = parsed.at(-2);
-    const componentSchema = {
+    const typeName = parsed[parsed.length - 1];
+    const componentName: ComponentName = parsed[parsed.length - 2];
+    const componentSchema: SchemaComponent = {
       $ref,
       typeName,
       rawTypeData,
@@ -35,43 +38,35 @@ class SchemaComponentsMap {
       typeData: null,
     };
 
-    const usageComponent: any =
-      this.config.hooks.onCreateComponent(componentSchema) || componentSchema;
+    const usageComponent = this.config.hooks.onCreateComponent(componentSchema) || componentSchema;
 
-    const refIndex = this._data.findIndex((c: any) => c.$ref === $ref);
+    const refIndex = this._data.findIndex((c) => c.$ref === $ref);
 
     if (refIndex === -1) {
-      // @ts-ignore
       this._data.push(usageComponent);
     } else {
-      // @ts-ignore
       this._data[refIndex] = usageComponent;
     }
 
     return usageComponent;
   }
 
-  /**
-   * @returns {SchemaComponent[]}
-   */
   getComponents() {
     return this._data;
   }
 
   /**
-   * @params {...string[]} componentNames
-   * @returns {SchemaComponent[]}
+   * @param componentNames `schemas`, `responses`, ...
+   * @returns components of the given sections
    */
-  filter(...componentNames: any) {
-    return filter(this._data, (it: any) =>
-      componentNames.some((componentName: any) =>
-        startsWith(it.$ref, `#/components/${componentName}`)
-      )
+  filter(...componentNames: ComponentName[]) {
+    return filter(this._data, (it) =>
+      componentNames.some((componentName) => startsWith(it.$ref, `#/components/${componentName}`))
     );
   }
 
-  get($ref: any) {
-    return this._data.find((c: any) => c.$ref === $ref) || null;
+  get($ref: string) {
+    return this._data.find((c) => c.$ref === $ref) || null;
   }
 }
 

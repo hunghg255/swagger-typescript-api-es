@@ -62,7 +62,7 @@ const OPTIONS = new Map(
   Object.entries(MAP_KEY).map(([cliKey, info]) => [normalizeKey(cliKey), { ...info, cliKey }])
 );
 
-const parseBoolean = (value: any) => {
+const parseBoolean = (value: unknown) => {
   if (typeof value === 'string') {
     return !['false', '0', 'no', 'off', ''].includes(value.trim().toLowerCase());
   }
@@ -70,9 +70,12 @@ const parseBoolean = (value: any) => {
   return !!value;
 };
 
-const formatValue = (value: any, { type, invert, cliKey }: OptionInfo & { cliKey: string }) => {
+const formatValue = (
+  value: unknown,
+  { type, invert, cliKey }: OptionInfo & { cliKey: string }
+): string | number | boolean | null | undefined => {
   // repeated flags are collected into an array by the args parser, the last one wins
-  const rawValue = Array.isArray(value) ? value[value.length - 1] : value;
+  const rawValue: unknown = Array.isArray(value) ? value[value.length - 1] : value;
 
   switch (type) {
     case 'boolean': {
@@ -92,8 +95,11 @@ const formatValue = (value: any, { type, invert, cliKey }: OptionInfo & { cliKey
   }
 };
 
-export const formatOptions = (options: Record<string, any>) => {
-  const formattedOptions = Object.keys(options).reduce((acc: any, key) => {
+/** CLI options mapped to config options (`IOptions` keys, `name` and `customConfig`) */
+export type FormattedCliOptions = Record<string, string | number | boolean | null | undefined>;
+
+export const formatOptions = (options: Record<string, unknown>): FormattedCliOptions => {
+  const formattedOptions = Object.keys(options).reduce<FormattedCliOptions>((acc, key) => {
     const option = OPTIONS.get(normalizeKey(key));
 
     if (option && options[key] !== undefined) {

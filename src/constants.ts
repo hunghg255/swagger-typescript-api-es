@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import type { FormatConfig } from 'oxfmt';
+
 import packageJson from '../package.json';
 
 const RESERVED_QUERY_ARG_NAMES = ['query', 'queryParams', 'queryArg'];
@@ -23,12 +25,12 @@ const SCHEMA_TYPES = {
   COMPLEX_ALL_OF: 'allOf',
   COMPLEX_NOT: 'not',
   COMPLEX_UNKNOWN: '__unknown',
-};
+} as const;
 
 const HTTP_CLIENT = {
   FETCH: 'fetch',
   AXIOS: 'axios',
-};
+} as const;
 
 const PROJECT_VERSION = packageJson.version;
 
@@ -46,7 +48,7 @@ const DEFAULT_BODY_ARG_NAME = 'data';
  * Default oxfmt options for generated code.
  * Overridden by the project's `.oxfmtrc.json` (cwd) and then by `oxfmtOptrions`.
  */
-const OXC_FORMAT_OPTIONS = {
+const OXC_FORMAT_OPTIONS: FormatConfig = {
   singleQuote: true,
   jsxSingleQuote: true,
   printWidth: 100,
