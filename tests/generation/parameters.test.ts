@@ -191,3 +191,43 @@ describe('extracted request params optionality', () => {
     }
   }
 });
+
+describe('path params encoding', () => {
+  const spec = oas({
+    '/pets/{petId}/photos/{side}': {
+      get: {
+        operationId: 'getPhoto',
+        parameters: [
+          { name: 'petId', in: 'path', required: true, schema: { type: 'integer' } },
+          { name: 'side', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        responses: ok({ type: 'string' }),
+      },
+    },
+  });
+
+  it('wraps every path param with encodeURIComponent', async () => {
+    const { files } = await generate(spec);
+    expect(files['api.ts']).toContain(
+      'path: `/pets/${encodeURIComponent(petId)}/photos/${encodeURIComponent(side)}`'
+    );
+    expect(typeCheck(files)).toEqual([]);
+  });
+
+  it('keeps insertions customized by onInsertPathParam as is', async () => {
+    const { files } = await generate(spec, {
+      hooks: {
+        onInsertPathParam: (name: string) => (name === 'side' ? `String(${name})` : undefined),
+      },
+    });
+    expect(files['api.ts']).toContain(
+      'path: `/pets/${encodeURIComponent(petId)}/photos/${String(side)}`'
+    );
+  });
+
+  it('works with extractRequestParams', async () => {
+    const { files } = await generate(spec, { extractRequestParams: true });
+    expect(files['api.ts']).toContain('${encodeURIComponent(petId)}');
+    expect(typeCheck(files)).toEqual([]);
+  });
+});

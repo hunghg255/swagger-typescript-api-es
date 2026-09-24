@@ -250,6 +250,17 @@ class SchemaRoutes {
     return this.config.hooks.onBuildRoutePath(result) || result;
   };
 
+  /**
+   * Wraps path params inserted into the request path (`/pets/${petId}`) with
+   * `encodeURIComponent`, so values like "a/b" or "a?b" don't change the request target.
+   * Insertions customized via `hooks.onInsertPathParam` are kept as is.
+   */
+  encodePathParams = (route: string, pathParamNames: string[]) =>
+    pathParamNames.reduce(
+      (path, name) => path.split(`\${${name}}`).join(`\${encodeURIComponent(${name})}`),
+      route
+    );
+
   getRouteParams = (
     routeInfo: any,
     pathParamsFromRouteName: any,
@@ -1071,7 +1082,7 @@ class SchemaRoutes {
       request: {
         contentTypes: requestBodyInfo.contentTypes,
         parameters: pathArgs,
-        path: route,
+        path: this.encodePathParams(route, pathArgsNames),
         formData: requestBodyInfo.contentKind === CONTENT_KIND.FORM_DATA,
         isQueryBody: requestBodyInfo.contentKind === CONTENT_KIND.URL_ENCODED,
         security: hasSecurity,

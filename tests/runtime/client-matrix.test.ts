@@ -109,9 +109,7 @@ describe.each(variants)('generated $name client', (variant) => {
       expect(server.last().path).toBe('/pets/7/photos/front%20view');
     });
 
-    // Known limitation: path params are interpolated without `encodeURIComponent`,
-    // so "/" and "?" in a value change the request target.
-    it.fails('encodes reserved characters in path params', async () => {
+    it('encodes reserved characters in path params', async () => {
       await client.pets.getPet('a b/c?d');
       expect(server.last().path).toBe('/pets/a%20b%2Fc%3Fd');
     });

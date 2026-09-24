@@ -227,7 +227,7 @@ export class Pets<SecurityDataType = unknown> extends HttpClient<SecurityDataTyp
    */
   getPet = (petId: number, params: RequestParams = {}) =>
     this.request<GetPetData, GetPetError>({
-      path: \`/pets/\${petId}\`,
+      path: \`/pets/\${encodeURIComponent(petId)}\`,
       method: 'GET',
       secure: true,
       ...params,
@@ -242,7 +242,7 @@ export class Pets<SecurityDataType = unknown> extends HttpClient<SecurityDataTyp
    */
   updatePet = (petId: string, data?: NewPet, params: RequestParams = {}) =>
     this.request<UpdatePetData, any>({
-      path: \`/pets/\${petId}\`,
+      path: \`/pets/\${encodeURIComponent(petId)}\`,
       method: 'PATCH',
       body: data,
       secure: true,
@@ -259,7 +259,7 @@ export class Pets<SecurityDataType = unknown> extends HttpClient<SecurityDataTyp
    */
   deletePet = (petId: string, params: RequestParams = {}) =>
     this.request<void, DeletePetError>({
-      path: \`/pets/\${petId}\`,
+      path: \`/pets/\${encodeURIComponent(petId)}\`,
       method: 'DELETE',
       secure: true,
       ...params,
@@ -274,7 +274,7 @@ export class Pets<SecurityDataType = unknown> extends HttpClient<SecurityDataTyp
    */
   uploadPetPhoto = (petId: string, data: UploadPetPhotoPayload, params: RequestParams = {}) =>
     this.request<UploadPetPhotoData, any>({
-      path: \`/pets/\${petId}/photo\`,
+      path: \`/pets/\${encodeURIComponent(petId)}/photo\`,
       method: 'POST',
       body: data,
       secure: true,
@@ -1068,7 +1068,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      */
     getPet: (petId: number, params: RequestParams = {}) =>
       this.request<Pet, Error>({
-        path: \`/pets/\${petId}\`,
+        path: \`/pets/\${encodeURIComponent(petId)}\`,
         method: 'GET',
         secure: true,
         format: 'json',
@@ -1085,7 +1085,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      */
     updatePet: (petId: string, data?: NewPet, params: RequestParams = {}) =>
       this.request<Pet, any>({
-        path: \`/pets/\${petId}\`,
+        path: \`/pets/\${encodeURIComponent(petId)}\`,
         method: 'PATCH',
         body: data,
         secure: true,
@@ -1104,7 +1104,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      */
     deletePet: (petId: string, params: RequestParams = {}) =>
       this.request<void, Error>({
-        path: \`/pets/\${petId}\`,
+        path: \`/pets/\${encodeURIComponent(petId)}\`,
         method: 'DELETE',
         secure: true,
         ...params,
@@ -1128,7 +1128,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       params: RequestParams = {}
     ) =>
       this.request<Photo, any>({
-        path: \`/pets/\${petId}/photo\`,
+        path: \`/pets/\${encodeURIComponent(petId)}/photo\`,
         method: 'POST',
         body: data,
         secure: true,
@@ -1195,7 +1195,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      */
     getUser: (username: Username, params: RequestParams = {}) =>
       this.request<User, Error>({
-        path: \`/users/\${username}\`,
+        path: \`/users/\${encodeURIComponent(username)}\`,
         method: 'GET',
         secure: true,
         format: 'json',
@@ -1212,7 +1212,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      */
     replaceUser: (username: string, data: User, params: RequestParams = {}) =>
       this.request<string, any>({
-        path: \`/users/\${username}\`,
+        path: \`/users/\${encodeURIComponent(username)}\`,
         method: 'PUT',
         body: data,
         secure: true,
@@ -1537,7 +1537,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      */
     updateItem: (itemId: string, item?: NewItem, params: RequestParams = {}) =>
       this.request<Item, any>({
-        path: \`/items/\${itemId}\`,
+        path: \`/items/\${encodeURIComponent(itemId)}\`,
         method: 'PUT',
         body: item,
         type: ContentType.Json,
@@ -1554,7 +1554,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      */
     deleteItem: (itemId: string, params: RequestParams = {}) =>
       this.request<void, any>({
-        path: \`/items/\${itemId}\`,
+        path: \`/items/\${encodeURIComponent(itemId)}\`,
         method: 'DELETE',
         ...params,
       }),
@@ -1575,7 +1575,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       params: RequestParams = {}
     ) =>
       this.request<Item, any>({
-        path: \`/items/\${itemId}/image\`,
+        path: \`/items/\${encodeURIComponent(itemId)}/image\`,
         method: 'POST',
         body: data,
         type: ContentType.FormData,
