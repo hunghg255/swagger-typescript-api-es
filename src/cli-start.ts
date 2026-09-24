@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { cac } from 'cac';
 import pc from 'picocolors';
-import { cac } from 'unprompts';
 import { loadConf, readConfig } from 'unreadconfig';
 
 import { generateApi } from '.';

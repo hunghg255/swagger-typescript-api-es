@@ -188,7 +188,7 @@ export class Pets<SecurityDataType = unknown> extends HttpClient<SecurityDataTyp
    *
    * @tags pet
    * @name ListPets
-   * @summary List pets matching *\\\\/ filters
+   * @summary List pets matching *\\/ filters
    * @request GET:/pets
    * @secure
    */
@@ -338,7 +338,7 @@ export namespace Pets {
    * No description
    * @tags pet
    * @name ListPets
-   * @summary List pets matching *\\\\/ filters
+   * @summary List pets matching *\\/ filters
    * @request GET:/pets
    * @secure
    */
@@ -486,15 +486,15 @@ export interface Category {
 }
 
 export interface NewPet {
-  /** @example \\"doggie\\" */
+  /** @example "doggie" */
   name: string;
   /** pet status in the store */
   status?: PetStatus;
   category?: Category;
   /**
-   * Home *\\\\/ page
-   * @default \\"https://example.com/*\\\\/\\"
-   * @pattern ^https?://.*\\\\/$
+   * Home *\\/ page
+   * @default "https://example.com/*\\/"
+   * @pattern ^https?://.*\\/$
    */
   homepage?: string;
   tags?: string[] | null;
@@ -670,15 +670,15 @@ export interface Category {
 }
 
 export interface NewPet {
-  /** @example \\"doggie\\" */
+  /** @example "doggie" */
   name: string;
   /** pet status in the store */
   status?: PetStatus;
   category?: Category;
   /**
-   * Home *\\\\/ page
-   * @default \\"https://example.com/*\\\\/\\"
-   * @pattern ^https?://.*\\\\/$
+   * Home *\\/ page
+   * @default "https://example.com/*\\/"
+   * @pattern ^https?://.*\\/$
    */
   homepage?: string;
   tags?: string[] | null;
@@ -754,7 +754,7 @@ export interface FullRequestParams extends Omit<RequestInit, 'body'> {
   type?: ContentType;
   /** query params */
   query?: QueryParamsType;
-  /** format of response (i.e. response.json() -> format: \\"json\\") */
+  /** format of response (i.e. response.json() -> format: "json") */
   format?: ResponseFormat;
   /** request body */
   body?: unknown;
@@ -974,7 +974,7 @@ export class HttpClient<SecurityDataType = unknown> {
 }
 
 /**
- * @title Petstore *\\\\/ Test
+ * @title Petstore *\\/ Test
  * @version 1.0.0
  * @baseUrl https://petstore.example.com/v1
  *
@@ -1002,7 +1002,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      *
      * @tags pet
      * @name ListPets
-     * @summary List pets matching *\\\\/ filters
+     * @summary List pets matching *\\/ filters
      * @request GET:/pets
      * @secure
      */
@@ -1257,7 +1257,7 @@ export interface FullRequestParams extends Omit<RequestInit, 'body'> {
   type?: ContentType;
   /** query params */
   query?: QueryParamsType;
-  /** format of response (i.e. response.json() -> format: \\"json\\") */
+  /** format of response (i.e. response.json() -> format: "json") */
   format?: ResponseFormat;
   /** request body */
   body?: unknown;
