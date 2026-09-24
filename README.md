@@ -788,6 +788,20 @@ Tests live in `tests/`:
 
 To run a single file: `npx vitest run tests/core/cli-start.test.ts`.
 
+### Docs site and online playground
+
+`docs/` is a Next.js app with the documentation (rendered from this README) and a playground that
+generates clients in a serverless function (`POST /api/generate`), so you can try options, view the
+generated files and download them (one by one or as a `.zip`).
+
+```bash
+npm run build          # the docs app uses the library from ../dist
+cd docs && npm install
+npm run dev            # http://localhost:3000
+```
+
+See [`docs/README.md`](docs/README.md) for the API, its security limits and how to deploy it on Vercel.
+
 CI runs lint, `fmt:check`, typecheck, the tests and the build on Node 20 and 22. Commit messages
 follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`,
 `chore:`, ...).

@@ -104,6 +104,10 @@ This is **ESM only** (`"type": "module"` in package.json). No CommonJS interop. 
 - `dist/cli.mjs` — CLI entry
 - `dist/templates/` — copied from `templates/` post-build
 
+### Docs site
+
+`docs/` is a separate Next.js 16 app (own `package.json`, deps installed in `docs/`), deployed on Vercel with Root Directory `docs`. It depends on the library via `file:..` and loads `../dist/index.mjs` at runtime in `lib/server/generate.ts` (run `npm run build` at the root first). Pages: `/` landing, `/docs` (renders the root `README.md`), `/playground`; API: `POST /api/generate` (`lib/server/*`: option whitelist, spec parsing, SSRF-safe URL download, rate limit). Contract in `docs/lib/api-types.ts`. Tests: `cd docs && npm test` (vitest) and `npm run test:e2e` (Playwright). Root lint/format ignore `docs/**`.
+
 ## Key Hooks for Customization
 
 Users can provide hooks in their config to customize generation:
