@@ -4,7 +4,7 @@ description: Guide for using swagger-typescript-api-es — a CLI and Node.js too
 license: MIT
 metadata:
   author: hunghg255
-  version: 0.0.15
+  version: 0.2.0
   source: https://github.com/hunghg255/swagger-typescript-api-es
 ---
 
