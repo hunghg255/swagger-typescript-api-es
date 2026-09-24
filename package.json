@@ -40,6 +40,7 @@
     "lint:fix": "oxlint --fix",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
+    "typecheck": "tsc --noEmit",
     "start": "esno play/test.ts",
     "test": "vitest",
     "changelog": "npx changeloggithub@latest --all true && git add CHANGELOG.md && git commit -m 'chore: update CHANGELOG.md'",
@@ -71,5 +72,8 @@
     "tslib": "^2.8.1",
     "unbuild": "^2.0.0",
     "vitest": "^0.34.6"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
