@@ -43,6 +43,7 @@
     "typecheck": "tsc --noEmit",
     "start": "tsx play/test.ts",
     "test": "vitest",
+    "test:coverage": "vitest run --coverage",
     "changelog": "npx changeloggithub@latest --all true && git add CHANGELOG.md && git commit -m 'chore: update CHANGELOG.md'",
     "prepublishOnly": "npm run build",
     "release": "bumpp -r && npm publish"
@@ -67,6 +68,8 @@
     "@types/lodash-es": "^4.17.12",
     "@types/node": "^20.19.0",
     "@types/swagger2openapi": "^7.0.4",
+    "@vitest/coverage-v8": "^4.1.11",
+    "axios": "^1.20.0",
     "bumpp": "^10.4.1",
     "oxlint": "^1.71.0",
     "tslib": "^2.8.1",
