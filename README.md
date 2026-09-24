@@ -205,7 +205,7 @@ swagger-typescript-api-es [options]
 | `--module-name-index <number>`    | `moduleNameIndex`          | `0`        | Which path segment to group routes into modules by (`GET:/fruits/getFruit` with index `0` gives module `fruits`)                             |
 | `--module-name-first-tag <bool>`  | `moduleNameFirstTag`       | `false`    | Group routes into modules by their first tag                                                                                                 |
 | `--disableStrictSSL <bool>`       | `disableStrictSSL`         | `false`    | Skip TLS certificate checks when downloading the schema                                                                                      |
-| `--disableProxy <bool>`           | `disableProxy`             | `false`    | No-op, kept for backward compatibility                                                                                                       |
+| `--disableProxy <bool>`           | `disableProxy`             | `false`    | Ignore `HTTP(S)_PROXY` env variables when downloading the schema                                                                             |
 | `--httpClientType <fetch\|axios>` | `httpClientType`           | `"fetch"`  | HTTP client used by the generated code                                                                                                       |
 | `--unwrap-response-data <bool>`   | `unwrapResponseData`       | `false`    | Resolve requests with the response `data` instead of the full response                                                                       |
 | `--disable-throw-on-error <bool>` | `disableThrowOnError`      | `false`    | (fetch) Do not throw when `response.ok` is not `true`                                                                                        |
@@ -323,12 +323,12 @@ class. In modular mode they go to `Common.ts`.
 
 ### Network (schema download)
 
-| Option               | Type                                         | Default                  | Description                                                                                                                                      |
-| -------------------- | -------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `requestOptions`     | `Record<string, any> & { timeout?: number }` | `null` (timeout `60000`) | Extra `fetch` options (`headers`, `agent`, `signal`, ...) for downloading the schema from `url`. `timeout` is in ms, and `0` disables it.        |
-| `authorizationToken` | `string`                                     | –                        | Sent as-is in the `Authorization` header when downloading the schema (for example `"Bearer xxx"`).                                               |
-| `disableStrictSSL`   | `boolean`                                    | `false`                  | Accept self-signed or invalid TLS certificates for `https` schema URLs.                                                                          |
-| `disableProxy`       | `boolean`                                    | `false`                  | **No-op**, kept for backward compatibility. The download never uses `HTTP(S)_PROXY`. To go through a proxy, pass an `agent` in `requestOptions`. |
+| Option               | Type                                         | Default                  | Description                                                                                                                                                                        |
+| -------------------- | -------------------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `requestOptions`     | `Record<string, any> & { timeout?: number }` | `null` (timeout `60000`) | Extra [undici `fetch`](https://undici.nodejs.org) options (`headers`, `dispatcher`, `signal`, ...) for downloading the schema from `url`. `timeout` is in ms, and `0` disables it. |
+| `authorizationToken` | `string`                                     | –                        | Sent as-is in the `Authorization` header when downloading the schema (for example `"Bearer xxx"`).                                                                                 |
+| `disableStrictSSL`   | `boolean`                                    | `false`                  | Accept self-signed or invalid TLS certificates for `https` schema URLs.                                                                                                            |
+| `disableProxy`       | `boolean`                                    | `false`                  | By default the download goes through the proxy from `HTTP_PROXY` / `HTTPS_PROXY` (respecting `NO_PROXY`). `true` connects directly.                                                |
 
 ### Logging
 
@@ -734,8 +734,10 @@ If formatting fails, a warning is printed and the code is written unformatted.
 - **Download timeouts.** The schema download times out after **60 s**. Change it with
   `requestOptions: { timeout: 120_000 }` (`0` disables the timeout). This option has no CLI flag.
 - **Self-signed certificates.** Use `disableStrictSSL: true` (or `--disableStrictSSL true`).
-- **Proxies.** `disableProxy` does nothing, and the download ignores `HTTP(S)_PROXY`. Pass a proxy
-  agent: `requestOptions: { agent: new HttpsProxyAgent(proxyUrl) }`.
+- **Proxies.** The download respects `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY`. Use `disableProxy: true`
+  to connect directly, or pass your own undici dispatcher:
+  `requestOptions: { dispatcher: new ProxyAgent(proxyUrl) }` (`import { ProxyAgent } from 'undici'`).
+  The node-fetch style `agent` option is no longer supported.
 - **Protected schema.** Use `authorizationToken: 'Bearer <token>'` or
   `requestOptions: { headers: { ... } }`.
 - **`sortRouters`** is deprecated. Use `sortRoutes`.

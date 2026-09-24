@@ -1,8 +1,5 @@
-import https from 'node:https';
-
 import { merge, startsWith } from 'lodash-es';
-// @ts-ignore
-import nodeFetch from 'node-fetch-h2';
+import { Agent, EnvHttpProxyAgent, fetch, type Dispatcher } from 'undici';
 
 /** default timeout (ms) for downloading the swagger schema */
 const DEFAULT_REQUEST_TIMEOUT = 60_000;
@@ -23,29 +20,36 @@ class Request {
   }
 
   /**
+   * - by default `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY` env variables are respected
+   * - `disableProxy` connects directly, ignoring those env variables
+   * - `disableStrictSSL` skips TLS certificate validation (for https urls)
+   * - a custom undici `dispatcher` in `requestOptions` replaces all of the above
+   */
+  createDispatcher({ url, disableStrictSSL, disableProxy }: any): Dispatcher {
+    const tls =
+      disableStrictSSL && !startsWith(url, 'http://') ? { rejectUnauthorized: false } : {};
+
+    if (disableProxy) {
+      return new Agent({ connect: tls });
+    }
+
+    // `requestTls` (tls options for the proxied request) is passed through to undici's ProxyAgent,
+    // but it is missing in the EnvHttpProxyAgent options type
+    return new EnvHttpProxyAgent({ connect: tls, requestTls: tls } as EnvHttpProxyAgent.Options);
+  }
+
+  /**
    *
    * @param url {string}
    * @param disableStrictSSL
+   * @param disableProxy
    * @param authToken
-   * @param options {Partial<RequestInit> & { timeout?: number }}
+   * @param options {Partial<RequestInit> & { timeout?: number, dispatcher?: Dispatcher }}
    * @return {Promise<string>}
    */
-  async download({
-    url,
-    disableStrictSSL,
-    authToken,
-    // accepted for compatibility: neither the global fetch nor node-fetch use HTTP(S)_PROXY,
-    // so the schema is always downloaded without a proxy
-    disableProxy: _disableProxy,
-    ...options
-  }: any) {
+  async download({ url, disableStrictSSL, disableProxy, authToken, ...options }: any) {
     const requestOptions: any = {};
 
-    if (disableStrictSSL && !startsWith(url, 'http://')) {
-      requestOptions.agent = new https.Agent({
-        rejectUnauthorized: false,
-      });
-    }
     if (authToken) {
       requestOptions.headers = {
         Authorization: authToken,
@@ -54,7 +58,21 @@ class Request {
 
     merge(requestOptions, options, this.config.requestOptions);
 
-    const { timeout = DEFAULT_REQUEST_TIMEOUT, ...fetchOptions } = requestOptions;
+    const { timeout = DEFAULT_REQUEST_TIMEOUT, agent, ...fetchOptions } = requestOptions;
+
+    if (agent) {
+      this.logger.warn(
+        '"requestOptions.agent" is not supported anymore, use an undici "dispatcher" instead'
+      );
+    }
+
+    const ownDispatcher = fetchOptions.dispatcher
+      ? null
+      : this.createDispatcher({ url, disableStrictSSL, disableProxy });
+
+    if (ownDispatcher) {
+      fetchOptions.dispatcher = ownDispatcher;
+    }
 
     const timeoutSignal = !fetchOptions.signal && timeout > 0 ? AbortSignal.timeout(timeout) : null;
 
@@ -62,26 +80,20 @@ class Request {
       fetchOptions.signal = timeoutSignal;
     }
 
-    // The global fetch (undici) doesn't support node http(s) agents, which are needed
-    // for `disableStrictSSL` (or a custom `requestOptions.agent`)
-    const fetchFn =
-      fetchOptions.agent || typeof globalThis.fetch !== 'function' ? nodeFetch : globalThis.fetch;
-
-    let response: any;
+    let response: Awaited<ReturnType<typeof fetch>>;
     let body: string;
 
     try {
-      response = await fetchFn(url, fetchOptions);
+      response = await fetch(url, fetchOptions);
       body = await response.text();
     } catch (error: any) {
-      const isTimeout =
-        !!timeoutSignal?.aborted ||
-        error?.name === 'TimeoutError' ||
-        error?.type === 'request-timeout';
+      const isTimeout = !!timeoutSignal?.aborted || error?.name === 'TimeoutError';
       const reason = isTimeout
         ? `request timed out after ${timeout}ms`
         : error?.cause?.message || error?.message || String(error);
       throw new Error(`Failed to fetch swagger schema from "${url}": ${reason}`);
+    } finally {
+      ownDispatcher?.destroy().catch(() => {});
     }
 
     if (!response.ok) {

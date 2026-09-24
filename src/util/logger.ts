@@ -1,5 +1,13 @@
 import { map, startsWith } from 'lodash-es';
-import { emojify } from 'node-emoji';
+
+const EMOJIS: Record<string, string> = {
+  ':sparkles:': '✨',
+  ':star:': '⭐',
+  ':white_check_mark:': '✅',
+  ':exclamation:': '❗',
+  ':no_entry:': '⛔',
+  ':black_large_square:': '⬛',
+};
 
 class Logger {
   firstLog = true;
@@ -18,7 +26,7 @@ class Logger {
       return;
     }
 
-    const emoji = emojify(emojiName);
+    const emoji = EMOJIS[emojiName] ?? emojiName;
 
     if (this.firstLog && !this.config.silent) {
       this.firstLog = false;

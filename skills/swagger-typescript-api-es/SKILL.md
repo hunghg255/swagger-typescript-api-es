@@ -108,7 +108,7 @@ export default defaultConfig({
 - **`extractEnums: true` extracts inline enums** into separate enum declarations — without it, inline enums stay as union literals in types.
 - **Request body is optional unless the schema marks it `required: true`**; with `extractRequestParams`, the extracted query params argument is optional when all its fields are optional.
 - **`silent: true` hides logs but still prints errors.**
-- **`sortRouters` is deprecated** — use `sortRoutes`. `disableProxy` is a no-op.
+- **`sortRouters` is deprecated** — use `sortRoutes`. The schema download respects `HTTP(S)_PROXY` unless `disableProxy: true`.
 - **Swagger 2.0 vs OpenAPI 3.0** — both are supported but some options like `generateResponses` behave differently between versions. Test with your actual schema.
 
 See `references/options.md` for the full IOptions reference.

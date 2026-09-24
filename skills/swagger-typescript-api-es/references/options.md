@@ -86,7 +86,7 @@ There is no `parser` option — the parser is inferred from the file extension (
 | `debug`                    | `boolean`                                    | Log additional information about the generation process                              |
 | `authorizationToken`       | `string`                                     | Sent as `Authorization` header when downloading the schema from `url`                |
 | `disableStrictSSL`         | `boolean`                                    | Disable strict SSL when downloading the schema                                       |
-| `disableProxy`             | `boolean`                                    | No-op, kept for backward compatibility                                               |
+| `disableProxy`             | `boolean`                                    | Ignore `HTTP(S)_PROXY` env variables when downloading the schema                     |
 | `requestOptions`           | `Record<string, any> & { timeout?: number }` | Extra `fetch` options for downloading the schema; `timeout` in ms (default: `60000`) |
 | `codeGenConstructs`        | `function`                                   | Override code generation constructs                                                  |
 | `primitiveTypeConstructs`  | `function`                                   | Override primitive type mappings                                                     |

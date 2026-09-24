@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import { resolve } from 'node:path';
 
 import { noop, split } from 'lodash-es';
-import makeDir from 'make-dir';
 
 import { Logger } from './logger';
 
@@ -73,7 +72,7 @@ class FileSystem {
     }
 
     try {
-      makeDir.sync(path);
+      fs.mkdirSync(path, { recursive: true });
     } catch (error) {
       this.logger.debug('failed to create dir', error);
     }

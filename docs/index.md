@@ -89,7 +89,7 @@ bunx swagger-typescript-api-es@latest -u https://petstore.swagger.io/v2/swagger.
 | `--module-name-index`      |       | Determines which path index should be used for routes separation (example: GET:/fruits/getFruit -> index:0 -> moduleName -> fruits) | `0`        |
 | `--module-name-first-tag`  |       | Splits routes based on the first tag                                                                                                | `false`    |
 | `--disableStrictSSL`       |       | Disable strict SSL                                                                                                                  | `false`    |
-| `--disableProxy`           |       | Disable proxy                                                                                                                       | `false`    |
+| `--disableProxy`           |       | Ignore HTTP(S)_PROXY                                                                                                                | `false`    |
 | `--httpClientType`         |       | HTTP client type                                                                                                                    | `"fetch"`  |
 | `--unwrap-response-data`   |       | Unwrap the data item from the response                                                                                              | `false`    |
 | `--disable-throw-on-error` |       | Do not throw an error when response.ok is not true                                                                                  | `false`    |
@@ -230,7 +230,7 @@ interface IOptions {
   /** default type for empty response schema (default: "void") */
   defaultResponseType?: string;
   disableStrictSSL?: boolean;
-  /** no-op, kept for backward compatibility */
+  /** ignore HTTP_PROXY / HTTPS_PROXY env variables when downloading the schema */
   disableProxy?: boolean;
   authorizationToken?: string;
   /**
