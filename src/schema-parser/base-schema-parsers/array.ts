@@ -1,14 +1,15 @@
-import { isArray, isObject } from 'lodash-es';
+import { isObject } from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../../constants';
+import type { ParsedPrimitiveSchema } from '../../types/parsed';
 import { MonoSchemaParser } from '../mono-schema-parser';
 
-class ArraySchemaParser extends MonoSchemaParser {
-  parse() {
+class ArraySchemaParser extends MonoSchemaParser<ParsedPrimitiveSchema> {
+  parse(): ParsedPrimitiveSchema {
     let contentType;
     const { type, description, items } = this.schema || {};
 
-    if (isArray(items) && type === SCHEMA_TYPES.ARRAY) {
+    if (Array.isArray(items) && type === SCHEMA_TYPES.ARRAY) {
       const tupleContent = [];
       for (const item of items) {
         tupleContent.push(
@@ -20,7 +21,11 @@ class ArraySchemaParser extends MonoSchemaParser {
       contentType = this.config.Ts.Tuple(tupleContent);
     } else {
       const content = this.schemaParserFabric
-        .createSchemaParser({ schema: items, schemaPath: this.schemaPath })
+        // (unreachable) a list of items without `type: "array"` is parsed as an object with index keys
+        .createSchemaParser({
+          schema: Array.isArray(items) ? { ...items } : items,
+          schemaPath: this.schemaPath,
+        })
         .getInlineParseContent();
       contentType = this.config.Ts.ArrayType(content);
     }

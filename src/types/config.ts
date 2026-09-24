@@ -249,15 +249,41 @@ export type SchemaParserName =
   | 'discriminator'
   | 'array';
 
-/** a class extending `MonoSchemaParser` */
-export type SchemaParserConstructor = new (
-  schemaParser: SchemaParser,
-  schema: SchemaObject,
-  typeName?: string | null,
-  schemaPath?: (string | null | undefined)[]
-) => MonoSchemaParser;
+/** path of type names used to build names of extracted types (`MonoSchemaParser.schemaPath`) */
+export type SchemaPath = (string | null | undefined)[];
 
-export type SchemaParsers = Partial<Record<SchemaParserName, SchemaParserConstructor>>;
+/**
+ * a class extending `MonoSchemaParser`
+ * @template TResult result of `parse()`
+ * @template TSchema schema passed to the parser
+ */
+export type SchemaParserConstructor<
+  TResult = ParsedSchema | string,
+  TSchema extends SchemaObject | null = SchemaObject,
+> = new (
+  schemaParser: SchemaParser,
+  schema: TSchema,
+  typeName?: string | null,
+  schemaPath?: SchemaPath
+) => MonoSchemaParser<TResult, TSchema>;
+
+/**
+ * Custom schema parsers.
+ * Complex parsers (`allOf`, `oneOf`, ...) return the inline type (string),
+ * base parsers return a parsed schema (the primitive parser also gets `null` for a missing schema).
+ */
+export interface SchemaParsers {
+  complexOneOf?: SchemaParserConstructor<string>;
+  complexAllOf?: SchemaParserConstructor<string>;
+  complexAnyOf?: SchemaParserConstructor<string>;
+  complexNot?: SchemaParserConstructor<string>;
+  enum?: SchemaParserConstructor<ParsedSchema>;
+  object?: SchemaParserConstructor<ParsedSchema>;
+  complex?: SchemaParserConstructor<ParsedSchema>;
+  primitive?: SchemaParserConstructor<ParsedSchema, SchemaObject | null>;
+  discriminator?: SchemaParserConstructor<ParsedSchema>;
+  array?: SchemaParserConstructor<ParsedSchema>;
+}
 
 // #endregion
 

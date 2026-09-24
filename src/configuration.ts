@@ -314,11 +314,10 @@ class CodeGenConfig {
      * /** $A *\/
      */
     MultilineComment: (contents, formatFn) =>
-      [
-        ...(contents.length === 1
-          ? [`/** ${contents[0]} */`]
-          : ['/**', ...contents.map((content) => ` * ${content}`), ' */']),
-      ].map((part) => `${formatFn ? formatFn(part) : part}\n`),
+      (contents.length === 1
+        ? [`/** ${contents[0]} */`]
+        : ['/**', ...contents.map((content) => ` * ${content}`), ' */']
+      ).map((part) => `${formatFn ? formatFn(part) : part}\n`),
     /**
      * $A1<...$A2.join(,)>
      */

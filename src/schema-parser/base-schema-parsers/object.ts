@@ -1,10 +1,12 @@
-import { compact, get, isObject, map, some, values } from 'lodash-es';
+import { isObject, map, some, values } from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../../constants';
+import type { SchemaObject } from '../../types/openapi';
+import type { ObjectFieldContent, ParsedObjectSchema } from '../../types/parsed';
 import { MonoSchemaParser } from '../mono-schema-parser';
 
-class ObjectSchemaParser extends MonoSchemaParser {
-  parse() {
+class ObjectSchemaParser extends MonoSchemaParser<ParsedObjectSchema> {
+  parse(): ParsedObjectSchema {
     const contentProperties = this.getObjectSchemaContent(this.schema);
 
     return {
@@ -21,13 +23,14 @@ class ObjectSchemaParser extends MonoSchemaParser {
     };
   }
 
-  getObjectSchemaContent = (schema: any) => {
+  getObjectSchemaContent = (schema: SchemaObject | null | undefined): ObjectFieldContent[] => {
     const { properties, additionalProperties } = schema || {};
 
-    const propertiesContent = map(properties, (property, name) => {
-      const required = this.schemaUtils.isPropertyRequired(name, property, schema);
-      const rawTypeData = get(this.schemaUtils.getSchemaRefType(property), 'rawTypeData', {});
-      const nullable = !!(rawTypeData.nullable || property.nullable);
+    const propertiesContent = map(properties, (property, name): ObjectFieldContent => {
+      const required = this.schemaUtils.isPropertyRequired(name, property, schema || {});
+      const refRawSchema: SchemaObject =
+        this.schemaUtils.getSchemaRefType(property)?.rawTypeData ?? {};
+      const nullable = !!(refRawSchema.nullable || property.nullable);
       const fieldName = this.typeNameFormatter.isValidName(name)
         ? name
         : this.config.Ts.StringValue(name);
@@ -45,11 +48,9 @@ class ObjectSchemaParser extends MonoSchemaParser {
         title: property.title,
         description:
           property.description ||
-          compact(map(property[this.schemaUtils.getComplexType(property)], 'description'))[0] ||
-          rawTypeData.description ||
-          compact(
-            map(rawTypeData[this.schemaUtils.getComplexType(rawTypeData)], 'description')
-          )[0] ||
+          this.schemaUtils.getComplexSchemaDescription(property) ||
+          refRawSchema.description ||
+          this.schemaUtils.getComplexSchemaDescription(refRawSchema) ||
           '',
         isRequired: required,
         isNullable: nullable,

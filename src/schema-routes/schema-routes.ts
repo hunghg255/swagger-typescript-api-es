@@ -9,7 +9,6 @@ import {
   find,
   flatMap,
   forEach,
-  get,
   includes,
   isEqual,
   isNaN,
@@ -24,8 +23,10 @@ import {
   split,
   startsWith,
   uniq,
+  values,
 } from 'lodash-es';
 
+import type { CodeGenConfig } from '../configuration';
 import {
   DEFAULT_BODY_ARG_NAME,
   RESERVED_BODY_ARG_NAMES,
@@ -34,7 +35,47 @@ import {
   RESERVED_QUERY_ARG_NAMES,
   SCHEMA_TYPES,
 } from '../constants';
+import type { SchemaComponentsMap } from '../schema-components-map';
+import type { SchemaParserFabric } from '../schema-parser/schema-parser-fabric';
+import type { SchemaUtils } from '../schema-parser/schema-utils';
+import type { TemplatesWorker } from '../templates-worker';
+import type { TypeNameFormatter } from '../type-name-formatter';
+import type {
+  ContentObject,
+  HeaderObject,
+  HttpMethod,
+  MaybeRef,
+  OpenAPIV3Document,
+  OperationObject,
+  ParameterLocation,
+  ParameterObject,
+  PathItemObject,
+  ResponseObject,
+  ResponsesObject,
+  SchemaObject,
+} from '../types/openapi';
+import type {
+  BuildRoutePathResult,
+  ContentKind,
+  GroupedRoutes,
+  ModuleRoutes,
+  ParsedRoute,
+  ParsedSchema,
+  PathArg,
+  RawRouteInfo,
+  RequestBodyInfo,
+  ResponseBodyInfo,
+  ResponseInfo,
+  RouteNameInfo,
+  RouteNameParam,
+  RouteParam,
+  RouteParams,
+  SchemaComponent,
+  SpecificArgs,
+} from '../types/parsed';
 import { generateId } from '../util/id';
+import type { Logger } from '../util/logger';
+import { isOperationObject, isRecord } from '../util/type-guards';
 import { SpecificArgNameResolver } from './util/specific-arg-name-resolver';
 
 const CONTENT_KIND = {
@@ -44,41 +85,93 @@ const CONTENT_KIND = {
   IMAGE: 'IMAGE',
   OTHER: 'OTHER',
   TEXT: 'TEXT',
+} as const satisfies Record<ContentKind, ContentKind>;
+
+/** config fields used by `SchemaRoutes` */
+export type SchemaRoutesConfig = Pick<
+  CodeGenConfig,
+  | 'hooks'
+  | 'Ts'
+  | 'defaultResponseAsSuccess'
+  | 'successResponseStatusRange'
+  | 'defaultResponseType'
+  | 'extractRequestBody'
+  | 'extractRequestParams'
+  | 'extractResponseBody'
+  | 'extractResponseError'
+  | 'extractingOptions'
+  | 'routeNameDuplicatesMap'
+  | 'templatesToRender'
+  | 'moduleNameIndex'
+  | 'moduleNameFirstTag'
+  | 'sortRoutes'
+  | 'specificArgNameResolverName'
+>;
+
+/** instances used by `SchemaRoutes` (a `CodeGenProcess`) */
+export interface SchemaRoutesDeps {
+  config: SchemaRoutesConfig;
+  schemaParserFabric: SchemaParserFabric;
+  schemaComponentsMap: SchemaComponentsMap;
+  logger: Pick<Logger, 'warn' | 'debug'>;
+  templatesWorker: Pick<TemplatesWorker, 'renderTemplate'>;
+  typeNameFormatter: Pick<TypeNameFormatter, 'format'>;
+}
+
+/** an object which can have a `content` map (request body, response, parameter or a `$ref` to them) */
+interface ContentHolder {
+  $ref?: string;
+  content?: ContentObject;
+}
+
+/** a request/response (`ContentHolder`) or a component value resolved from a `$ref` */
+type RequestInfoLike = ContentHolder | SchemaComponent['rawTypeData'] | null | undefined;
+
+/** param schema with its location (`{ ...schema, in: "path" }`) */
+type LocatedSchemaObject = SchemaObject & { in: ParameterLocation };
+
+/** `value` is a (resolved) parameter object with a location (`in`) */
+const isParameterObject = (value: unknown): value is ParameterObject =>
+  isRecord(value) && !!value.in;
+
+/** `value` is an object with a `schema` (e.g. an OpenAPI 3 header object) */
+const hasSchema = (value: unknown): value is { schema: SchemaObject } =>
+  isRecord(value) && !!value.schema;
+
+/** `content` of a request body / response (the structure of the document is trusted) */
+const getContentObject = (value: unknown): ContentObject | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const { content } = value;
+  return isContentObject(content) ? content : null;
 };
 
+const isContentObject = (value: unknown): value is ContentObject => isRecord(value);
+
+/** a component created by the generator (e.g. an extracted response body) */
+const isSchemaComponent = (value: ResponseInfo | SchemaComponent): value is SchemaComponent =>
+  'rawTypeData' in value && 'componentName' in value;
+
+/** `allFieldsAreOptional` of a parsed object schema (`false` for other schemas) */
+const isAllFieldsOptional = (parsedSchema: ParsedSchema) =>
+  'allFieldsAreOptional' in parsedSchema && !!parsedSchema.allFieldsAreOptional;
+
+/** vendor extension with a content type (`x-accepts`, `x-contentType`) */
+const getExtraContentType = (value: unknown) => (typeof value === 'string' ? value : undefined);
+
 class SchemaRoutes {
-  /**
-   * @type {CodeGenConfig}
-   */
-  config;
-  /**
-   * @type {SchemaParserFabric}
-   */
-  schemaParserFabric;
-  /**
-   * @type {SchemaUtils}
-   */
-  schemaUtils;
-  /**
-   * @type {TypeNameFormatter}
-   */
-  typeNameFormatter;
-  /**
-   * @type {SchemaComponentsMap}
-   */
-  schemaComponentsMap;
-  /**
-   * @type {Logger}
-   */
-  logger;
-  /**
-   * @type {TemplatesWorker}
-   */
-  templatesWorker;
+  config: SchemaRoutesConfig;
+  schemaParserFabric: SchemaParserFabric;
+  schemaUtils: SchemaUtils;
+  typeNameFormatter: Pick<TypeNameFormatter, 'format'>;
+  schemaComponentsMap: SchemaComponentsMap;
+  logger: Pick<Logger, 'warn' | 'debug'>;
+  templatesWorker: Pick<TemplatesWorker, 'renderTemplate'>;
 
-  FORM_DATA_TYPES: any = [];
+  FORM_DATA_TYPES: string[] = [];
 
-  routes: any = [];
+  routes: ParsedRoute[] = [];
   hasSecurityRoutes = false;
   hasQueryRoutes = false;
   hasFormDataRoutes = false;
@@ -90,7 +183,7 @@ class SchemaRoutes {
     logger,
     templatesWorker,
     typeNameFormatter,
-  }: any) {
+  }: SchemaRoutesDeps) {
     this.config = config;
     this.schemaParserFabric = schemaParserFabric;
     this.schemaUtils = this.schemaParserFabric.schemaUtils;
@@ -107,13 +200,14 @@ class SchemaRoutes {
 
   /**
    * Unique key of a parameter (name + location), resolving `$ref` parameters.
-   * @returns {string | null}
    */
-  getParameterKey = (parameter: any) => {
-    const resolved = this.schemaUtils.isRefSchema(parameter)
-      ? get(this.schemaComponentsMap.get(parameter.$ref), 'rawTypeData')
-      : parameter;
-    if (!resolved || !resolved.name || !resolved.in) {
+  getParameterKey = (parameter: MaybeRef<ParameterObject>): string | null => {
+    const $ref = isRecord(parameter) ? parameter.$ref : undefined;
+    const resolved =
+      typeof $ref === 'string' && $ref
+        ? this.schemaComponentsMap.get($ref)?.rawTypeData
+        : parameter;
+    if (!isParameterObject(resolved) || !resolved.name) {
       return null;
     }
     return `${resolved.in}:${resolved.name}`;
@@ -123,12 +217,15 @@ class SchemaRoutes {
    * Merges path-level and operation-level parameters.
    * Operation-level parameters override path-level ones with the same name and location.
    */
-  mergeParameters = (pathParameters: any, operationParameters: any) => {
+  mergeParameters = (
+    pathParameters: PathItemObject['parameters'],
+    operationParameters: OperationObject['parameters']
+  ): MaybeRef<ParameterObject>[] => {
     const operationParams = compact(concat(operationParameters));
     const overriddenKeys = new Set(compact(operationParams.map(this.getParameterKey)));
 
     return [
-      ...compact(concat(pathParameters)).filter((parameter: any) => {
+      ...compact(concat(pathParameters)).filter((parameter) => {
         const key = this.getParameterKey(parameter);
         return !key || !overriddenKeys.has(key);
       }),
@@ -136,15 +233,16 @@ class SchemaRoutes {
     ];
   };
 
-  createRequestsMap = (routeInfoByMethodsMap: any) => {
-    const parameters = get(routeInfoByMethodsMap, 'parameters');
+  createRequestsMap = (routeInfoByMethodsMap: PathItemObject): Record<string, OperationObject> => {
+    const parameters = routeInfoByMethodsMap?.parameters;
 
     return reduce(
       routeInfoByMethodsMap,
-      (acc: any, requestInfo, method) => {
+      (acc: Record<string, OperationObject>, requestInfo: unknown, method: string) => {
         if (
           startsWith(method, 'x-') ||
-          ['parameters', '$ref', 'summary', 'description', 'servers'].includes(method)
+          ['parameters', '$ref', 'summary', 'description', 'servers'].includes(method) ||
+          !isOperationObject(requestInfo)
         ) {
           return acc;
         }
@@ -160,7 +258,7 @@ class SchemaRoutes {
     );
   };
 
-  parseRouteName = (originalRouteName: any) => {
+  parseRouteName = (originalRouteName: string): BuildRoutePathResult => {
     const routeName = this.config.hooks.onPreBuildRoutePath(originalRouteName) || originalRouteName;
 
     const pathParamMatches = (routeName || '').match(
@@ -168,9 +266,9 @@ class SchemaRoutes {
     );
 
     // used in case when path parameters is not declared in requestInfo.parameters ("in": "path")
-    const pathParams: any = reduce(
+    const pathParams = reduce(
       pathParamMatches,
-      (pathParams: any, match) => {
+      (pathParams: RouteNameParam[], match) => {
         const paramName = replace(match, /[:{}]/g, '');
 
         if (!paramName) {
@@ -200,7 +298,7 @@ class SchemaRoutes {
 
     let fixedRoute = reduce(
       pathParams,
-      (fixedRoute, pathParam, i, arr) => {
+      (fixedRoute: string, pathParam, i, arr) => {
         const insertion =
           this.config.hooks.onInsertPathParam(pathParam.name, i, arr, fixedRoute) || pathParam.name;
         return replace(fixedRoute, pathParam.$match, `\${${insertion}}`);
@@ -209,7 +307,7 @@ class SchemaRoutes {
     );
 
     const queryParamMatches = fixedRoute.match(/({\?.*})/g);
-    const queryParams = [];
+    const queryParams: RouteNameParam[] = [];
 
     if (queryParamMatches && queryParamMatches.length > 0) {
       for (const match of queryParamMatches) {
@@ -222,13 +320,13 @@ class SchemaRoutes {
           .replaceAll(/({\?)|(})|\s/g, '')
           .split(',')
       )) {
-        if (includes(paramName as any, '-')) {
+        if (includes(paramName, '-')) {
           this.logger.warn('wrong query param name', paramName);
         }
 
         queryParams.push({
           $match: paramName,
-          name: camelCase(paramName as any),
+          name: camelCase(paramName),
           required: true,
           type: 'string',
           description: '',
@@ -240,7 +338,7 @@ class SchemaRoutes {
       }
     }
 
-    const result = {
+    const result: BuildRoutePathResult = {
       originalRoute: originalRouteName || '',
       route: fixedRoute,
       pathParams,
@@ -262,13 +360,13 @@ class SchemaRoutes {
     );
 
   getRouteParams = (
-    routeInfo: any,
-    pathParamsFromRouteName: any,
-    queryParamsFromRouteName: any
-  ) => {
+    routeInfo: Pick<OperationObject, 'parameters'>,
+    pathParamsFromRouteName: RouteNameParam[],
+    queryParamsFromRouteName: RouteNameParam[]
+  ): RouteParams => {
     const { parameters } = routeInfo;
 
-    const routeParams: any = {
+    const routeParams: RouteParams = {
       path: [],
       header: [],
       body: [],
@@ -279,31 +377,24 @@ class SchemaRoutes {
 
     each(parameters, (parameter) => {
       const refTypeInfo = this.schemaParserFabric.schemaUtils.getSchemaRefType(parameter);
-      let routeParam = null;
+      // `$ref` parameters are resolved, unresolved `$ref`s (without `in`) are skipped
+      const resolvedParameter =
+        refTypeInfo && isParameterObject(refTypeInfo.rawTypeData)
+          ? refTypeInfo.rawTypeData
+          : parameter;
 
-      if (refTypeInfo && refTypeInfo.rawTypeData.in && refTypeInfo.rawTypeData) {
-        if (!routeParams[refTypeInfo.rawTypeData.in]) {
-          routeParams[refTypeInfo.rawTypeData.in] = [];
-        }
-
-        routeParam = {
-          ...refTypeInfo.rawTypeData,
-          ...refTypeInfo.rawTypeData.schema,
-        };
-      } else {
-        if (!parameter.in) {
-          return;
-        }
-
-        if (!routeParams[parameter.in]) {
-          routeParams[parameter.in] = [];
-        }
-
-        routeParam = {
-          ...parameter,
-          ...parameter.schema,
-        };
+      if (!isParameterObject(resolvedParameter)) {
+        return;
       }
+
+      if (!routeParams[resolvedParameter.in]) {
+        routeParams[resolvedParameter.in] = [];
+      }
+
+      const routeParam = {
+        ...resolvedParameter,
+        ...resolvedParameter.schema,
+      };
 
       if (routeParam.in === 'path') {
         if (!routeParam.name) {
@@ -313,9 +404,7 @@ class SchemaRoutes {
         routeParam.name = camelCase(routeParam.name);
       }
 
-      if (routeParam) {
-        routeParams[routeParam.in].push(routeParam);
-      }
+      routeParams[routeParam.in].push(routeParam);
     });
 
     // used in case when path parameters is not declared in requestInfo.parameters ("in": "path")
@@ -341,18 +430,21 @@ class SchemaRoutes {
     return routeParams;
   };
 
-  getContentTypes = (requestInfo: any, extraContentTypes: any) =>
+  getContentTypes = (
+    requestInfo: (ContentHolder | null | undefined)[] | Record<string, ContentHolder> | undefined,
+    extraContentTypes?: (string | null | undefined)[]
+  ): string[] =>
     uniq(
       compact([
         ...(extraContentTypes || []),
         ...flatMap(
-          requestInfo,
-          (requestInfoData) => requestInfoData && keys(requestInfoData.content)
+          Array.isArray(requestInfo) ? requestInfo : values(requestInfo),
+          (requestInfoData) => (requestInfoData ? keys(requestInfoData.content) : [])
         ),
       ])
     );
 
-  getContentKind = (contentTypes: any) => {
+  getContentKind = (contentTypes: string[]): ContentKind => {
     if (
       some(contentTypes, (contentType) => startsWith(contentType, 'application/json')) ||
       some(contentTypes, (contentType) => endsWith(contentType, '+json'))
@@ -379,15 +471,16 @@ class SchemaRoutes {
     return CONTENT_KIND.OTHER;
   };
 
-  isSuccessStatus = (status: any) =>
+  isSuccessStatus = (status: string | number) =>
     (this.config.defaultResponseAsSuccess && status === 'default') ||
     (+status >= this.config.successResponseStatusRange[0] &&
       +status <= this.config.successResponseStatusRange[1]) ||
     // OpenAPI allows status code ranges in any case: "2XX" / "2xx"
     /^2xx$/i.test(`${status}`);
 
-  getSchemaFromRequestType = (requestInfo: any) => {
-    const content = get(requestInfo, 'content');
+  /** schema of the first content type of a request body / response (with its `dataType`) */
+  getSchemaFromRequestType = (requestInfo: RequestInfoLike): SchemaObject | null => {
+    const content = getContentObject(requestInfo);
 
     if (!content) {
       return null;
@@ -397,9 +490,10 @@ class SchemaRoutes {
 
     /* for example: dataType = "multipart/form-data" */
     for (const dataType in content) {
-      if (content[dataType] && content[dataType].schema) {
+      const mediaType = content[dataType];
+      if (mediaType && mediaType.schema) {
         return {
-          ...content[dataType].schema,
+          ...mediaType.schema,
           dataType,
         };
       }
@@ -414,7 +508,13 @@ class SchemaRoutes {
     operationId,
     defaultType,
     typeName,
-  }: any) => {
+  }: {
+    requestInfo: MaybeRef<ResponseObject> | ContentHolder;
+    parsedSchemas: ParsedSchema[];
+    operationId?: string;
+    defaultType?: string;
+    typeName?: string | null;
+  }): string => {
     // TODO: make more flexible pick schema without content type
     const schema = this.getSchemaFromRequestType(requestInfo);
     const refTypeInfo = this.schemaParserFabric.schemaUtils.getSchemaRefType(requestInfo);
@@ -423,23 +523,31 @@ class SchemaRoutes {
       const content = this.schemaParserFabric.getInlineParseContent(schema, typeName, [
         operationId,
       ]);
-      const foundedSchemaByName = find(
+      // formatted name of this component is equal to the content
+      const foundSchemaByName = find(
         parsedSchemas,
         (parsedSchema) => this.typeNameFormatter.format(parsedSchema.name) === content
       );
+
+      if (foundSchemaByName) {
+        return content;
+      }
+
       // Reuse a component whose inline content is identical to this one.
       // Only composite (allOf/oneOf/anyOf/discriminator) components are considered:
       // for primitive components (e.g. `UserId: { type: string }`) an equal content
       // says nothing about identity and would type every `string` as `UserId`.
       const foundSchemaByContent = find(
         parsedSchemas,
-        (parsedSchema) =>
-          parsedSchema.schemaType === SCHEMA_TYPES.COMPLEX && isEqual(parsedSchema.content, content)
+        (parsedSchema): parsedSchema is ParsedSchema & { name: string } =>
+          parsedSchema.schemaType === SCHEMA_TYPES.COMPLEX &&
+          typeof parsedSchema.name === 'string' &&
+          isEqual(parsedSchema.content, content)
       );
 
-      const foundSchema = foundedSchemaByName || foundSchemaByContent;
-
-      return foundSchema ? this.typeNameFormatter.format(foundSchema.name) : content;
+      return foundSchemaByContent
+        ? this.typeNameFormatter.format(foundSchemaByContent.name)
+        : content;
     }
 
     if (refTypeInfo) {
@@ -447,7 +555,9 @@ class SchemaRoutes {
       // const foundedSchemaByName = find(parsedSchemas, ({ name }) => name === refType || name === refTypeWithoutOpId)
 
       // TODO:HACK fix problem of swagger2opeanpi
-      const typeNameWithoutOpId = replace(refTypeInfo.typeName, operationId, '');
+      const typeNameWithoutOpId = operationId
+        ? replace(refTypeInfo.typeName, operationId, '')
+        : refTypeInfo.typeName;
       if (find(parsedSchemas, (schema) => schema.name === typeNameWithoutOpId)) {
         return this.typeNameFormatter.format(typeNameWithoutOpId);
       }
@@ -477,11 +587,20 @@ class SchemaRoutes {
     return defaultType || this.config.Ts.Keyword.Any;
   };
 
-  getRequestInfoTypes = ({ requestInfos, parsedSchemas, operationId, defaultType }: any) =>
+  getRequestInfoTypes = ({
+    requestInfos,
+    parsedSchemas,
+    operationId,
+    defaultType,
+  }: {
+    requestInfos: ResponsesObject | undefined;
+    parsedSchemas: ParsedSchema[];
+    operationId?: string;
+    defaultType?: string;
+  }): ResponseInfo[] =>
     reduce(
       requestInfos,
-      (acc: any, requestInfo: any, status: any) => {
-        // @ts-ignore
+      (acc: ResponseInfo[], requestInfo, status) => {
         const contentTypes = this.getContentTypes([requestInfo]);
 
         return [
@@ -511,12 +630,15 @@ class SchemaRoutes {
       []
     );
 
-  getResponseBodyInfo = (routeInfo: any, parsedSchemas: any) => {
+  getResponseBodyInfo = (
+    routeInfo: OperationObject,
+    parsedSchemas: ParsedSchema[]
+  ): ResponseBodyInfo => {
     const { produces, operationId, responses } = routeInfo;
 
     const contentTypes = this.getContentTypes(responses, [
       ...(produces || []),
-      routeInfo['x-accepts'],
+      getExtraContentType(routeInfo['x-accepts']),
     ]);
 
     const responseInfos = this.getRequestInfoTypes({
@@ -531,15 +653,14 @@ class SchemaRoutes {
       (response) => !response.isSuccess && response.type !== this.config.Ts.Keyword.Any
     );
 
-    const handleResponseHeaders = (src: any) => {
+    const handleResponseHeaders = (src: ResponseInfo['headers']) => {
       if (!src) {
         return 'headers: {},';
       }
       const headerTypes = Object.fromEntries(
-        Object.entries(src).map(([k, v]) => {
+        Object.entries(src).map(([k, v]: [string, MaybeRef<HeaderObject>]) => {
           // header object: { description, schema: {...} } (OpenAPI 3) or { type } (Swagger 2)
-          const headerObject: any = v;
-          const headerSchema = headerObject && headerObject.schema ? headerObject.schema : v;
+          const headerSchema = hasSchema(v) ? v.schema : v;
           return [k, this.schemaUtils.getSchemaType(headerSchema)];
         })
       );
@@ -578,10 +699,16 @@ class SchemaRoutes {
     };
   };
 
-  convertRouteParamsIntoObject = (params: any) => {
+  /** object schema with the params as properties */
+  convertRouteParamsIntoObject = (params: RouteParam[]): SchemaObject => {
+    const objectSchema: SchemaObject = {
+      properties: {},
+      type: 'object',
+    };
+
     return reduce(
       params,
-      (objectSchema, schemaPart) => {
+      (objectSchema: SchemaObject, schemaPart) => {
         if (!schemaPart || !schemaPart.name) {
           return objectSchema;
         }
@@ -592,38 +719,42 @@ class SchemaRoutes {
           usageName = camelCase(usageName);
         }
 
+        const property: RouteParam = {
+          ...schemaPart,
+          ...schemaPart.schema,
+          $origName: schemaPart.name,
+          name: usageName,
+        };
+
         return {
           ...objectSchema,
           properties: {
             ...objectSchema.properties,
-            [usageName]: {
-              ...schemaPart,
-              ...schemaPart.schema,
-              $origName: schemaPart.name,
-              name: usageName,
-            },
+            [usageName]: property,
           },
         };
       },
-      {
-        properties: {},
-        type: 'object',
-      }
+      objectSchema
     );
   };
 
-  getRequestBodyInfo = (routeInfo: any, routeParams: any, parsedSchemas: any, routeName: any) => {
+  getRequestBodyInfo = (
+    routeInfo: OperationObject,
+    routeParams: RouteParams,
+    parsedSchemas: ParsedSchema[],
+    routeName: RouteNameInfo
+  ): RequestBodyInfo => {
     const { requestBody, consumes, requestBodyName, operationId } = routeInfo;
-    let schema = null;
-    let content: any = null;
+    let schema: SchemaObject | null = null;
+    let content: string | null = null;
 
     const contentTypes = this.getContentTypes(
       [requestBody],
-      [...(consumes || []), routeInfo['x-contentType']]
+      [...(consumes || []), getExtraContentType(routeInfo['x-contentType'])]
     );
     let contentKind = this.getContentKind(contentTypes);
 
-    let typeName = null;
+    let typeName: string | null = null;
 
     if (this.config.extractRequestBody) {
       typeName = this.schemaUtils.resolveTypeName(routeName.usage, {
@@ -658,30 +789,38 @@ class SchemaRoutes {
       // TODO: Refactor that.
       // It needed for cases when swagger schema is not declared request body type as form data
       // but request body data type contains form data types like File
-      if (this.FORM_DATA_TYPES.some((dataType: any) => includes(content, `: ${dataType}`))) {
+      if (this.FORM_DATA_TYPES.some((dataType) => includes(content, `: ${dataType}`))) {
         contentKind = CONTENT_KIND.FORM_DATA;
       }
     }
 
+    let requestBodySchema: SchemaObject | SchemaComponent | null = schema;
+
     if (schema && !schema.$ref && this.config.extractRequestBody) {
-      schema = this.schemaParserFabric.createParsedComponent({
+      const component = this.schemaParserFabric.createParsedComponent({
         schema,
         typeName,
         schemaPath: [operationId],
       });
-      content = this.schemaParserFabric.getInlineParseContent({
-        $ref: schema.$ref,
-      });
+      requestBodySchema = component;
+      content = this.schemaParserFabric.getInlineParseContent(
+        { $ref: component.$ref },
+        undefined,
+        undefined
+      );
     }
 
+    const requestBodyObjectName =
+      requestBody && 'name' in requestBody ? requestBody.name : undefined;
+
     return {
-      paramName: requestBodyName || (requestBody && requestBody.name) || DEFAULT_BODY_ARG_NAME,
+      paramName: requestBodyName || requestBodyObjectName || DEFAULT_BODY_ARG_NAME,
       contentTypes,
       contentKind,
-      schema,
+      schema: requestBodySchema,
       type: content,
       // OpenAPI: `requestBody.required` defaults to `false`
-      required: !!requestBody && !!requestBody.required,
+      required: !!requestBody && 'required' in requestBody && !!requestBody.required,
     };
   };
 
@@ -691,16 +830,23 @@ class SchemaRoutes {
     pathArgsSchemas,
     extractRequestParams,
     routeName,
-  }: any) => {
+  }: {
+    queryParams: RouteParam[];
+    queryObjectSchema: SchemaObject;
+    pathArgsSchemas: (SchemaObject | RouteParam)[];
+    extractRequestParams: boolean;
+    routeName: RouteNameInfo;
+  }): SchemaObject | SchemaComponent | null => {
     if (!queryParams || queryParams.length === 0) {
       return null;
     }
 
     const pathParams = reduce(
       pathArgsSchemas,
-      (acc: any, pathArgSchema) => {
-        if (pathArgSchema.name) {
-          acc[pathArgSchema.name] = {
+      (acc: Record<string, LocatedSchemaObject>, pathArgSchema) => {
+        const name = 'name' in pathArgSchema ? pathArgSchema.name : undefined;
+        if (typeof name === 'string' && name) {
+          acc[name] = {
             ...pathArgSchema,
             in: 'path',
           };
@@ -712,8 +858,8 @@ class SchemaRoutes {
     );
 
     const fixedQueryParams = reduce(
-      get(queryObjectSchema, 'properties', {}),
-      (acc: any, property, name) => {
+      queryObjectSchema.properties ?? {},
+      (acc: Record<string, LocatedSchemaObject>, property, name) => {
         if (name && isObject(property)) {
           acc[name] = {
             ...property,
@@ -726,7 +872,7 @@ class SchemaRoutes {
       {}
     );
 
-    const schema = {
+    const schema: SchemaObject = {
       // `$parsed` belongs to the query object schema only (it doesn't contain path params),
       // parsed query properties are reused
       ...omit(queryObjectSchema, '$parsed'),
@@ -757,18 +903,24 @@ class SchemaRoutes {
     return schema;
   };
 
-  extractResponseBodyIfItNeeded = (routeInfo: any, responseBodyInfo: any, routeName: any) => {
+  extractResponseBodyIfItNeeded = (
+    routeInfo: OperationObject,
+    responseBodyInfo: ResponseBodyInfo,
+    routeName: RouteNameInfo
+  ) => {
     if (
       responseBodyInfo.responses.length > 0 &&
       responseBodyInfo.success &&
       responseBodyInfo.success.schema
     ) {
-      const idx = responseBodyInfo.responses.indexOf(responseBodyInfo.success.schema);
-
       const successResponse = responseBodyInfo.success;
+      const successSchema = successResponse.schema;
 
-      if (successResponse.schema && !successResponse.schema.$ref) {
-        const schema = this.getSchemaFromRequestType(successResponse.schema);
+      // not a `$ref` response and not extracted yet
+      if (successSchema && !successSchema.$ref && !isSchemaComponent(successSchema)) {
+        const idx = responseBodyInfo.responses.indexOf(successSchema);
+
+        const schema = this.getSchemaFromRequestType(successSchema);
 
         // response without content (e.g. 204) - nothing to extract
         if (!schema) {
@@ -780,18 +932,21 @@ class SchemaRoutes {
           resolver: this.config.extractingOptions.responseBodyNameResolver,
         });
 
-        successResponse.schema = this.schemaParserFabric.createParsedComponent({
+        const component = this.schemaParserFabric.createParsedComponent({
           schema,
           typeName,
           schemaPath: [routeInfo.operationId],
         });
-        successResponse.type = this.schemaParserFabric.getInlineParseContent({
-          $ref: successResponse.schema.$ref,
-        });
+        successResponse.schema = component;
+        successResponse.type = this.schemaParserFabric.getInlineParseContent(
+          { $ref: component.$ref },
+          undefined,
+          undefined
+        );
 
         if (idx > -1) {
           assign(responseBodyInfo.responses[idx], {
-            ...successResponse.schema,
+            ...component,
             type: successResponse.type,
           });
         }
@@ -799,19 +954,23 @@ class SchemaRoutes {
     }
   };
 
-  extractResponseErrorIfItNeeded = (routeInfo: any, responseBodyInfo: any, routeName: any) => {
+  extractResponseErrorIfItNeeded = (
+    routeInfo: OperationObject,
+    responseBodyInfo: ResponseBodyInfo,
+    routeName: RouteNameInfo
+  ) => {
     if (
       responseBodyInfo.responses.length > 0 &&
       responseBodyInfo.error.schemas &&
       responseBodyInfo.error.schemas.length > 0
     ) {
       const errorSchemas = responseBodyInfo.error.schemas
-        .map((errorSchema: any) => {
+        .map((errorSchema) => {
           // resolve `$ref: "#/components/responses/Name"` error responses
           const refTypeInfo = this.schemaUtils.getSchemaRefType(errorSchema);
           return this.getSchemaFromRequestType(refTypeInfo ? refTypeInfo.rawTypeData : errorSchema);
         })
-        .filter(Boolean);
+        .filter((schema): schema is SchemaObject => !!schema);
 
       if (errorSchemas.length === 0) {
         return;
@@ -826,11 +985,11 @@ class SchemaRoutes {
         {
           oneOf: errorSchemas,
           title: errorSchemas
-            .map((schema: any) => schema.title)
+            .map((schema) => schema.title)
             .filter(Boolean)
             .join(' '),
           description: errorSchemas
-            .map((schema: any) => schema.description)
+            .map((schema) => schema.description)
             .filter(Boolean)
             .join('\n'),
         },
@@ -838,7 +997,8 @@ class SchemaRoutes {
         [routeInfo.operationId]
       );
       const component = this.schemaComponentsMap.createComponent(
-        this.schemaComponentsMap.createRef(['components', 'schemas', typeName]),
+        // `null` is joined as an empty string (`#/components/schemas/`)
+        this.schemaComponentsMap.createRef(['components', 'schemas', typeName ?? '']),
         { ...schema }
       );
       responseBodyInfo.error.schemas = [component];
@@ -846,9 +1006,9 @@ class SchemaRoutes {
     }
   };
 
-  getRouteName = (rawRouteInfo: any) => {
+  getRouteName = (rawRouteInfo: RawRouteInfo): RouteNameInfo => {
     const { moduleName } = rawRouteInfo;
-    const { routeNameDuplicatesMap, templatesToRender } = this.config as any;
+    const { routeNameDuplicatesMap, templatesToRender } = this.config;
     const routeNameTemplate = templatesToRender.routeName;
 
     const routeNameFromTemplate = this.templatesWorker.renderTemplate(routeNameTemplate, {
@@ -860,26 +1020,21 @@ class SchemaRoutes {
       routeNameFromTemplate;
 
     const duplicateIdentifier = `${moduleName}|${routeName}`;
+    const previousDuplicates = routeName
+      ? routeNameDuplicatesMap.get(duplicateIdentifier)
+      : undefined;
+    const duplicates = previousDuplicates === undefined ? 1 : previousDuplicates + 1;
 
-    if (routeName && routeNameDuplicatesMap.has(duplicateIdentifier)) {
-      routeNameDuplicatesMap.set(
-        duplicateIdentifier,
-        routeNameDuplicatesMap.get(duplicateIdentifier) + 1
-      );
+    routeNameDuplicatesMap.set(duplicateIdentifier, duplicates);
 
+    if (previousDuplicates !== undefined) {
       this.logger.warn(
         `Module "${moduleName}" already has method "${routeName}()"`,
-        `\nThis method has been renamed to "${
-          routeName + routeNameDuplicatesMap.get(duplicateIdentifier)
-        }()" to solve conflict names.`
+        `\nThis method has been renamed to "${routeName + duplicates}()" to solve conflict names.`
       );
-    } else {
-      routeNameDuplicatesMap.set(duplicateIdentifier, 1);
     }
 
-    const duplicates = routeNameDuplicatesMap.get(duplicateIdentifier);
-
-    const routeNameInfo = {
+    const routeNameInfo: RouteNameInfo = {
       usage: routeName + (duplicates > 1 ? duplicates : ''),
       original: routeName,
       duplicate: duplicates > 1,
@@ -889,14 +1044,14 @@ class SchemaRoutes {
   };
 
   parseRouteInfo = (
-    rawRouteName: any,
-    routeInfo: any,
-    method: any,
-    usageSchema: any,
-    parsedSchemas: any
-  ) => {
+    rawRouteName: string,
+    routeInfo: OperationObject,
+    method: HttpMethod,
+    usageSchema: Pick<OpenAPIV3Document, 'security'>,
+    parsedSchemas: ParsedSchema[]
+  ): ParsedRoute => {
     const { security: globalSecurity } = usageSchema;
-    const { moduleNameIndex, moduleNameFirstTag, extractRequestParams } = this.config as any;
+    const { moduleNameIndex, moduleNameFirstTag, extractRequestParams } = this.config;
     const {
       operationId,
       requestBody,
@@ -908,7 +1063,7 @@ class SchemaRoutes {
       produces,
       consumes,
       ...otherInfo
-    } = routeInfo as any;
+    } = routeInfo;
     const {
       route,
       pathParams: pathParamsFromRouteName,
@@ -932,18 +1087,21 @@ class SchemaRoutes {
       queryParamsFromRouteName
     );
 
-    const pathArgs = routeParams.path.map((pathArgSchema: any) => ({
-      name: pathArgSchema.name,
-      optional: !pathArgSchema.required,
-      // mark it as any for now, because "getInlineParseContent" breaks type names of extracted enums
-      type: this.config.Ts.Keyword.Any,
-      description: pathArgSchema.description,
-    }));
-    const pathArgsNames = pathArgs.map((arg: any) => arg.name);
+    // path params always have a name (see `getRouteParams`)
+    const pathArgs = routeParams.path.map(
+      (pathArgSchema): PathArg => ({
+        name: `${pathArgSchema.name}`,
+        optional: !pathArgSchema.required,
+        // mark it as any for now, because "getInlineParseContent" breaks type names of extracted enums
+        type: this.config.Ts.Keyword.Any,
+        description: pathArgSchema.description,
+      })
+    );
+    const pathArgsNames = pathArgs.map((arg) => arg.name);
 
     const responseBodyInfo = this.getResponseBodyInfo(routeInfo, parsedSchemas);
 
-    const rawRouteInfo = {
+    const rawRouteInfo: RawRouteInfo = {
       ...otherInfo,
       pathArgs,
       operationId,
@@ -1006,7 +1164,9 @@ class SchemaRoutes {
       queryParams: routeParams.query,
       // reuse already parsed path params (see `pathType`)
       pathArgsSchemas: routeParams.path.map(
-        (pathParam: any) => get(pathObjectSchema, ['properties', pathParam.name]) || pathParam
+        (pathParam) =>
+          (pathParam.name !== undefined && pathObjectSchema.properties?.[pathParam.name]) ||
+          pathParam
       ),
       queryObjectSchema,
       extractRequestParams,
@@ -1015,41 +1175,41 @@ class SchemaRoutes {
 
     const nameResolver = new SpecificArgNameResolver(this.config, this.logger, pathArgsNames);
 
-    const specificArgs = {
+    const specificArgs: SpecificArgs = {
       query: queryType
         ? {
-            // @ts-ignore
-            name: nameResolver.resolve(RESERVED_QUERY_ARG_NAMES),
-            optional: this.schemaParserFabric.parseSchema(queryObjectSchema, null, [
-              routeName.usage,
-            ]).allFieldsAreOptional,
+            name: nameResolver.resolveArgName(RESERVED_QUERY_ARG_NAMES),
+            optional: isAllFieldsOptional(
+              this.schemaParserFabric.parseSchema(queryObjectSchema, null, [routeName.usage])
+            ),
             type: queryType,
           }
         : void 0,
       body: requestBodyInfo.type
         ? {
-            // @ts-ignore
-            name: nameResolver.resolve([requestBodyInfo.paramName, ...RESERVED_BODY_ARG_NAMES]),
+            name: nameResolver.resolveArgName([
+              requestBodyInfo.paramName,
+              ...RESERVED_BODY_ARG_NAMES,
+            ]),
             optional: !requestBodyInfo.required,
             type: requestBodyInfo.type,
           }
         : void 0,
       pathParams: pathType
         ? {
-            // @ts-ignore
-            name: nameResolver.resolve(RESERVED_PATH_ARG_NAMES),
-            optional: this.schemaParserFabric.parseSchema(pathObjectSchema, null, [routeName.usage])
-              .allFieldsAreOptional,
+            name: nameResolver.resolveArgName(RESERVED_PATH_ARG_NAMES),
+            optional: isAllFieldsOptional(
+              this.schemaParserFabric.parseSchema(pathObjectSchema, null, [routeName.usage])
+            ),
             type: pathType,
           }
         : void 0,
       headers: headersType
         ? {
-            // @ts-ignore
-            name: nameResolver.resolve(RESERVED_HEADER_ARG_NAMES),
-            optional: this.schemaParserFabric.parseSchema(headersObjectSchema, null, [
-              routeName.usage,
-            ]).allFieldsAreOptional,
+            name: nameResolver.resolveArgName(RESERVED_HEADER_ARG_NAMES),
+            optional: isAllFieldsOptional(
+              this.schemaParserFabric.parseSchema(headersObjectSchema, null, [routeName.usage])
+            ),
             type: headersType,
           }
         : void 0,
@@ -1059,7 +1219,7 @@ class SchemaRoutes {
       // reuse already parsed path params (see `pathType`),
       // otherwise inline enums would be extracted twice (with `extractEnums`)
       pathArg.type = this.schemaParserFabric.getInlineParseContent(
-        get(pathObjectSchema, ['properties', pathArg.name]) || routeParams.path[i].schema,
+        pathObjectSchema.properties?.[pathArg.name] || routeParams.path[i].schema,
         null,
         [typeName]
       );
@@ -1104,7 +1264,13 @@ class SchemaRoutes {
     };
   };
 
-  attachSchema = ({ usageSchema, parsedSchemas }: any) => {
+  attachSchema = ({
+    usageSchema,
+    parsedSchemas,
+  }: {
+    usageSchema: Pick<OpenAPIV3Document, 'paths' | 'security'>;
+    parsedSchemas: ParsedSchema[];
+  }) => {
     this.config.routeNameDuplicatesMap.clear();
 
     const pathsEntries = entries(usageSchema.paths);
@@ -1140,9 +1306,9 @@ class SchemaRoutes {
     });
   };
 
-  getGroupedRoutes = () => {
+  getGroupedRoutes = (): GroupedRoutes => {
     const groupedRoutes = this.routes.reduce(
-      (modules: any, route: any) => {
+      (modules: Record<string, ParsedRoute[]>, route) => {
         if (route.namespace) {
           if (!modules[route.namespace]) {
             modules[route.namespace] = [];
@@ -1162,7 +1328,7 @@ class SchemaRoutes {
 
     const routeGroups = reduce(
       groupedRoutes,
-      (acc: any, routesGroup, moduleName) => {
+      (acc: GroupedRoutes, routesGroup, moduleName) => {
         if (moduleName === '$outOfModule') {
           acc.outOfModule = routesGroup;
         } else {
@@ -1172,7 +1338,7 @@ class SchemaRoutes {
 
           acc.combined.push({
             moduleName,
-            routes: map(routesGroup, (route) => {
+            routes: map(routesGroup, (route): ParsedRoute => {
               const { original: originalName, usage: usageName } = route.routeName;
 
               // TODO: https://github.com/acacode/swagger-typescript-api/issues/152
@@ -1208,7 +1374,7 @@ class SchemaRoutes {
         routeGroups.outOfModule = this.sortRoutes(routeGroups.outOfModule);
       }
       if (routeGroups.combined) {
-        each(routeGroups.combined, (routeGroup) => {
+        each(routeGroups.combined, (routeGroup: ModuleRoutes) => {
           routeGroup.routes = this.sortRoutes(routeGroup.routes);
         });
       }
@@ -1217,8 +1383,8 @@ class SchemaRoutes {
     return routeGroups;
   };
 
-  sortRoutes = (routes: any) => {
-    return slice(routes).sort((routeA: any, routeB: any) =>
+  sortRoutes = (routes: ParsedRoute[]): ParsedRoute[] => {
+    return slice(routes).sort((routeA, routeB) =>
       routeA.routeName.usage.localeCompare(routeB.routeName.usage)
     );
   };

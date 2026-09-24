@@ -1,26 +1,36 @@
-class MonoSchemaParser {
-  schema;
-  typeName: any;
-  schemaPath;
+import type { SchemaPath } from '../types/config';
+import type { SchemaObject } from '../types/openapi';
+import type { ParsedSchema } from '../types/parsed';
+import type { SchemaParser } from './schema-parser';
 
-  /** @type {Logger} */
-  logger;
-  /** @type {SchemaParser} */
-  schemaParser;
-  /** @type {SchemaParserFabric} */
-  schemaParserFabric;
-  /** @type {TypeNameFormatter} */
-  typeNameFormatter;
-  /** @type {SchemaComponentsMap} */
-  schemaComponentsMap;
-  /** @type {SchemaUtils} */
-  schemaUtils;
-  /** @type {CodeGenConfig} */
-  config;
-  /** @type {SchemaFormatters} */
-  schemaFormatters;
+/**
+ * Base class of schema parsers (`config.schemaParsers`).
+ * @template TResult result of `parse()`: a parsed schema (base parsers) or an inline type (complex parsers)
+ * @template TSchema parsed schema (the primitive parser also gets `null` for a missing schema)
+ */
+class MonoSchemaParser<
+  TResult = ParsedSchema | string,
+  TSchema extends SchemaObject | null = SchemaObject,
+> {
+  schema: TSchema;
+  typeName: string | null | undefined;
+  schemaPath: SchemaPath;
 
-  constructor(schemaParser: any, schema: any, typeName = undefined, schemaPath = []) {
+  logger: SchemaParser['logger'];
+  schemaParser: SchemaParser;
+  schemaParserFabric: SchemaParser['schemaParserFabric'];
+  typeNameFormatter: SchemaParser['typeNameFormatter'];
+  schemaComponentsMap: SchemaParser['schemaComponentsMap'];
+  schemaUtils: SchemaParser['schemaUtils'];
+  config: SchemaParser['config'];
+  schemaFormatters: SchemaParser['schemaFormatters'];
+
+  constructor(
+    schemaParser: SchemaParser,
+    schema: TSchema,
+    typeName: string | null | undefined = undefined,
+    schemaPath: SchemaPath = []
+  ) {
     this.schemaParser = schemaParser;
     this.schemaParserFabric = schemaParser.schemaParserFabric;
     this.logger = schemaParser.logger;
@@ -34,7 +44,7 @@ class MonoSchemaParser {
     this.schemaFormatters = this.schemaParser.schemaFormatters;
   }
 
-  parse() {
+  parse(): TResult {
     throw new Error('not implemented');
   }
 

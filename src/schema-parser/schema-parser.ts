@@ -1,8 +1,11 @@
-import { first, get, merge, omit, values } from 'lodash-es';
+import { first, merge, omit, values } from 'lodash-es';
 
 import { SCHEMA_TYPES } from '../constants.js';
-import type { BaseSchemaType } from '../types/parsed';
+import type { SchemaPath } from '../types/config';
+import type { ContentObject, SchemaObject } from '../types/openapi';
+import type { BaseSchemaType, ComplexSchemaType, ParsedSchema } from '../types/parsed';
 import { sortByProperty } from '../util/sort-by-property';
+import { isRecord } from '../util/type-guards';
 import { ArraySchemaParser } from './base-schema-parsers/array';
 import { ComplexSchemaParser } from './base-schema-parsers/complex';
 import { DiscriminatorSchemaParser } from './base-schema-parsers/discriminator';
@@ -13,32 +16,44 @@ import { AllOfSchemaParser } from './complex-schema-parsers/all-of';
 import { AnyOfSchemaParser } from './complex-schema-parsers/any-of';
 import { NotSchemaParser } from './complex-schema-parsers/not';
 import { OneOfSchemaParser } from './complex-schema-parsers/one-of';
+import type { SchemaParserFabric } from './schema-parser-fabric';
+
+/** options of `SchemaParser` (`SchemaParserFabric.createSchemaParser`) */
+export interface SchemaParserOptions {
+  /** schema to parse (a missing schema is parsed as `any`) */
+  schema?: SchemaObject | null;
+  typeName?: string | null;
+  schemaPath?: SchemaPath;
+}
+
+/** a parser of a complex schema (`allOf`, `oneOf`, ...), returns the inline type */
+export type ComplexSchemaParserFn = (schema: SchemaObject) => string;
+
+/** a parser of a base schema kind (`SchemaUtils.getInternalSchemaType`) */
+export type BaseSchemaParserFn = (schema: SchemaObject, typeName: string | null) => ParsedSchema;
+
+/** a response/request body struct (`{ content: { "application/json": { schema } } }`), the content is trusted */
+const isContentObject = (value: unknown): value is ContentObject => isRecord(value);
 
 class SchemaParser {
-  /** @type {SchemaParserFabric} */
-  schemaParserFabric;
-  /** @type {CodeGenConfig} */
-  config;
-  /** @type {Logger} */
-  logger;
-  /** @type {SchemaComponentsMap} */
-  schemaComponentsMap;
-  /** @type {TypeNameFormatter} */
-  typeNameFormatter;
-  /** @type {SchemaFormatters} */
-  schemaFormatters;
-  /** @type {SchemaUtils} */
-  schemaUtils;
-  /** @type {TemplatesWorker} */
-  templatesWorker;
-  /** @type {SchemaWalker} */
-  schemaWalker;
+  schemaParserFabric: SchemaParserFabric;
+  config: SchemaParserFabric['config'];
+  logger: SchemaParserFabric['logger'];
+  schemaComponentsMap: SchemaParserFabric['schemaComponentsMap'];
+  typeNameFormatter: SchemaParserFabric['typeNameFormatter'];
+  schemaFormatters: SchemaParserFabric['schemaFormatters'];
+  schemaUtils: SchemaParserFabric['schemaUtils'];
+  templatesWorker: SchemaParserFabric['templatesWorker'];
+  schemaWalker: SchemaParserFabric['schemaWalker'];
 
-  typeName;
-  schema;
-  schemaPath: any = [];
+  typeName: string | null;
+  schema: SchemaObject | null | undefined;
+  schemaPath: SchemaPath = [];
 
-  constructor(schemaParserFabric: any, { typeName, schema, schemaPath } = {} as any) {
+  constructor(
+    schemaParserFabric: SchemaParserFabric,
+    { typeName, schema, schemaPath }: SchemaParserOptions = {}
+  ) {
     this.schemaParserFabric = schemaParserFabric;
     this.config = schemaParserFabric.config;
     this.logger = schemaParserFabric.logger;
@@ -54,56 +69,59 @@ class SchemaParser {
     this.schemaPath = [...(schemaPath || [])];
   }
 
-  _complexSchemaParsers = {
-    [SCHEMA_TYPES.COMPLEX_ONE_OF]: (schema: any) => {
+  _complexSchemaParsers: Record<ComplexSchemaType, ComplexSchemaParserFn> = {
+    [SCHEMA_TYPES.COMPLEX_ONE_OF]: (schema) => {
       const SchemaParser = this.config.schemaParsers.complexOneOf || OneOfSchemaParser;
       const schemaParser = new SchemaParser(this, schema, null, this.schemaPath);
       return schemaParser.parse();
     },
-    [SCHEMA_TYPES.COMPLEX_ALL_OF]: (schema: any) => {
+    [SCHEMA_TYPES.COMPLEX_ALL_OF]: (schema) => {
       const SchemaParser = this.config.schemaParsers.complexAllOf || AllOfSchemaParser;
       const schemaParser = new SchemaParser(this, schema, null, this.schemaPath);
       return schemaParser.parse();
     },
-    [SCHEMA_TYPES.COMPLEX_ANY_OF]: (schema: any) => {
+    [SCHEMA_TYPES.COMPLEX_ANY_OF]: (schema) => {
       const SchemaParser = this.config.schemaParsers.complexAnyOf || AnyOfSchemaParser;
       const schemaParser = new SchemaParser(this, schema, null, this.schemaPath);
       return schemaParser.parse();
     },
-    [SCHEMA_TYPES.COMPLEX_NOT]: (schema: any) => {
+    [SCHEMA_TYPES.COMPLEX_NOT]: (schema) => {
       const SchemaParser = this.config.schemaParsers.complexNot || NotSchemaParser;
       const schemaParser = new SchemaParser(this, schema, null, this.schemaPath);
       return schemaParser.parse();
     },
   };
 
-  _baseSchemaParsers = {
-    [SCHEMA_TYPES.ENUM]: (schema: any, typeName: any) => {
+  _baseSchemaParsers: Record<Exclude<BaseSchemaType, 'primitive'>, BaseSchemaParserFn> & {
+    /** also parses a missing schema (as `any`) */
+    primitive: (schema: SchemaObject | null, typeName: string | null) => ParsedSchema;
+  } = {
+    [SCHEMA_TYPES.ENUM]: (schema, typeName) => {
       const SchemaParser = this.config.schemaParsers.enum || EnumSchemaParser;
       const schemaParser = new SchemaParser(this, schema, typeName, this.schemaPath);
       return schemaParser.parse();
     },
-    [SCHEMA_TYPES.OBJECT]: (schema: any, typeName: any) => {
+    [SCHEMA_TYPES.OBJECT]: (schema, typeName) => {
       const SchemaParser = this.config.schemaParsers.object || ObjectSchemaParser;
       const schemaParser = new SchemaParser(this, schema, typeName, this.schemaPath);
       return schemaParser.parse();
     },
-    [SCHEMA_TYPES.COMPLEX]: (schema: any, typeName: any) => {
+    [SCHEMA_TYPES.COMPLEX]: (schema, typeName) => {
       const SchemaParser = this.config.schemaParsers.complex || ComplexSchemaParser;
       const schemaParser = new SchemaParser(this, schema, typeName, this.schemaPath);
       return schemaParser.parse();
     },
-    [SCHEMA_TYPES.PRIMITIVE]: (schema: any, typeName: any) => {
+    [SCHEMA_TYPES.PRIMITIVE]: (schema, typeName) => {
       const SchemaParser = this.config.schemaParsers.primitive || PrimitiveSchemaParser;
       const schemaParser = new SchemaParser(this, schema, typeName, this.schemaPath);
       return schemaParser.parse();
     },
-    [SCHEMA_TYPES.DISCRIMINATOR]: (schema: any, typeName: any) => {
+    [SCHEMA_TYPES.DISCRIMINATOR]: (schema, typeName) => {
       const SchemaParser = this.config.schemaParsers.discriminator || DiscriminatorSchemaParser;
       const schemaParser = new SchemaParser(this, schema, typeName, this.schemaPath);
       return schemaParser.parse();
     },
-    [SCHEMA_TYPES.ARRAY]: (schema: any, typeName: any) => {
+    [SCHEMA_TYPES.ARRAY]: (schema, typeName) => {
       const SchemaParser = this.config.schemaParsers.array || ArraySchemaParser;
       const schemaParser = new SchemaParser(this, schema, typeName, this.schemaPath);
       return schemaParser.parse();
@@ -111,9 +129,10 @@ class SchemaParser {
   };
 
   /**
-   * @return {Record<string, any>}
+   * Parses the schema (the result is cached as `schema.$parsed`).
+   * A string "schema" is returned as is.
    */
-  parseSchema = () => {
+  parseSchema = (): ParsedSchema => {
     if (!this.schema) {
       return this._baseSchemaParsers[SCHEMA_TYPES.PRIMITIVE](null, this.typeName);
     }
@@ -125,7 +144,9 @@ class SchemaParser {
       return this.schema;
     }
 
-    if (!this.schema.$parsed) {
+    let parsed = this.schema.$parsed;
+
+    if (!parsed) {
       if (!this.typeName && this.schemaUtils.isRefSchema(this.schema)) {
         this.typeName = this.schemaUtils.getSchemaType(this.schema);
       }
@@ -153,8 +174,9 @@ class SchemaParser {
           typeName: this.typeName,
           schemaPath: this.schemaPath,
         });
-        this.schema.$parsed = schemaParser.parseSchema();
-        return this.schema.$parsed;
+        const responseParsed = schemaParser.parseSchema();
+        this.schema.$parsed = responseParsed;
+        return responseParsed;
       }
 
       // #endregion
@@ -168,36 +190,42 @@ class SchemaParser {
         this.config.hooks.onPreParseSchema(this.schema, this.typeName, schemaType)
       );
       parsedSchema = this._baseSchemaParsers[schemaType](this.schema, this.typeName);
-      this.schema.$parsed =
-        this.config.hooks.onParseSchema(this.schema, parsedSchema) || parsedSchema;
+      parsed = this.config.hooks.onParseSchema(this.schema, parsedSchema) || parsedSchema;
+      this.schema.$parsed = parsed;
 
-      if (this.config.sortTypes && Array.isArray(this.schema.$parsed?.content)) {
-        this.schema.$parsed.content = this.schema.$parsed.content.sort(sortByProperty('name'));
+      if (this.config.sortTypes && Array.isArray(parsed?.content)) {
+        // sorted in place
+        parsed.content.sort(sortByProperty('name'));
       }
     }
 
     this.schemaPath.pop();
 
-    return this.schema.$parsed;
+    return parsed;
   };
 
-  getInlineParseContent = () => {
+  getInlineParseContent = (): string => {
     const parsedSchema = this.parseSchema();
     const formattedSchema = this.schemaFormatters.formatSchema(parsedSchema, 'inline');
     return formattedSchema.content;
   };
 
-  getParseContent = () => {
+  getParseContent = (): string => {
     const parsedSchema = this.parseSchema();
     const formattedSchema = this.schemaFormatters.formatSchema(parsedSchema, 'base');
     return formattedSchema.content;
   };
 
-  extractSchemaFromResponseStruct = (responseStruct: any) => {
+  /**
+   * @returns schema of the first content type merged with the response struct and the media type
+   */
+  extractSchemaFromResponseStruct = (
+    responseStruct: SchemaObject & { content?: unknown }
+  ): SchemaObject | undefined => {
     const { content, ...extras } = responseStruct;
 
-    const firstResponse = first(values(content));
-    const firstSchema = get(firstResponse, 'schema');
+    const firstResponse = first(isContentObject(content) ? values(content) : []);
+    const firstSchema = firstResponse?.schema;
 
     if (!firstSchema) {
       return;

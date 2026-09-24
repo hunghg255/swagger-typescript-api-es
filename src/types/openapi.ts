@@ -19,7 +19,7 @@ export type SchemaTypeName = LooseString<
   'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null' | 'file'
 >;
 
-export interface ReferenceObject {
+export interface ReferenceObject extends VendorExtensions {
   $ref: string;
   /** OAS 3.1 */
   summary?: string;

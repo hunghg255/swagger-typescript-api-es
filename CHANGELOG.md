@@ -51,12 +51,23 @@
 - Missing output: out-of-module routes in modular mode and in route types; response components with `extractResponses`.
 - Fetch client: `data` was `null` for text and binary responses; `null` query params were sent as `"null"`.
 - Swagger 2 `formData` with `x-www-form-urlencoded` was sent as multipart.
+- Vendor extensions under `components` were treated as components.
+- `primitiveTypeConstructs` without `$default` could produce `[object Object]` types.
+- `$ref` names containing "undefined" could resolve to the wrong schema for operations without `operationId`.
 
 ### 🏎 Dependencies
 
 - Replaced `unprompts` with `cac` (drops `unbuild`/`esbuild` from runtime dependencies), `node-fetch-h2` with
   `undici`, removed `make-dir`, `nanoid` and `node-emoji`, declared `picocolors`.
 - `npm audit`: 0 vulnerabilities.
+
+### 🏷 Types
+
+- The whole codebase is strictly typed (no `any` / `@ts-ignore`, enforced by oxlint).
+- Public types are exported: `IOptions`, `Hooks`, `GenerateApiOutput`, `GeneratedFile`, `OpenAPIDocument`,
+  `SchemaObject`, `ParsedRoute`, ... `spec` accepts a full OpenAPI/Swagger document, hooks have typed
+  arguments and return values. Configs that relied on `any` (e.g. reading unknown properties in hooks)
+  may need a cast.
 
 ### 🧪 Tests & tooling
 

@@ -184,8 +184,12 @@ export type ComponentRawTypeData =
   | MaybeRef<PathItemObject>
   | ReferenceObject;
 
-/** an entry of `SchemaComponentsMap` */
-export interface SchemaComponent<TRaw = ComponentRawTypeData> {
+/**
+ * an entry of `SchemaComponentsMap`.
+ * A type alias (not an interface), so a component is assignable to `SchemaObject`:
+ * components are also parsed as `$ref` schemas (`SchemaParserFabric.parseSchema(component)`).
+ */
+export type SchemaComponent<TRaw = ComponentRawTypeData> = {
   /** `#/components/schemas/Pet` */
   $ref: string;
   /** `Pet` (not formatted) */
@@ -198,7 +202,7 @@ export interface SchemaComponent<TRaw = ComponentRawTypeData> {
   typeData: ParsedSchema | null;
   /** cached result of `CodeGenProcess.prepareModelType` */
   $prepared?: ModelType | null;
-}
+};
 
 // #endregion
 
@@ -207,7 +211,7 @@ export interface SchemaComponent<TRaw = ComponentRawTypeData> {
 export type ContentKind = 'JSON' | 'URL_ENCODED' | 'FORM_DATA' | 'IMAGE' | 'OTHER' | 'TEXT';
 
 /** a path/query param found in the route path (`/pets/{id}`, `/pets{?limit}`) */
-export interface RouteNameParam {
+export interface RouteNameParam extends RouteParam {
   /** matched text (`{id}`) */
   $match: string;
   name: string;

@@ -3,8 +3,8 @@ import { map } from 'lodash-es';
 import { MonoSchemaParser } from '../mono-schema-parser';
 
 // T1 | T2
-class AnyOfSchemaParser extends MonoSchemaParser {
-  parse() {
+class AnyOfSchemaParser extends MonoSchemaParser<string> {
+  parse(): string {
     const ignoreTypes = new Set([this.config.Ts.Keyword.Any]);
     const combined = map(this.schema.anyOf, (childSchema) =>
       this.schemaParserFabric.getInlineParseContent(
@@ -16,7 +16,7 @@ class AnyOfSchemaParser extends MonoSchemaParser {
 
     const filtered = this.schemaUtils.filterSchemaContents(
       combined,
-      (content: any) => !ignoreTypes.has(content)
+      (content) => !ignoreTypes.has(content)
     );
 
     const type = this.config.Ts.UnionType(filtered);
