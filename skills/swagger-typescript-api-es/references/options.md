@@ -1,122 +1,259 @@
-# IOptions Full Reference
+# Options reference
 
-All options for `defaultConfig()` in `swagger-typescript-api.config.ts`.
+All keys of `IOptions` (`import type { IOptions } from 'swagger-typescript-api-es'`), accepted by
+`defaultConfig()`, `generateApi()`, config files and `--custom-config` files. Every key is optional.
 
-## Core Options
+## Input / output
 
-| Option           | Type                 | Default    | Description                                                                                                                                                        |
-| ---------------- | -------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `name`           | `string`             | `"Api.ts"` | Output filename                                                                                                                                                    |
-| `output`         | `string \| false`    | `"./"`     | Output directory path (created if missing). `false` generates in memory: files are only returned by `generateApi`                                                  |
-| `url`            | `string`             | —          | URL to remote swagger/OpenAPI schema (a local file path also works)                                                                                                |
-| `input`          | `string`             | —          | Local path to swagger JSON/YAML file                                                                                                                               |
-| `httpClientType` | `'axios' \| 'fetch'` | `'fetch'`  | HTTP client to use in generated code                                                                                                                               |
-| `cleanOutput`    | `boolean`            | `false`    | Delete output folder contents before generating                                                                                                                    |
-| `modular`        | `boolean`            | `false`    | Separate files: `http-client`, `data-contracts` and one file per route module (routes outside any module go to `Common.ts`; their route types to `CommonRoute.ts`) |
-| `apiClassName`   | `string`             | `"Api"`    | Name of the generated API class                                                                                                                                    |
+| Option        | Type                 | Default    | Description                                                                                                                                     |
+| ------------- | -------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `url`         | `string`             | —          | Schema URL. A value without `http://` / `https://` is read as a file path relative to cwd                                                       |
+| `input`       | `string`             | —          | Local schema file (JSON or YAML). Used when the file exists, otherwise `url` is tried                                                           |
+| `spec`        | `OpenAPIDocument`    | —          | Schema object already in memory (OpenAPI 3.x or Swagger 2.0). Wins over `input` / `url`. Never modified                                         |
+| `output`      | `string \| false`    | `"./"`     | Output **directory**, resolved from cwd and created if missing. `false`: nothing is written                                                     |
+| `name`        | `string`             | `"Api.ts"` | Output file name (single-file mode only)                                                                                                        |
+| `cleanOutput` | `boolean`            | `false`    | Delete the contents of `output` before writing                                                                                                  |
+| `modular`     | `boolean`            | `false`    | One file per module + `data-contracts.ts` + `http-client.ts` (see below)                                                                        |
+| `fileNames`   | `Partial<FileNames>` | see below  | Modular file names: `dataContracts` (`data-contracts`), `routeTypes` (`route-types`), `httpClient` (`http-client`), `outOfModuleApi` (`Common`) |
+| `toJS`        | `boolean`            | `false`    | Emit `.js` + `.d.ts` instead of `.ts` (loads `typescript` on demand)                                                                            |
+| `silent`      | `boolean`            | `false`    | Hide logs (errors are still printed)                                                                                                            |
+| `debug`       | `boolean`            | `false`    | Extra logs about the generation                                                                                                                 |
+| `patch`       | `boolean`            | `false`    | Fix small errors in a Swagger 2.0 document while converting it                                                                                  |
 
-## Type Generation Options
+Swagger 2.0 documents are converted to OpenAPI 3.0 (`swagger2openapi`) before parsing.
 
-| Option                 | Type      | Default  | Description                                                   |
-| ---------------------- | --------- | -------- | ------------------------------------------------------------- |
-| `generateClient`       | `boolean` | `true`   | Generate HTTP client class                                    |
-| `generateRouteTypes`   | `boolean` | `false`  | Generate route type definitions                               |
-| `generateResponses`    | `boolean` | `false`  | Generate response type definitions                            |
-| `extractRequestParams` | `boolean` | `false`  | Extract request params into separate types                    |
-| `extractRequestBody`   | `boolean` | `false`  | Extract request body into separate types                      |
-| `extractEnums`         | `boolean` | `false`  | Extract enums into separate declarations                      |
-| `unwrapResponseData`   | `boolean` | `false`  | Return response data directly (not wrapped in axios response) |
-| `generateUnionEnums`   | `boolean` | `false`  | Generate union types instead of enums                         |
-| `enumNamesAsValues`    | `boolean` | `false`  | Use enum name as value                                        |
-| `toJS`                 | `boolean` | `false`  | Generate JavaScript instead of TypeScript                     |
-| `addReadonly`          | `boolean` | `false`  | Add `readonly` to generated properties                        |
-| `anotherArrayType`     | `boolean` | `false`  | Use `Array<T>` instead of `T[]`                               |
-| `extractResponseBody`  | `boolean` | `false`  | Extract response body into separate types                     |
-| `extractResponseError` | `boolean` | `false`  | Extract response error into separate types                    |
-| `defaultResponseType`  | `string`  | `"void"` | Type for empty response schemas                               |
-| `disableThrowOnError`  | `boolean` | `false`  | Do not throw when `response.ok` is not true                   |
+## Schema download (`url`)
 
-## Naming Options
+| Option               | Type             | Default | Description                                                                                                                          |
+| -------------------- | ---------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `authorizationToken` | `string`         | —       | Sent verbatim as the `Authorization` header (write `'Bearer <token>'` yourself)                                                      |
+| `disableStrictSSL`   | `boolean`        | `false` | Skip TLS certificate validation (self-signed certs)                                                                                  |
+| `disableProxy`       | `boolean`        | `false` | Connect directly. By default `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY` are respected (undici `EnvHttpProxyAgent`)                    |
+| `requestOptions`     | `RequestOptions` | —       | undici `fetch` `RequestInit` (`headers`, `method`, `dispatcher`, `signal`, ...) + `timeout` in ms (default `60000`, `0` disables it) |
 
-| Option                     | Type      | Description                                                  |
-| -------------------------- | --------- | ------------------------------------------------------------ |
-| `typePrefix`               | `string`  | Prefix for all generated type names                          |
-| `typeSuffix`               | `string`  | Suffix for all generated type names                          |
-| `enumKeyPrefix`            | `string`  | Prefix for enum keys                                         |
-| `enumKeySuffix`            | `string`  | Suffix for enum keys                                         |
-| `fixInvalidTypeNamePrefix` | `string`  | Prefix to fix invalid type names                             |
-| `fixInvalidEnumKeyPrefix`  | `string`  | Prefix to fix invalid enum keys                              |
-| `moduleNameFirstTag`       | `boolean` | Use first tag as module/class name                           |
-| `moduleNameIndex`          | `number`  | Path segment index used for module separation (default: `0`) |
+A custom `requestOptions.dispatcher` (e.g. `new ProxyAgent(url)` from `undici`) replaces the proxy /
+SSL handling. The node-fetch style `requestOptions.agent` is no longer supported (a warning is
+logged). Non-2xx responses, network errors and timeouts reject with
+`Failed to fetch swagger schema from "<url>": ...`.
 
-## Sorting Options
+## Client
 
-| Option       | Type      | Description                                                                |
-| ------------ | --------- | -------------------------------------------------------------------------- |
-| `sortTypes`  | `boolean` | Sort generated types alphabetically                                        |
-| `sortRoutes` | `boolean` | Sort generated routes alphabetically (`sortRouters` is a deprecated alias) |
+| Option                       | Type                 | Default      | Description                                                                             |
+| ---------------------------- | -------------------- | ------------ | --------------------------------------------------------------------------------------- |
+| `httpClientType`             | `'fetch' \| 'axios'` | `'fetch'`    | HTTP client of the generated code (axios must be installed in the consuming project)    |
+| `generateClient`             | `boolean`            | `true`       | `false`: only types (no `HttpClient` / `Api`)                                           |
+| `apiClassName`               | `string`             | `"Api"`      | Name of the main class (single-file mode)                                               |
+| `singleHttpClient`           | `boolean`            | `false`      | `Api` does not extend `HttpClient`; its constructor takes an `HttpClient` instance      |
+| `unwrapResponseData`         | `boolean`            | `false`      | Methods resolve with the response body instead of `HttpResponse` / `AxiosResponse`      |
+| `disableThrowOnError`        | `boolean`            | `false`      | fetch client: resolve (not reject) on non-2xx; check `response.ok` / `response.error`   |
+| `defaultResponseAsSuccess`   | `boolean`            | `false`      | Also use the `default` response as the success type                                     |
+| `successResponseStatusRange` | `[number, number]`   | `[200, 299]` | Status codes treated as success when picking the response type                          |
+| `defaultResponseType`        | `string`             | `"void"`     | Type used for responses without a schema                                                |
+| `generateResponses`          | `boolean`            | `false`      | Add an `@response <status> <type> <description>` JSDoc line per response to each method |
 
-## Formatting Options
+## Types and enums
 
-Generated code is formatted with [oxfmt](https://oxc.rs/docs/guide/usage/formatter). Options are merged in this order (later wins):
+| Option                            | Type      | Default           | Description                                          |
+| --------------------------------- | --------- | ----------------- | ---------------------------------------------------- |
+| `generateUnionEnums`              | `boolean` | `false`           | Every enum becomes a union type (`'a' \| 'b'`)       |
+| `extractEnums`                    | `boolean` | `false`           | Inline enums become named enum declarations          |
+| `enumNamesAsValues`               | `boolean` | `false`           | Use `x-enumNames` as values too (not only as keys)   |
+| `addReadonly`                     | `boolean` | `false`           | `readonly` properties                                |
+| `anotherArrayType`                | `boolean` | `false`           | `Array<T>` instead of `T[]`                          |
+| `sortTypes`                       | `boolean` | `false`           | Sort types and fields                                |
+| `typePrefix` / `typeSuffix`       | `string`  | `""`              | Added to every data contract name                    |
+| `enumKeyPrefix` / `enumKeySuffix` | `string`  | `""`              | Added to every enum key                              |
+| `fixInvalidTypeNamePrefix`        | `string`  | `"Type"`          | Prefix for type names that are not valid identifiers |
+| `fixInvalidEnumKeyPrefix`         | `string`  | `"Value"`         | Prefix for enum keys that are not valid identifiers  |
+| `typeNameResolverName`            | `string`  | `"ComponentType"` | Prefix of fallback type names                        |
+| `enumKeyResolverName`             | `string`  | `"Value"`         | Prefix of fallback enum keys                         |
+| `specificArgNameResolverName`     | `string`  | `"arg"`           | Prefix of fallback argument names                    |
 
-1. built-in defaults: `singleQuote: true`, `jsxSingleQuote: true`, `printWidth: 100`, `trailingComma: 'es5'`, `tabWidth: 2`, `semi: true`, `sortImports` (grouped)
-2. `.oxfmtrc.json` in the current working directory (if any)
-3. `oxfmtOptrions` (note the spelling — it is the public option name)
+Boolean enums are always generated as unions. Type names are deterministic (the same spec gives the
+same names).
 
-| Option          | Type                          | Description                                                                                    |
-| --------------- | ----------------------------- | ---------------------------------------------------------------------------------------------- |
-| `oxfmtOptrions` | `FormatConfig` (from `oxfmt`) | Any oxfmt format option, e.g. `printWidth`, `tabWidth`, `trailingComma`, `singleQuote`, `semi` |
+## Extraction
 
-There is no `parser` option — the parser is inferred from the file extension (a passed `parser` is ignored).
+| Option                 | Type                         | Default | Description                                                                                 |
+| ---------------------- | ---------------------------- | ------- | ------------------------------------------------------------------------------------------- |
+| `extractRequestParams` | `boolean`                    | `false` | Path + query params become one `<Route>Params` type and one argument                        |
+| `extractRequestBody`   | `boolean`                    | `false` | Inline bodies become `<Route>Payload` types                                                 |
+| `extractResponseBody`  | `boolean`                    | `false` | Inline success responses become `<Route>Data` types                                         |
+| `extractResponseError` | `boolean`                    | `false` | Inline error responses become `<Route>Error` types                                          |
+| `extractResponses`     | `boolean`                    | `false` | `#/components/responses/*` become data contracts (renamed on a clash, e.g. `ErrorResponse`) |
+| `extractingOptions`    | `Partial<ExtractingOptions>` | below   | Suffixes tried in order, plus optional `*NameResolver(typeName, reservedNames)` functions   |
 
-## Advanced Options
+Default suffixes: `requestBodySuffix: ['Payload', 'Body', 'Input']`, `requestParamsSuffix: ['Params']`,
+`responseBodySuffix: ['Data', 'Result', 'Output']`,
+`responseErrorSuffix: ['Error', 'Fail', 'Fails', 'ErrorData', 'HttpError', 'BadResponse']`,
+`enumSuffix: ['Enum']`, `discriminatorMappingSuffix: ['Mapping', 'Mapper', 'MapType']`,
+`discriminatorAbstractPrefix: ['Base', 'Abstract', 'Discriminator', 'Internal', 'Polymorph']`.
+Resolvers: `requestBodyNameResolver`, `requestParamsNameResolver`, `responseBodyNameResolver`,
+`responseErrorNameResolver`, `enumNameResolver`, `discriminatorMappingNameResolver`,
+`discriminatorAbstractResolver`. Extracted types never overwrite a real component with the same name.
 
-| Option                     | Type                                         | Description                                                                          |
-| -------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `templates`                | `string`                                     | Path to custom templates folder (`.ejs` / `.eta`, Eta engine)                        |
-| `extraTemplates`           | `[]`                                         | Extra template files to generate additional output files                             |
-| `singleHttpClient`         | `boolean`                                    | Use a single shared HTTP client instance                                             |
-| `defaultResponseAsSuccess` | `boolean`                                    | Treat default response as success                                                    |
-| `spec`                     | `object`                                     | Inline swagger spec object (alternative to url/input)                                |
-| `constants`                | `Record<string, any>`                        | Constants available in templates                                                     |
-| `templateInfos`            | `{ name: string; fileName: string }[]`       | Template name -> template file mapping (e.g. `{ name: "api", fileName: "api" }`)     |
-| `patch`                    | `boolean`                                    | Fix up small errors in the swagger source definition                                 |
-| `silent`                   | `boolean`                                    | Output only errors to console                                                        |
-| `debug`                    | `boolean`                                    | Log additional information about the generation process                              |
-| `authorizationToken`       | `string`                                     | Sent as `Authorization` header when downloading the schema from `url`                |
-| `disableStrictSSL`         | `boolean`                                    | Disable strict SSL when downloading the schema                                       |
-| `disableProxy`             | `boolean`                                    | Ignore `HTTP(S)_PROXY` env variables when downloading the schema                     |
-| `requestOptions`           | `Record<string, any> & { timeout?: number }` | Extra `fetch` options for downloading the schema; `timeout` in ms (default: `60000`) |
-| `codeGenConstructs`        | `function`                                   | Override code generation constructs                                                  |
-| `primitiveTypeConstructs`  | `function`                                   | Override primitive type mappings                                                     |
+## Routes and modules
 
-## Extracting Options
+| Option               | Type      | Default | Description                                                            |
+| -------------------- | --------- | ------- | ---------------------------------------------------------------------- |
+| `moduleNameIndex`    | `number`  | `0`     | Path segment used as module name (`/pets/{id}` -> `pets`)              |
+| `moduleNameFirstTag` | `boolean` | `false` | Use the first tag of the operation as module name                      |
+| `generateRouteTypes` | `boolean` | `false` | Also emit `namespace` route types (request params/query/body/response) |
+| `sortRoutes`         | `boolean` | `false` | Sort routes alphabetically (`sortRouters` is a deprecated alias)       |
 
-```ts
-extractingOptions?: {
-  requestBodySuffix?: string[]    // suffix for extracted request body types
-  requestParamsSuffix?: string[]  // suffix for extracted request param types
-  responseBodySuffix?: string[]   // suffix for extracted response body types
-  responseErrorSuffix?: string[]  // suffix for extracted response error types
-}
-```
+Method names come from `operationId` (camelCase); without one they are built from the method and path.
+
+### Modular output files
+
+- `data-contracts.ts`, `http-client.ts` (when `generateClient`)
+- `<Module>.ts` per module, e.g. `Pets.ts` exporting `class Pets extends HttpClient`; routes outside
+  any module (`GET /`) go to `Common.ts` (`fileNames.outOfModuleApi`)
+- with `generateRouteTypes`: `<Module>Route.ts` exporting `namespace <Module>`, and `CommonRoute.ts`
+- a module whose name clashes with a data contract gets a suffix: class `HealthApi`, namespace
+  `HealthRoute` (the file names stay `Health.ts` / `HealthRoute.ts`)
+- `name` and `apiClassName` are not used
+
+## Formatting
+
+Output is formatted with [oxfmt](https://oxc.rs/docs/guide/usage/formatter). Later wins:
+
+1. built-in defaults (`constants.OXC_FORMAT_OPTIONS`): `singleQuote: true`, `jsxSingleQuote: true`,
+   `printWidth: 100`, `trailingComma: 'es5'`, `tabWidth: 2`, `semi: true`, grouped `sortImports`
+2. `.oxfmtrc.json` in `process.cwd()` (if present)
+3. `oxfmtOptrions` (oxfmt `FormatConfig`; the spelling is the real public name). `parser` is ignored.
+
+## Templates and advanced
+
+| Option                    | Type                               | Description                                                                                                                             |
+| ------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `templates`               | `string`                           | Folder of custom Eta templates (`.ejs` / `.eta`). Lookup: custom folder > `templates/base` > `templates/default` or `templates/modular` |
+| `templateInfos`           | `TemplateInfo[]`                   | Template name -> file name (`{ name: 'api', fileName: 'api' }`, ...)                                                                    |
+| `extraTemplates`          | `{ name: string; path: string }[]` | Extra files rendered with the same data (`name` = output file, `path` = template file)                                                  |
+| `constants`               | `Record<string, unknown>`          | Merged into `config.constants` in templates                                                                                             |
+| `codeGenConstructs`       | object or `(ts) => object`         | Changes deep-merged into `config.Ts` (TS code constructs: `Keyword`, `ArrayType`, `UnionType`, ...)                                     |
+| `primitiveTypeConstructs` | object or `(types) => object`      | Changes deep-merged into schema type -> TS type map, e.g. `{ string: { 'date-time': 'Date' } }`                                         |
+| `schemaParsers`           | `SchemaParsers`                    | Custom parser classes (extend `MonoSchemaParser`) for `object`, `enum`, `array`, `complexOneOf`, ...                                    |
+| `customTranslator`        | `new (process) => Translator`      | Custom code translator (extend the exported `Translator`)                                                                               |
+| `hooks`                   | `Partial<Hooks>`                   | See below                                                                                                                               |
+
+In templates: `it` is the `GenerateApiConfiguration` (`apiConfig`, `config`, `modelTypes`, `routes`,
+`utils`, ...). `utils._` is a set of lodash-compatible functions from `es-toolkit/compat` (`get`,
+`map`, `compact`, `sortBy`, `camelCase`, `upperCase`, ...); `utils.require()` resolves paths from
+the templates folder and packages from your project. Use `includeFile('@base/...', it)` to include
+built-in partials. Copy the built-in templates with `generateTemplates({ output, httpClientType, modular })`.
 
 ## Hooks
 
+Returning `undefined` (or nothing) keeps the original value. Any hook (or custom parser / template /
+construct) makes the generator work on a deep copy of the schema, so your input is never changed.
+
 ```ts
-hooks?: {
-  onCreateComponent?: (component: any) => void
-  onCreateRequestParams?: (rawType: any) => void
-  onCreateRoute?: (routeData: any) => void
-  onCreateRouteName?: (routeNameInfo: any, rawRouteInfo: any) => void
-  onFormatRouteName?: (routeInfo: any, templateRouteName: any) => void
-  onFormatTypeName?: (typeName: any, rawTypeName: any, schemaType: any) => void
-  onInit?: (configuration: any) => void
-  onPreParseSchema?: (originalSchema: any, typeName: any, schemaType: any) => void
-  onParseSchema?: (originalSchema: any, parsedSchema: any) => void
-  onPrepareConfig?: (currentConfiguration: any) => void
+interface Hooks {
+  onInit(config: CodeGenConfig, process: CodeGenProcess): CodeGenConfig | void; // after the schema is loaded
+  onPrepareConfig(configuration: GenerateApiConfiguration): GenerateApiConfiguration | void; // template data
+  onCreateComponent(component: SchemaComponent): SchemaComponent | void; // each #/components/* entry
+  onPreParseSchema(
+    schema: SchemaObject,
+    typeName: string | null,
+    schemaType: BaseSchemaType
+  ): SchemaObject | void; // deep-merged into the schema
+  onParseSchema(schema: SchemaObject, parsed: ParsedSchema): ParsedSchema | void;
+  onPreBuildRoutePath(routePath: string): string | void; // raw path, before params are parsed
+  onBuildRoutePath(data: BuildRoutePathResult): BuildRoutePathResult | void; // { originalRoute, route, pathParams, queryParams }
+  onInsertPathParam(
+    paramName: string,
+    index: number,
+    pathParams: RouteNameParam[],
+    route: string
+  ): string | void; // expression put in `${...}` (not wrapped in encodeURIComponent)
+  onCreateRequestParams(rawType: SchemaObject): SchemaObject | SchemaComponent | void;
+  onCreateRoute(route: ParsedRoute): ParsedRoute | false | void; // false skips the route
+  onCreateRouteName(nameInfo: RouteNameInfo, raw: RawRouteInfo): RouteNameInfo | void; // { usage, original, duplicate }
+  onFormatRouteName(raw: RawRouteInfo, templateRouteName: string): string | void; // method name
+  onFormatTypeName(
+    typeName: string,
+    rawTypeName: string,
+    schemaType: 'type-name' | 'enum-key'
+  ): string | void;
 }
 ```
 
-Hooks allow intercepting and customizing generation at various stages. Useful for renaming types, skipping routes, or injecting custom logic.
+Useful fields: `route.raw` (`operationId`, `method`, `route` = original path, `moduleName`, `tags`,
+`summary`, ...), `route.request.path` / `.method` / `.security`, `route.routeName.usage`,
+`route.namespace` (module name).
+
+## CLI flags
+
+`swagger-typescript-api-es [flags]` (`-h` help, `-v` version). Kebab-case and camelCase spellings
+are equivalent. Boolean values: `false`, `0`, `no`, `off` and `""` are false, anything else is true.
+
+| Flag                                                    | Option                                               |
+| ------------------------------------------------------- | ---------------------------------------------------- |
+| `-u, --u <url>`                                         | `url`                                                |
+| `-o, --o <output>`                                      | `output`                                             |
+| `-n, --n <name>`                                        | `name`                                               |
+| `-t, --t <templates>`                                   | `templates`                                          |
+| `--httpClientType <fetch\|axios>`                       | `httpClientType`                                     |
+| `--modular <bool>`                                      | `modular`                                            |
+| `--js <bool>`                                           | `toJS`                                               |
+| `--noClient <bool>`                                     | `generateClient` (inverted)                          |
+| `--d <bool>`                                            | `defaultResponseAsSuccess`                           |
+| `--r <bool>`                                            | `generateResponses`                                  |
+| `--route-types <bool>`                                  | `generateRouteTypes`                                 |
+| `--union-enums <bool>`                                  | `generateUnionEnums`                                 |
+| `--extract-enums` (value optional)                      | `extractEnums`                                       |
+| `--enum-names-as-values <bool>`                         | `enumNamesAsValues`                                  |
+| `--add-readonly <bool>`                                 | `addReadonly`                                        |
+| `--another-array-type <bool>`                           | `anotherArrayType`                                   |
+| `--extract-request-params <bool>`                       | `extractRequestParams`                               |
+| `--extract-request-body <bool>`                         | `extractRequestBody`                                 |
+| `--extract-response-body <bool>`                        | `extractResponseBody`                                |
+| `--extract-response-error <bool>`                       | `extractResponseError`                               |
+| `--module-name-index <number>`                          | `moduleNameIndex`                                    |
+| `--module-name-first-tag <bool>`                        | `moduleNameFirstTag`                                 |
+| `--unwrap-response-data <bool>`                         | `unwrapResponseData`                                 |
+| `--disable-throw-on-error <bool>`                       | `disableThrowOnError`                                |
+| `--single-http-client <bool>`                           | `singleHttpClient`                                   |
+| `--default-response <type>`                             | `defaultResponseType`                                |
+| `--type-prefix <str>` / `--type-suffix <str>`           | `typePrefix` / `typeSuffix`                          |
+| `--api-class-name <name>`                               | `apiClassName`                                       |
+| `--clean-output <bool>`                                 | `cleanOutput`                                        |
+| `--sort-types <bool>` / `--sort-routes <bool>`          | `sortTypes` / `sortRoutes`                           |
+| `--disableStrictSSL <bool>` / `--disableProxy <bool>`   | `disableStrictSSL` / `disableProxy`                  |
+| `--silent <bool>` / `--debug <bool>` / `--patch <bool>` | `silent` / `debug` / `patch`                         |
+| `--custom-config <file>`                                | loads a js/ts/json file exporting one options object |
+
+Options without a flag (`input`, `hooks`, `requestOptions`, `oxfmtOptrions`, `extractResponses`,
+...) go in the config file or the `--custom-config` file.
+
+## Programmatic API and exported types
+
+```ts
+import {
+  constants,
+  defaultConfig,
+  generateApi,
+  generateTemplates,
+  Translator,
+} from 'swagger-typescript-api-es';
+import type {
+  GenerateApiOutput,
+  GeneratedFile,
+  Hooks,
+  IOptions,
+  OpenAPIDocument,
+  ParsedRoute,
+} from 'swagger-typescript-api-es';
+```
+
+- `generateApi(options: IOptions): Promise<GenerateApiOutput>`; an array of options returns an array
+  of results (generated one after another). Rejects on errors (no `process.exit`).
+- `GenerateApiOutput`: `files: GeneratedFile[]` (`{ fileName, fileExtension, fileContent }`, returned
+  with or without `output: false`), `configuration` (template data), `getTemplate`, `renderTemplate`,
+  `createFile`, `formatTSContent(code): Promise<string>`.
+- `defaultConfig(options)`: identity function that types a config object or array.
+- `generateTemplates({ output, httpClientType, modular, cleanOutput, rewrite, silent })`: copies the
+  built-in templates for customisation, resolves `{ files: SourceTemplate[] }`.
+- Other exported types: `GenerateApiConfiguration`, `GenerateApiConfig`, `SchemaObject`,
+  `OpenAPIV3Document`, `ParsedSchema`, `RawRouteInfo`, `RouteNameInfo`, `BuildRoutePathResult`,
+  `SchemaComponent`, `RequestOptions`, `OxfmtOptions`, `ExtractingOptions`, `SchemaParsers`, ...
