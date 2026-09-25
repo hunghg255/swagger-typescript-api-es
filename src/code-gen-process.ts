@@ -436,7 +436,9 @@ class CodeGenProcess {
   ): Promise<TranslatorIO[]> => {
     const { routes } = configuration;
     const { fileNames, generateRouteTypes, generateClient } = configuration.config;
-    const modularApiFileInfos: TranslatorIO[] = [];
+    // templates are rendered in order (a render can set flags read by later ones, e.g. `internalTemplateOptions`),
+    // the (async) formatting of the files runs concurrently
+    const modularApiFileInfos: Promise<TranslatorIO[]>[] = [];
 
     // routes without module (e.g. `GET /`) are a flat list of routes,
     // wrap them into a module-like structure expected by modular templates
@@ -458,11 +460,11 @@ class CodeGenProcess {
         );
 
         modularApiFileInfos.push(
-          ...(await this.createOutputFileInfo(
+          this.createOutputFileInfo(
             configuration,
             pascalCase(`${fileNames.outOfModuleApi}_Route`),
             outOfModuleRouteContent
-          ))
+          )
         );
       }
       if (generateClient) {
@@ -472,11 +474,7 @@ class CodeGenProcess {
         });
 
         modularApiFileInfos.push(
-          ...(await this.createOutputFileInfo(
-            configuration,
-            fileNames.outOfModuleApi,
-            outOfModuleApiContent
-          ))
+          this.createOutputFileInfo(configuration, fileNames.outOfModuleApi, outOfModuleApiContent)
         );
       }
     }
@@ -493,11 +491,11 @@ class CodeGenProcess {
           );
 
           modularApiFileInfos.push(
-            ...(await this.createOutputFileInfo(
+            this.createOutputFileInfo(
               configuration,
               pascalCase(`${route.moduleName}_Route`),
               routeModuleContent
-            ))
+            )
           );
         }
 
@@ -508,31 +506,32 @@ class CodeGenProcess {
           });
 
           modularApiFileInfos.push(
-            ...(await this.createOutputFileInfo(
-              configuration,
-              pascalCase(route.moduleName),
-              apiModuleContent
-            ))
+            this.createOutputFileInfo(configuration, pascalCase(route.moduleName), apiModuleContent)
           );
         }
       }
     }
 
-    return [
-      ...(await this.createOutputFileInfo(
-        configuration,
-        fileNames.dataContracts,
-        this.templatesWorker.renderTemplate(templatesToRender.dataContracts, configuration)
-      )),
-      ...(generateClient
-        ? await this.createOutputFileInfo(
-            configuration,
-            fileNames.httpClient,
-            this.templatesWorker.renderTemplate(templatesToRender.httpClient, configuration)
-          )
-        : []),
+    const dataContractsFileInfo = this.createOutputFileInfo(
+      configuration,
+      fileNames.dataContracts,
+      this.templatesWorker.renderTemplate(templatesToRender.dataContracts, configuration)
+    );
+    const httpClientFileInfo = generateClient
+      ? this.createOutputFileInfo(
+          configuration,
+          fileNames.httpClient,
+          this.templatesWorker.renderTemplate(templatesToRender.httpClient, configuration)
+        )
+      : [];
+
+    const [dataContracts, httpClient, ...apiModules] = await Promise.all([
+      dataContractsFileInfo,
+      httpClientFileInfo,
       ...modularApiFileInfos,
-    ];
+    ]);
+
+    return [...dataContracts, ...httpClient, ...apiModules.flat()];
   };
 
   createSingleFileInfo = (
