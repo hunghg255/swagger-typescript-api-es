@@ -237,6 +237,9 @@ class TemplatesWorker {
   /**
    * Renders a template (synchronously) with the base template data (`utils`, `config`) and `configuration`.
    */
+  /** compiled templates, keyed by the template source */
+  compiledTemplates = new Map<string, ReturnType<typeof Eta.compile>>();
+
   renderTemplate = (
     template: string | undefined | null,
     configuration: object = {},
@@ -245,20 +248,25 @@ class TemplatesWorker {
     if (!template) {
       return '';
     }
-    return Eta.render(
-      template,
+    const etaConfig = Eta.getConfig({
+      async: false,
+      ...options,
+      includeFile: (path: string, configuration?: object, options?: TemplateRenderOptions) => {
+        return this.renderTemplate(this.getTemplateContent(path), configuration, options);
+      },
+    });
+    let templateFn = this.compiledTemplates.get(template);
+    if (!templateFn) {
+      templateFn = Eta.compile(template, etaConfig);
+      this.compiledTemplates.set(template, templateFn);
+    }
+    return templateFn(
       {
         ...this.getRenderTemplateData(),
         ...configuration,
       },
-      {
-        async: false,
-        ...options,
-        includeFile: (path: string, configuration?: object, options?: TemplateRenderOptions) => {
-          return this.renderTemplate(this.getTemplateContent(path), configuration, options);
-        },
-      }
-    );
+      etaConfig
+    ) as string;
   };
 }
 
