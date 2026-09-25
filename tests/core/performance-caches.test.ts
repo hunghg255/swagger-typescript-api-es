@@ -186,3 +186,70 @@ describe('config.update with big documents', () => {
     expect(b.files['api.ts']).toContain('class Mutated');
   });
 });
+
+describe('documents read from a file are not copied', () => {
+  const fixture = (name: string) => path.resolve(__dirname, '../fixtures', name);
+
+  it.each(['petstore.json', 'swagger2.yaml'])(
+    '%s: input file and spec object give the same output',
+    async (name) => {
+      const content = fs.readFileSync(fixture(name), 'utf8');
+      const specObject = name.endsWith('.json')
+        ? JSON.parse(content)
+        : (await import('js-yaml')).load(content);
+      for (const options of [
+        {},
+        { modular: true, extractEnums: true, extractRequestParams: true },
+      ]) {
+        const fromFile = await generate(content, options);
+        const fromSpec = await generate(specObject as object, options);
+        expect(fromFile.files).toEqual(fromSpec.files);
+      }
+    }
+  );
+});
+
+describe('lookup indexes', () => {
+  it('SchemaComponentsMap.get follows components replaced or changed from outside', async () => {
+    const { SchemaComponentsMap } = await import('../../src/schema-components-map');
+    const map = new SchemaComponentsMap({
+      config: { hooks: { onCreateComponent: (c: any) => c } } as any,
+    });
+    const a = map.createComponent('#/components/schemas/A', { type: 'string' });
+    map.createComponent('#/components/schemas/B', { type: 'string' });
+    expect(map.get('#/components/schemas/A')).toBe(a);
+    const a2 = map.createComponent('#/components/schemas/A', { type: 'number' });
+    expect(map.get('#/components/schemas/A')).toBe(a2);
+    expect(map.getComponents()).toHaveLength(2);
+    // changed through the returned array
+    map.getComponents().unshift({ ...a2, $ref: '#/components/schemas/C' });
+    expect(map.get('#/components/schemas/A')).toBe(a2);
+    expect(map.get('#/components/schemas/C')?.$ref).toBe('#/components/schemas/C');
+    map.clear();
+    expect(map.get('#/components/schemas/A')).toBeNull();
+  });
+
+  it('NameResolver stays in sync when reservedNames is changed from outside', async () => {
+    const { NameResolver } = await import('../../src/util/name-resolver');
+    const resolver = new NameResolver({} as any, null, ['A'], null);
+    expect(resolver.isReserved('A')).toBe(true);
+    resolver.reservedNames.push('B');
+    expect(resolver.isReserved('B')).toBe(true);
+    resolver.reservedNames = ['C'];
+    expect(resolver.isReserved('A')).toBe(false);
+    expect(resolver.isReserved('C')).toBe(true);
+    resolver.reserve(['C', 'D']);
+    expect(resolver.reservedNames).toEqual(['C', 'D']);
+    resolver.unreserve(['C']);
+    expect(resolver.isReserved('C')).toBe(false);
+    expect(resolver.reservedNames).toEqual(['D']);
+  });
+
+  it('generateId keeps the [a-z0-9]{12} format across pool refills', async () => {
+    const { generateId } = await import('../../src/util/id');
+    const ids = Array.from({ length: 2000 }, () => generateId());
+    expect(ids.every((id) => /^[a-z0-9]{12}$/.test(id))).toBe(true);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(generateId(5000)).toMatch(/^[a-z0-9]{5000}$/);
+  });
+});

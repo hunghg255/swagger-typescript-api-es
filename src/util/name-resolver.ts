@@ -1,4 +1,4 @@
-import { compact, some, uniq } from 'es-toolkit/compat';
+import { compact, uniq } from 'es-toolkit/compat';
 
 import type { CodeGenConfig } from '../configuration';
 import type { Logger } from './logger';
@@ -41,21 +41,41 @@ class NameResolver {
     this.reserve(reservedNames);
   }
 
+  /** lookup set of `reservedNames` (the array stays the public, ordered list) */
+  private reservedNamesSet = new Set<string>();
+
+  private reservedNamesSetSource: string[] | null = null;
+
+  /** keeps the lookup set in sync, also when `reservedNames` was replaced / changed from outside */
+  private getReservedNamesSet() {
+    if (
+      this.reservedNamesSetSource !== this.reservedNames ||
+      this.reservedNamesSet.size !== this.reservedNames.length
+    ) {
+      this.reservedNamesSet = new Set(this.reservedNames);
+      this.reservedNamesSetSource = this.reservedNames;
+    }
+    return this.reservedNamesSet;
+  }
+
   reserve(names: (string | null | undefined)[]) {
     const fixedNames = uniq(compact(names));
+    const reserved = this.getReservedNamesSet();
     for (const name of fixedNames) {
-      if (!this.reservedNames.includes(name)) {
+      if (!reserved.has(name)) {
         this.reservedNames.push(name);
+        reserved.add(name);
       }
     }
   }
 
   unreserve(names: string[]) {
-    this.reservedNames = this.reservedNames.filter((reservedName) => !names.includes(reservedName));
+    const toRemove = new Set(names);
+    this.reservedNames = this.reservedNames.filter((reservedName) => !toRemove.has(reservedName));
   }
 
   isReserved(name: string) {
-    return some(this.reservedNames, (reservedName) => reservedName === name);
+    return this.getReservedNamesSet().has(name);
   }
 
   /**

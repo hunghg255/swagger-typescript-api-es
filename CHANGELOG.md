@@ -64,9 +64,16 @@
   core `cloneDeep` for documents). `utils._` in templates keeps the same lodash-compatible functions.
 - The config no longer deep-merges whole documents (`spec`, `swaggerSchema`, `originalSchema`) and
   skips the no-op `onInit` update, which copied the whole schema several times.
-- CLI run (new process) on a small spec: ~800ms → ~400ms; 1500 schemas / 3000 operations: ~3.4s → ~2.2s.
-  Repeated in-process generation of that spec: ~2.7s → ~1.5s (`npm run bench`). The generated output is
-  unchanged.
+- Algorithmic fixes:
+  - response / request types were resolved by scanning (and re-formatting the names of) every
+    component for every route (O(routes × components), 3.4M `formatName` calls on a 1500 / 3000 spec):
+    now an index built once;
+  - `$ref` lookups in the components map and reserved-name checks use a `Map` / `Set` instead of
+    linear scans;
+  - memoized `pascalCase` / `internalCase`, pooled random bytes for route ids, and a document read
+    from a file / URL is no longer deep-copied before use.
+- CLI run (new process): small spec ~840ms → ~380ms; 1500 schemas / 3000 operations ~3.6s → ~1.3s.
+  In-process generation of that spec (`npm run bench`): ~2.6s → ~0.7s. The generated output is unchanged.
 
 ### 🏎 Dependencies
 

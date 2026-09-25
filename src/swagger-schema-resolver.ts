@@ -97,7 +97,14 @@ class SwaggerSchemaResolver {
       authorizationToken
     );
     const swaggerSchemaObject = this.processSwaggerSchemaFile(swaggerSchemaFile);
-    return await this.convertSwaggerObject(swaggerSchemaObject, { patch });
+    // a document parsed here from the file / downloaded text is not shared with anyone: no copy needed
+    return await this.convertSwaggerObject(
+      swaggerSchemaObject,
+      { patch },
+      {
+        owned: typeof swaggerSchemaFile === 'string',
+      }
+    );
   }
 
   /**
@@ -105,7 +112,9 @@ class SwaggerSchemaResolver {
    */
   convertSwaggerObject(
     swaggerSchema: unknown,
-    converterOptions: ConverterOptions
+    converterOptions: ConverterOptions,
+    /** `owned`: the document was created by the resolver, so it can be changed without copying it */
+    { owned = false }: { owned?: boolean } = {}
   ): Promise<ResolvedSwaggerSchema> {
     if (!isRecord(swaggerSchema)) {
       throw new Error(`Invalid swagger schema: expected an object, got ${typeof swaggerSchema}`);
@@ -121,7 +130,7 @@ class SwaggerSchemaResolver {
     }
 
     return new Promise((resolve, reject) => {
-      const result = cloneDeep(swaggerSchema);
+      const result = owned ? swaggerSchema : cloneDeep(swaggerSchema);
 
       result.info = merge(
         {

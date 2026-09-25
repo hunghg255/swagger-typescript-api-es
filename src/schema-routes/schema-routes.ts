@@ -6,11 +6,9 @@ import {
   each,
   endsWith,
   entries,
-  find,
   flatMap,
   forEach,
   includes,
-  isEqual,
   isNaN,
   isObject,
   keys,
@@ -159,6 +157,15 @@ const isAllFieldsOptional = (parsedSchema: ParsedSchema) =>
 
 /** vendor extension with a content type (`x-accepts`, `x-contentType`) */
 const getExtraContentType = (value: unknown) => (typeof value === 'string' ? value : undefined);
+
+interface ParsedSchemasIndex {
+  /** formatted names of the components */
+  formattedNames: Set<string | null | undefined>;
+  /** composite components by their (string) content */
+  complexByContent: Map<string, ParsedSchema & { name: string }>;
+  /** raw names of the components */
+  names: Set<string | null | undefined>;
+}
 
 class SchemaRoutes {
   config: SchemaRoutesConfig;
@@ -502,6 +509,43 @@ class SchemaRoutes {
     return null;
   };
 
+  /** lookup tables of the parsed components, built once per `parsedSchemas` list */
+  parsedSchemasIndexes = new WeakMap<ParsedSchema[], ParsedSchemasIndex>();
+
+  /**
+   * `getTypeFromRequestInfo` runs for every request / response: scanning all the components
+   * (and formatting their names) each time was O(routes × components).
+   */
+  getParsedSchemasIndex = (parsedSchemas: ParsedSchema[]): ParsedSchemasIndex => {
+    let index = this.parsedSchemasIndexes.get(parsedSchemas);
+
+    if (!index) {
+      index = { formattedNames: new Set(), complexByContent: new Map(), names: new Set() };
+
+      for (const parsedSchema of parsedSchemas) {
+        index.names.add(parsedSchema.name);
+        index.formattedNames.add(this.typeNameFormatter.format(parsedSchema.name));
+
+        if (
+          parsedSchema.schemaType === SCHEMA_TYPES.COMPLEX &&
+          typeof parsedSchema.name === 'string' &&
+          typeof parsedSchema.content === 'string' &&
+          // the first matching component wins (as with `find`)
+          !index.complexByContent.has(parsedSchema.content)
+        ) {
+          index.complexByContent.set(
+            parsedSchema.content,
+            parsedSchema as ParsedSchema & { name: string }
+          );
+        }
+      }
+
+      this.parsedSchemasIndexes.set(parsedSchemas, index);
+    }
+
+    return index;
+  };
+
   getTypeFromRequestInfo = ({
     requestInfo,
     parsedSchemas,
@@ -523,13 +567,10 @@ class SchemaRoutes {
       const content = this.schemaParserFabric.getInlineParseContent(schema, typeName, [
         operationId,
       ]);
-      // formatted name of this component is equal to the content
-      const foundSchemaByName = find(
-        parsedSchemas,
-        (parsedSchema) => this.typeNameFormatter.format(parsedSchema.name) === content
-      );
+      const index = this.getParsedSchemasIndex(parsedSchemas);
 
-      if (foundSchemaByName) {
+      // formatted name of this component is equal to the content
+      if (index.formattedNames.has(content)) {
         return content;
       }
 
@@ -537,13 +578,7 @@ class SchemaRoutes {
       // Only composite (allOf/oneOf/anyOf/discriminator) components are considered:
       // for primitive components (e.g. `UserId: { type: string }`) an equal content
       // says nothing about identity and would type every `string` as `UserId`.
-      const foundSchemaByContent = find(
-        parsedSchemas,
-        (parsedSchema): parsedSchema is ParsedSchema & { name: string } =>
-          parsedSchema.schemaType === SCHEMA_TYPES.COMPLEX &&
-          typeof parsedSchema.name === 'string' &&
-          isEqual(parsedSchema.content, content)
-      );
+      const foundSchemaByContent = index.complexByContent.get(content);
 
       return foundSchemaByContent
         ? this.typeNameFormatter.format(foundSchemaByContent.name)
@@ -558,7 +593,7 @@ class SchemaRoutes {
       const typeNameWithoutOpId = operationId
         ? replace(refTypeInfo.typeName, operationId, '')
         : refTypeInfo.typeName;
-      if (find(parsedSchemas, (schema) => schema.name === typeNameWithoutOpId)) {
+      if (this.getParsedSchemasIndex(parsedSchemas).names.has(typeNameWithoutOpId)) {
         return this.typeNameFormatter.format(typeNameWithoutOpId);
       }
 
