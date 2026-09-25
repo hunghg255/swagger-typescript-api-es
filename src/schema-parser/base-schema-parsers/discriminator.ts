@@ -1,14 +1,5 @@
-import {
-  clone,
-  cloneDeep,
-  compact,
-  entries,
-  isArray,
-  isObject,
-  keys,
-  omit,
-  reduce,
-} from 'lodash-es';
+import { cloneDeep } from 'es-toolkit';
+import { clone, compact, entries, isArray, isObject, keys, omit, reduce } from 'es-toolkit/compat';
 
 import { SCHEMA_TYPES } from '../../constants';
 import type { SchemaObject } from '../../types/openapi';

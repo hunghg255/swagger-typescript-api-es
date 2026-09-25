@@ -18,7 +18,7 @@ import {
   uniq,
   upperCase,
   values,
-} from 'lodash-es';
+} from 'es-toolkit/compat';
 import pc from 'picocolors';
 
 import { CodeFormatter } from './code-formatter';
@@ -129,7 +129,11 @@ class CodeGenProcess {
 
     this.logger.event('Start generating your typescript api');
 
-    this.config.update(this.config.hooks.onInit(this.config, this) || this.config);
+    const initConfig = this.config.hooks.onInit(this.config, this);
+    // returning the (mutated) config itself or nothing needs no update
+    if (initConfig && initConfig !== this.config) {
+      this.config.update(initConfig);
+    }
 
     this.schemaComponentsMap.clear();
 

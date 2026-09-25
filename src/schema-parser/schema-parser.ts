@@ -1,4 +1,4 @@
-import { first, merge, omit, values } from 'lodash-es';
+import { first, merge, omit, values } from 'es-toolkit/compat';
 
 import { SCHEMA_TYPES } from '../constants.js';
 import type { SchemaPath } from '../types/config';

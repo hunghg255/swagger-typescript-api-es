@@ -1,9 +1,9 @@
 import { createRequire } from 'node:module';
 import path, { resolve } from 'node:path';
 
+import { endsWith, lowerCase, reduce, replace, startsWith } from 'es-toolkit/compat';
 import * as Eta from 'eta';
 import type { EtaConfig } from 'eta';
-import { endsWith, lowerCase, reduce, replace, startsWith } from 'lodash-es';
 
 import type { CodeGenConfig } from './configuration';
 import { TEMPLATES_DIR } from './constants';

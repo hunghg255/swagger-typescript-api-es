@@ -60,13 +60,18 @@
 - Compiled Eta templates are cached (they were recompiled for every route, model and include) and
   included template files are read once.
 - `typescript` is only loaded when `toJS` is used (~400ms less startup).
-- CLI run on a small spec: ~800ms → ~400ms; 1500 schemas / 3000 operations: ~3.4s → ~2.1s
-  (`npm run bench`). The generated output is unchanged.
+- `lodash-es` replaced by `es-toolkit` (`es-toolkit/compat` where lodash semantics matter, the faster
+  core `cloneDeep` for documents). `utils._` in templates keeps the same lodash-compatible functions.
+- The config no longer deep-merges whole documents (`spec`, `swaggerSchema`, `originalSchema`) and
+  skips the no-op `onInit` update, which copied the whole schema several times.
+- CLI run (new process) on a small spec: ~800ms → ~400ms; 1500 schemas / 3000 operations: ~3.4s → ~2.2s.
+  Repeated in-process generation of that spec: ~2.7s → ~1.5s (`npm run bench`). The generated output is
+  unchanged.
 
 ### 🏎 Dependencies
 
 - Replaced `unprompts` with `cac` (drops `unbuild`/`esbuild` from runtime dependencies), `node-fetch-h2` with
-  `undici`, removed `make-dir`, `nanoid` and `node-emoji`, declared `picocolors`.
+  `undici`, removed `make-dir`, `nanoid`, `node-emoji` and `lodash-es` (now `es-toolkit`), declared `picocolors`.
 - `npm audit`: 0 vulnerabilities.
 
 ### 🏷 Types

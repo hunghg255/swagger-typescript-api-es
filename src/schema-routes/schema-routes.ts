@@ -24,7 +24,7 @@ import {
   startsWith,
   uniq,
   values,
-} from 'lodash-es';
+} from 'es-toolkit/compat';
 
 import type { CodeGenConfig } from '../configuration';
 import {

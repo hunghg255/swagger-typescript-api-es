@@ -1,4 +1,4 @@
-import { cloneDeep } from 'lodash-es';
+import { cloneDeep } from 'es-toolkit';
 
 import type { CodeGenConfig } from '../configuration';
 import type { SchemaComponentsMap } from '../schema-components-map';

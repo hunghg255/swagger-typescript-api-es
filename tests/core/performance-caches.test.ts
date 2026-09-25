@@ -133,3 +133,56 @@ describe('caches do not leak between generations', () => {
     expect(typeCheck(modular.files)).toEqual([]);
   });
 });
+
+describe('config.update with big documents', () => {
+  it('replaces spec / swaggerSchema / originalSchema by reference instead of deep-merging', () => {
+    const config = new CodeGenConfig({});
+    const first = {
+      openapi: '3.0.0',
+      info: { title: 'a', version: '1' },
+      paths: { '/a': {} },
+    } as any;
+    const second = {
+      openapi: '3.0.0',
+      info: { title: 'b', version: '1' },
+      paths: { '/b': {} },
+    } as any;
+    config.update({ swaggerSchema: first, originalSchema: first, spec: first });
+    config.update({ swaggerSchema: second });
+    expect(config.swaggerSchema).toBe(second);
+    // not merged with the previous document
+    expect(Object.keys(config.swaggerSchema!.paths!)).toEqual(['/b']);
+    expect(config.originalSchema).toBe(first);
+    expect(config.spec).toBe(first);
+  });
+
+  it('still deep-merges other options', () => {
+    const config = new CodeGenConfig({});
+    config.update({ extractingOptions: { requestBodySuffix: ['Body'] } } as any);
+    // lodash semantics: arrays are merged index by index (defaults: Payload, Body, Input)
+    expect(config.extractingOptions.requestBodySuffix).toEqual(['Body', 'Body', 'Input']);
+    expect(config.extractingOptions.responseBodySuffix.length).toBeGreaterThan(0);
+  });
+
+  it('does not mutate the spec passed by the user', async () => {
+    const input = structuredClone(spec);
+    await generate(input, { modular: true, extractEnums: true });
+    expect(input).toEqual(spec);
+  });
+
+  it('applies what onInit returns, and accepts the mutated config itself', async () => {
+    const a = await generate(spec, {
+      hooks: { onInit: (config: any) => ({ ...config, apiClassName: 'FromHook' }) },
+    });
+    expect(a.files['api.ts']).toContain('class FromHook');
+    const b = await generate(spec, {
+      hooks: {
+        onInit: (config: any) => {
+          config.apiClassName = 'Mutated';
+          return config;
+        },
+      },
+    });
+    expect(b.files['api.ts']).toContain('class Mutated');
+  });
+});

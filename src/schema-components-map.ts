@@ -1,4 +1,4 @@
-import { filter, startsWith } from 'lodash-es';
+import { filter, startsWith } from 'es-toolkit/compat';
 
 import type { CodeGenConfig } from './configuration';
 import type { ComponentName } from './types/openapi';

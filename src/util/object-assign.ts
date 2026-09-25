@@ -1,4 +1,4 @@
-import { merge, omitBy } from 'lodash-es';
+import { merge, omitBy } from 'es-toolkit/compat';
 
 /** changes, or a function receiving the target and returning the changes */
 export type ObjectUpdater<T, U> = U | ((target: T) => U);

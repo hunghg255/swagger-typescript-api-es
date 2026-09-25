@@ -1,4 +1,4 @@
-import { compact, some, uniq } from 'lodash-es';
+import { compact, some, uniq } from 'es-toolkit/compat';
 
 import type { CodeGenConfig } from '../configuration';
 import type { Logger } from './logger';

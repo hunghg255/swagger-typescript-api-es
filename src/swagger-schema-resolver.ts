@@ -1,7 +1,8 @@
 import path from 'node:path';
 
+import { cloneDeep } from 'es-toolkit';
+import { compact, each, find, get, merge, uniq } from 'es-toolkit/compat';
 import yaml from 'js-yaml';
-import { cloneDeep, compact, each, find, get, merge, uniq } from 'lodash-es';
 import pc from 'picocolors';
 import converter from 'swagger2openapi';
 import type { ConvertInputOptions } from 'swagger2openapi';
@@ -108,6 +109,15 @@ class SwaggerSchemaResolver {
   ): Promise<ResolvedSwaggerSchema> {
     if (!isRecord(swaggerSchema)) {
       throw new Error(`Invalid swagger schema: expected an object, got ${typeof swaggerSchema}`);
+    }
+
+    for (const key of ['paths', 'components', 'definitions'] as const) {
+      const value = swaggerSchema[key];
+      if (value != null && (typeof value !== 'object' || Array.isArray(value))) {
+        throw new Error(
+          `Invalid swagger schema: "${key}" must be an object, got ${Array.isArray(value) ? 'array' : typeof value}`
+        );
+      }
     }
 
     return new Promise((resolve, reject) => {

@@ -1,4 +1,4 @@
-import { compact, includes, isString, map, replace, trim } from 'lodash-es';
+import { compact, includes, isString, map, replace, trim } from 'es-toolkit/compat';
 
 import { SCHEMA_TYPES } from '../constants';
 import type { SchemaObject } from '../types/openapi';

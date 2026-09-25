@@ -1,4 +1,4 @@
-import { clone, compact, isObject, omit } from 'lodash-es';
+import { clone, compact, isObject, omit } from 'es-toolkit/compat';
 
 import { SCHEMA_TYPES } from '../../constants';
 import type { ParsedComplexSchema } from '../../types/parsed';

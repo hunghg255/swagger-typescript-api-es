@@ -1,6 +1,7 @@
 import path from 'node:path';
 
-import { cloneDeep, get } from 'lodash-es';
+import { cloneDeep } from 'es-toolkit';
+import { get } from 'es-toolkit/compat';
 
 import type { SwaggerSchemaResolver } from './swagger-schema-resolver';
 import type { Logger } from './util/logger';

@@ -1,4 +1,4 @@
-import { isObject } from 'lodash-es';
+import { isObject } from 'es-toolkit/compat';
 
 import { SCHEMA_TYPES } from '../../constants';
 import type { ParsedPrimitiveSchema } from '../../types/parsed';

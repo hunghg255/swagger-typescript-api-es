@@ -645,7 +645,8 @@ is looked up in the custom folder, then in the built-in one.
 **`utils`:** `Ts`, `formatDescription`, `escapeJSDocContent`, `internalCase`, `classNameCase`,
 `pascalCase`, `getInlineParseContent`, `getParseContent`, `getComponentByRef`, `parseSchema`,
 `checkAndAddNull`, `safeAddNullToType`, `isNeedToAddNull`, `inlineExtraFormatters`, `formatters`,
-`formatModelName`, `fmtToJSDocLine`, `NameResolver`, `require`, and `_`, a subset of lodash:
+`formatModelName`, `fmtToJSDocLine`, `NameResolver`, `require`, and `_`, lodash-compatible helpers
+(from [`es-toolkit/compat`](https://es-toolkit.dev/compatibility.html)):
 `compact`, `merge`, `each`, `isEmpty`, `sortByProperty`, `noop`, `isObject`, `isString`,
 `isUndefined`, `map`, `uniq`, `size`, `replace`, `camelCase`, `lowerCase`, `values`, `join`, `get`,
 `upperCase`, `sortBy`. `require('./x')` resolves from the templates folder. A package name

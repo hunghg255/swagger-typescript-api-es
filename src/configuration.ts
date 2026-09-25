@@ -1,6 +1,7 @@
 import path from 'node:path';
 
-import { cloneDeep, compact, join, map, merge, uniq } from 'lodash-es';
+import { cloneDeep } from 'es-toolkit';
+import { compact, join, map, merge, uniq } from 'es-toolkit/compat';
 import type ts from 'typescript';
 
 import { ComponentTypeNameResolver } from './component-type-name-resolver';
@@ -422,6 +423,16 @@ class CodeGenConfig {
   }
 
   update = (update: CodeGenConfigUpdate) => {
+    // big documents are replaced by reference: deep-merging them copied the whole schema
+    // on every update (the resolver already works on its own copy of `spec`)
+    if (update && typeof update === 'object') {
+      const { spec, swaggerSchema, originalSchema, ...rest } = update as Partial<CodeGenConfig>;
+      if (spec !== undefined) this.spec = spec;
+      if (swaggerSchema !== undefined) this.swaggerSchema = swaggerSchema;
+      if (originalSchema !== undefined) this.originalSchema = originalSchema;
+      objectAssign(this, rest);
+      return;
+    }
     objectAssign(this, update);
   };
 }

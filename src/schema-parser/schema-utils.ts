@@ -8,7 +8,7 @@ import {
   isString,
   keys,
   uniq,
-} from 'lodash-es';
+} from 'es-toolkit/compat';
 
 import { SCHEMA_TYPES } from '../constants';
 import type { SchemaWalker } from '../schema-walker';

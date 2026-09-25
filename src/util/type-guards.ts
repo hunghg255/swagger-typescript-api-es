@@ -1,4 +1,4 @@
-import { isPlainObject } from 'lodash-es';
+import { isPlainObject } from 'es-toolkit/compat';
 
 import type { OpenAPIV3Document, OperationObject, SwaggerV2Document } from '../types/openapi';
 
