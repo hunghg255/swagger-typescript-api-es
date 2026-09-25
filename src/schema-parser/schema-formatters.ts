@@ -9,6 +9,7 @@ import type {
   ParsedSchema,
 } from '../types/parsed';
 import type { Logger } from '../util/logger';
+import type { ParsedSchemaCache } from './parsed-schema-cache';
 import type { SchemaParserConfig, SchemaParserFabricDeps } from './schema-parser-fabric';
 import type { SchemaUtils } from './schema-utils';
 
@@ -24,6 +25,8 @@ export interface SchemaFormattersDeps {
   logger: Partial<Pick<Logger, 'debug' | 'warn'>>;
   schemaUtils: Pick<SchemaUtils, 'safeAddNullToType' | 'isNullableSchema'>;
   templatesWorker: SchemaParserFabricDeps['templatesWorker'];
+  /** parse results of raw schemas (a raw schema can be formatted too) */
+  parsedSchemaCache?: Pick<ParsedSchemaCache, 'get'>;
 }
 
 /** an item of a parsed content (the characters of a string content are iterated too, like by lodash `map`) */
@@ -52,6 +55,7 @@ class SchemaFormatters {
   config: SchemaFormattersDeps['config'];
   logger: SchemaFormattersDeps['logger'];
   templatesWorker: SchemaFormattersDeps['templatesWorker'];
+  parsedSchemaCache: SchemaFormattersDeps['parsedSchemaCache'];
   schemaUtils: SchemaFormattersDeps['schemaUtils'];
 
   /**
@@ -62,6 +66,7 @@ class SchemaFormatters {
     this.logger = schemaParser.logger;
     this.schemaUtils = schemaParser.schemaUtils;
     this.templatesWorker = schemaParser.templatesWorker;
+    this.parsedSchemaCache = schemaParser.parsedSchemaCache;
   }
 
   base: Record<'enum' | 'object' | 'primitive', SchemaFormatter> = {
@@ -169,7 +174,8 @@ class SchemaFormatters {
   ): FormattedSchema => {
     // a raw schema with a cached parsed schema can be passed too (e.g. from templates)
     const rawSchema: SchemaObject | undefined = parsedSchema;
-    const schemaType = parsedSchema?.schemaType || rawSchema?.$parsed?.schemaType;
+    const schemaType =
+      parsedSchema?.schemaType || this.parsedSchemaCache?.get(rawSchema)?.schemaType;
     const formatters: Partial<Record<string, SchemaFormatter>> | undefined = this[formatType];
     const formatterFn = schemaType ? formatters?.[schemaType] : undefined;
     return (formatterFn && formatterFn(parsedSchema)) || toUnformattedSchema(parsedSchema);

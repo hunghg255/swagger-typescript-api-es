@@ -24,6 +24,17 @@ const readDirRecursive = (dir: string, base = dir): GeneratedFiles => {
   return result;
 };
 
+/** freezes `value` and everything reachable from it */
+export const deepFreeze = <T>(value: T): T => {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const key of Reflect.ownKeys(value)) {
+      deepFreeze((value as Record<PropertyKey, unknown>)[key]);
+    }
+  }
+  return value;
+};
+
 /**
  * Writes `spec` to a temp file, runs `generateApi` into a temp output dir and
  * returns every written file keyed by its path relative to the output dir.
@@ -34,11 +45,14 @@ export const generate = async (spec: object | string, options: Record<string, an
   fs.writeFileSync(input, typeof spec === 'string' ? spec : JSON.stringify(spec));
   const output = path.join(dir, 'out');
 
+  // `STA_FREEZE=1` (`npm run test:immutability`): pass the spec as a deep-frozen object,
+  // so any change of the input document by the generator throws
+  const freezeInput = process.env.STA_FREEZE && typeof spec === 'object';
   const result = await generateApi({
     name: 'api.ts',
     silent: true,
     ...options,
-    input,
+    ...(freezeInput ? { spec: deepFreeze(structuredClone(spec)) } : { input }),
     output,
   } as any);
 

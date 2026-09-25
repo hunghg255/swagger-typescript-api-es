@@ -7,7 +7,6 @@
  *   (where TypeScript widens literals to `string`) stay assignable
  * - `SchemaObject` also covers `$ref` schemas and a few keys added by the generator itself
  */
-import type { ParsedSchema } from './parsed';
 
 /** `x-*` vendor extensions */
 export type VendorExtensions = { [extension: `x-${string}`]: unknown };
@@ -123,8 +122,6 @@ export interface SchemaObject extends VendorExtensions {
 
   // #region keys added by the generator
 
-  /** result of the schema parser, cached on the schema */
-  $parsed?: ParsedSchema;
   /** required keys of a referenced schema (`UtilRequiredKeys<Type, "a" | "b">`) */
   $$requiredKeys?: string[];
   /** original name of a request param (`a.b` -> `aB`) */

@@ -427,7 +427,8 @@ import type { GenerateApiOutput, IOptions } from 'swagger-typescript-api-es';
 ```
 
 To pass a schema object you already have, use `spec` (typed as `OpenAPIDocument`, OpenAPI 3.x or
-Swagger 2.0):
+Swagger 2.0). The object is never modified by the generator, and it is not even copied unless hooks,
+custom schema parsers, templates or type constructs are used:
 
 ```ts
 import { readFile } from 'node:fs/promises';
@@ -765,19 +766,20 @@ cd swagger-typescript-api-es
 npm install
 ```
 
-| Script                  | What it does                                                    |
-| ----------------------- | --------------------------------------------------------------- |
-| `npm run build`         | Build with `unbuild` and copy `templates/` to `dist/templates/` |
-| `npm run dev`           | Stub build (`unbuild --stub`) for fast local development        |
-| `npm test`              | Run the tests with Vitest (`npm test -- --run` runs them once)  |
-| `npm run test:coverage` | Run the tests once with v8 coverage                             |
-| `npm run lint`          | Lint with oxlint (`lint:fix` to fix)                            |
-| `npm run fmt`           | Format with oxfmt (`fmt:check` to check)                        |
-| `npm run typecheck`     | `tsc --noEmit`                                                  |
-| `npm start`             | Run the playground `play/test.ts`                               |
-| `npm run bench`         | Build, then benchmark generation on small / large specs         |
-| `npm run test:cli`      | Run the built CLI (`node dist/cli.mjs`)                         |
-| `npm run test:cli1`     | Run the CLI from source (`tsx src/cli.ts`)                      |
+| Script                      | What it does                                                                    |
+| --------------------------- | ------------------------------------------------------------------------------- |
+| `npm run build`             | Build with `unbuild` and copy `templates/` to `dist/templates/`                 |
+| `npm run dev`               | Stub build (`unbuild --stub`) for fast local development                        |
+| `npm test`                  | Run the tests with Vitest (`npm test -- --run` runs them once)                  |
+| `npm run test:coverage`     | Run the tests once with v8 coverage                                             |
+| `npm run test:immutability` | Run the tests with deep-frozen input specs (the generator must not change them) |
+| `npm run lint`              | Lint with oxlint (`lint:fix` to fix)                                            |
+| `npm run fmt`               | Format with oxfmt (`fmt:check` to check)                                        |
+| `npm run typecheck`         | `tsc --noEmit`                                                                  |
+| `npm start`                 | Run the playground `play/test.ts`                                               |
+| `npm run bench`             | Build, then benchmark generation on small / large specs                         |
+| `npm run test:cli`          | Run the built CLI (`node dist/cli.mjs`)                                         |
+| `npm run test:cli1`         | Run the CLI from source (`tsx src/cli.ts`)                                      |
 
 Tests live in `tests/`:
 

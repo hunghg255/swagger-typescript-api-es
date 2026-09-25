@@ -53,7 +53,7 @@ The core flow in `src/code-gen-process.ts`:
 1. **Schema Resolution** (`src/swagger-schema-resolver.ts`) — fetches spec from URL or file, converts Swagger 2.0 → OpenAPI 3.0 via `swagger2openapi`, resolves `$ref`s.
 2. **Component Mapping** (`src/schema-components-map.ts`) — indexes all `#/components/schemas/*` entries.
 3. **Schema Walking** (`src/schema-walker.ts`) — traverses and caches resolved schema nodes (WIP).
-4. **Schema Parsing** (`src/schema-parser/`) — recursively parses schema nodes into internal type representations.
+4. **Schema Parsing** (`src/schema-parser/`) — recursively parses schema nodes into internal type representations. Parse results are cached in `ParsedSchemaCache` (a `WeakMap`), **never on the schema objects**: the generator must not change the input document (it is not copied unless custom hooks / parsers / templates / constructs are used, see `config.hasCustomSchemaCode`). When copying a schema, carry its parse result with `parsedSchemaCache.inherit` / `cloneDeep` (as the old `$parsed` property was copied), and apply fixes to copies. `npm run test:immutability` runs the suite with deep-frozen inputs.
 5. **Route Extraction** (`src/schema-routes/schema-routes.ts`) — converts OpenAPI paths/operations into method descriptors.
 6. **Template Rendering** (`src/templates-worker.ts`) — uses the [Eta](https://eta.js.org/) template engine to emit TypeScript code.
 7. **Code Formatting** (`src/code-formatter.ts`) — formats output with `oxfmt`. Options = `CONSTANTS.OXC_FORMAT_OPTIONS` < `.oxfmtrc.json` in `process.cwd()` (if present) < user `oxfmtOptrions`.

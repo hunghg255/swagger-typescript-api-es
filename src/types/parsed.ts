@@ -135,7 +135,7 @@ export interface ParsedEnumSchema extends ParsedSchemaCommon {
   content: EnumFieldContent[];
 }
 
-/** result of `SchemaParser.parseSchema()` (stored as `schema.$parsed` and `component.typeData`) */
+/** result of `SchemaParser.parseSchema()` (cached in `ParsedSchemaCache`, stored as `component.typeData`) */
 export type ParsedSchema =
   | ParsedPrimitiveSchema
   | ParsedComplexSchema

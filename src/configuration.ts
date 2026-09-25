@@ -168,6 +168,11 @@ class CodeGenConfig {
 
   /** custom schema parsers */
   schemaParsers: SchemaParsers = {};
+  /**
+   * `true` when hooks, schema parsers, templates or type constructs are customized: they get the raw
+   * schemas and could change them, so the documents are deep-copied (the input is never changed)
+   */
+  hasCustomSchemaCode = false;
   toJS = false;
   silent = false;
   typePrefix = '';
@@ -395,6 +400,15 @@ class CodeGenConfig {
     output,
     ...otherConfig
   }: CodeGenProcessOptions) {
+    // user code which receives the raw schemas (and could change them)
+    this.hasCustomSchemaCode =
+      Object.values(hooks || {}).some((hook) => typeof hook === 'function') ||
+      Object.keys(otherConfig.schemaParsers || {}).length > 0 ||
+      !!otherConfig.templates ||
+      (otherConfig.extraTemplates?.length ?? 0) > 0 ||
+      !!codeGenConstructs ||
+      !!primitiveTypeConstructs;
+
     objectAssign(this.Ts, codeGenConstructs);
     objectAssign(this.primitiveTypes, primitiveTypeConstructs);
 

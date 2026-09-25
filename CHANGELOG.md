@@ -26,6 +26,9 @@
 - **Boolean enums** are generated as union types (`true | false`) — a TS `enum` with boolean values does not compile.
 - **Type names are deterministic**: the same spec always produces the same names (they were picked randomly on name clashes).
 
+- Schemas no longer get a `$parsed` property (an undocumented internal cache) and the `spec` object
+  passed to `generateApi` is never modified.
+
 ### 🐞 Bug fixes
 
 - CLI:
@@ -57,6 +60,13 @@
 
 ### ⚡ Performance
 
+- The generator no longer changes the input document, so it is not deep-copied anymore:
+  - parse results are cached aside (`ParsedSchemaCache`) instead of `schema.$parsed`, the
+    `items` without `type`, discriminator mapping and `consumes` / `produces` fixes are applied to copies;
+  - the document is copied only when custom code (hooks, schema parsers, templates, type constructs)
+    could change it; `originalSchema` shares the unchanged objects with the input;
+  - ~25% faster in-process generation of large specs, ~14% faster CLI run; guarded by
+    `npm run test:immutability` (the whole suite with deep-frozen inputs) in CI.
 - Compiled Eta templates are cached (they were recompiled for every route, model and include) and
   included template files are read once.
 - `typescript` is only loaded when `toJS` is used (~400ms less startup).

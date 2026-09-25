@@ -31,6 +31,8 @@ jobs:
       - run: npm run fmt:check
       - run: npm run typecheck
       - run: npm test -- --run
+      # the whole suite again with deep-frozen input documents (the generator must not change them)
+      - run: npm run test:immutability
       - run: npm run build
       - run: node bin/cli.mjs --help
 

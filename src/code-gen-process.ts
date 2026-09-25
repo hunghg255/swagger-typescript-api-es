@@ -124,8 +124,10 @@ class CodeGenProcess {
       originalSchema: swagger.originalSchema,
     });
 
-    this.schemaWalker.addSchema('$usage', swagger.usageSchema);
-    this.schemaWalker.addSchema('$original', swagger.originalSchema);
+    // the documents are not changed by the generator (only custom code could change them)
+    const copy = this.config.hasCustomSchemaCode;
+    this.schemaWalker.addSchema('$usage', swagger.usageSchema, { copy });
+    this.schemaWalker.addSchema('$original', swagger.originalSchema, { copy });
 
     this.logger.event('Start generating your typescript api');
 
