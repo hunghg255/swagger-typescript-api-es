@@ -1,6 +1,6 @@
 ---
 name: swagger-typescript-api-es
-description: Guide for using swagger-typescript-api-es — a CLI and Node.js tool that generates TypeScript API clients from Swagger/OpenAPI schemas (ESM rewrite). Use when user asks to generate TypeScript API types from Swagger or OpenAPI, auto-generate axios or fetch HTTP client from swagger.json, set up swagger-typescript-api.config.ts, run gen-api-types script, or use swagger-typescript-api-es CLI.
+description: Guide for swagger-typescript-api-es, an ESM/TypeScript CLI and Node.js library that generates typed TypeScript API clients (fetch or axios) from Swagger 2.0 / OpenAPI 3.x schemas. Use when the user wants to generate TypeScript types or an API client from swagger.json / openapi.yaml, set up swagger-typescript-api.config.ts, run the swagger-typescript-api-es CLI or a gen-api-types script, call generateApi() programmatically, write hooks or custom templates, or use a generated Api / HttpClient class (baseUrl, securityWorker, auth headers, error handling, modular output).
 license: MIT
 metadata:
   author: hunghg255
@@ -10,106 +10,107 @@ metadata:
 
 # swagger-typescript-api-es
 
-ESM + TypeScript rewrite of [swagger-typescript-api](https://github.com/acacode/swagger-typescript-api). Generates fully-typed TypeScript API clients (axios or fetch) from a Swagger 2.0 / OpenAPI 3.0 schema URL or file.
+ESM + TypeScript rewrite of [swagger-typescript-api](https://github.com/acacode/swagger-typescript-api).
+Reads a Swagger 2.0 / OpenAPI 3.x schema (URL, local JSON/YAML file or in-memory object) and writes a
+typed client: data contracts + an `HttpClient` (fetch or axios) + an `Api` class with one method per operation.
 
 ## Install
 
-Requires Node.js >= 20.
+Requires **Node.js >= 20**. ESM only (`import`, no `require`).
 
 ```bash
-npm i swagger-typescript-api-es@latest --save-dev
-# or
-pnpm i swagger-typescript-api-es@latest -D
+npm i -D swagger-typescript-api-es   # pnpm add -D / yarn add -D / bun add -d
+npm i axios                          # only if you generate with httpClientType: 'axios'
 ```
 
-## Quick Start (One-off CLI)
-
-No install needed — run directly with npx:
+## Quick start
 
 ```bash
+# one-off, no install
 npx swagger-typescript-api-es@latest -u https://petstore.swagger.io/v2/swagger.json -o ./src/api
+# -> ./src/api/Api.ts (fetch client)
 ```
 
-## Project Setup (Config File)
-
-### Step 1: Create `swagger-typescript-api.config.ts` at project root
+Project setup: `swagger-typescript-api.config.ts` (or `.js` / `.mjs` / `.cjs`) in the directory you
+run the CLI from. It may export one config or an array (each entry is generated in turn).
 
 ```ts
 import { defaultConfig } from 'swagger-typescript-api-es';
 
 export default defaultConfig({
-  name: 'api-axios.ts', // output filename
-  output: './src/apis/axios-gentype', // output directory
-  url: 'http://localhost:5002/api-json', // swagger schema URL
-  httpClientType: 'axios', // 'axios' | 'fetch'
+  url: 'http://localhost:5002/api-json', // or input: './openapi.yaml', or spec: {...}
+  output: './src/api', // a directory (created if missing)
+  name: 'api.ts', // file name (default "Api.ts"), ignored with modular
+  httpClientType: 'axios', // default 'fetch'
 });
 ```
-
-### Step 2: Add script to `package.json`
 
 ```json
-{
-  "scripts": {
-    "gen-api-types": "swagger-typescript-api-es"
-  }
-}
+{ "scripts": { "gen-api-types": "swagger-typescript-api-es" } }
 ```
 
-### Step 3: Run
-
-```bash
-npm run gen-api-types
-# or
-pnpm gen-api-types
-```
-
-## CLI Flags
-
-```bash
-npx swagger-typescript-api-es@latest --help
-```
-
-Key flags:
-
-| Flag                      | Description                                       |
-| ------------------------- | ------------------------------------------------- |
-| `-u <url>`                | Path/URL to swagger schema                        |
-| `-o <path>`               | Output directory (default: `./`)                  |
-| `-n <name>`               | Output filename (default: `Api.ts`)               |
-| `--httpClientType <type>` | `axios` or `fetch` (default: `fetch`)             |
-| `--modular true`          | Separate files for http client, contracts, routes |
-| `--custom-config <path>`  | Extra options (hooks, ...) from a js/ts/json file |
-
-- Flags accept both kebab-case and camelCase (`--union-enums` / `--unionEnums`); boolean flags take `true`/`false` (e.g. `--modular true`).
-- CLI flags are merged over `swagger-typescript-api.config.*` (if it exists) and the `--custom-config` file — CLI flags win.
-- The CLI exits with code `1` on errors.
-
-## Using a Local Schema File
-
-Instead of `url`, use `input` for a local file:
+Programmatic:
 
 ```ts
-export default defaultConfig({
-  name: 'api.ts',
-  output: './src/api',
-  input: './swagger.json', // local file path
-  httpClientType: 'fetch',
-});
+import { generateApi } from 'swagger-typescript-api-es';
+
+const { files } = await generateApi({ input: './openapi.json', output: false }); // in memory
+// files: { fileName: 'Api', fileExtension: '.ts', fileContent: string }[]
 ```
 
-## Gotchas
+Using the generated client (fetch):
 
-- **Config filename must be `swagger-typescript-api.config.ts`** (or `.js` / `.mjs` / `.cjs`) in the project root — the CLI looks for this name. It may export a single config or an array of configs.
-- **Schema source precedence: `spec` > `input` > `url`** — `input` is used if the file exists; `url` also accepts a local file path. Set only one to avoid surprises.
-- **`output` must be a directory** (default: `./`) — it is created (recursively) if missing; pointing it at an existing file fails. `output: false` generates in memory only (`generateApi` returns the files without writing).
-- **`cleanOutput: true` deletes everything in the output folder before generating** — do not point it at a folder that has hand-written files.
-- **`httpClientType` defaults to `fetch`** — explicitly set `'axios'` if your project uses axios, otherwise the generated client won't import it.
-- **`unwrapResponseData: true` changes the return shape** — with it, `api.getUser()` returns the data directly instead of the full axios response; set consistently across your codebase.
-- **`extractEnums: true` extracts inline enums** into separate enum declarations — without it, inline enums stay as union literals in types.
-- **Request body is optional unless the schema marks it `required: true`**; with `extractRequestParams`, the extracted query params argument is optional when all its fields are optional.
-- **`silent: true` hides logs but still prints errors.**
-- **`sortRouters` is deprecated** — use `sortRoutes`. The schema download respects `HTTP(S)_PROXY` unless `disableProxy: true`.
-- **Swagger 2.0 vs OpenAPI 3.0** — both are supported but some options like `generateResponses` behave differently between versions. Test with your actual schema.
+```ts
+import { Api } from './src/api/Api';
 
-See `references/options.md` for the full IOptions reference.
-See `references/patterns.md` for common usage patterns.
+const api = new Api<string>({
+  baseUrl: 'https://api.example.com',
+  securityWorker: (token) => (token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+});
+api.setSecurityData('jwt');
+const { data: pet } = await api.pets.getPet(1); // rejects with the HttpResponse on non-2xx
+```
+
+## Key gotchas
+
+- **CLI flags**: `-u/--u`, `-o/--o`, `-n/--n`, `-t/--t`, then kebab-case or camelCase
+  (`--union-enums` = `--unionEnums`). Every flag except `--extract-enums` **needs a value**:
+  `--modular true` (bare `--modular` fails with "value is missing"). Unknown flags are errors.
+- **Precedence**: config file < `--custom-config <file>` (js/ts/json, one object) < CLI flags. With an
+  array config, flags are applied to every entry. Errors print `❌ SWAGGER-TYPESCRIPT-API error: ...`
+  and **exit with code 1**. `silent: true` hides logs but still prints errors.
+- **Schema source**: `spec` > `input` (if the file exists) > `url`. `url` without `http(s)://` is read
+  as a local path. The `spec` object you pass is never modified.
+- **`output` is a directory**, never a file (`name` sets the file). `output: false` writes nothing
+  and only returns the files. `cleanOutput: true` empties the directory first.
+- **Download** (undici): respects `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY`; `disableProxy` connects
+  directly; `disableStrictSSL` skips TLS checks; `requestOptions.timeout` defaults to 60 s (`0` = off);
+  `requestOptions.dispatcher` for a custom undici dispatcher. node-fetch `agent` is not supported.
+  `authorizationToken` is sent verbatim as `Authorization` (include `Bearer `).
+- **Generated signatures**: `(pathParams..., query, data, params: RequestParams = {})`, with
+  required arguments moved before optional ones (e.g. `updatePet(petId, data?, params)`).
+  The body is optional unless `requestBody.required: true`; with `extractRequestParams` the params
+  object is optional when there are no path params and all query params are optional. Path params
+  are wrapped in `encodeURIComponent`.
+- **Modules** come from the first path segment (`/pets/{id}` -> `api.pets.getPet`), not tags, unless
+  `moduleNameFirstTag: true` or `moduleNameIndex` is set. Routes like `GET /` are methods on `Api`
+  (modular: `Common.ts`).
+- **Fetch client throws on non-2xx** (the `HttpResponse`, with `.error`) unless `disableThrowOnError`.
+  `unwrapResponseData: true` makes methods resolve with the body instead of the response.
+- A schema named `Error` generates `export interface Error`: import it as
+  `import type { Error as ApiError }` to avoid shadowing the global.
+- Output is formatted with **oxfmt**: built-in defaults < `.oxfmtrc.json` in cwd < `oxfmtOptrions`
+  (that misspelling is the real option name).
+- `sortRouters` is deprecated (use `sortRoutes`). `toJS: true` emits `.js` + `.d.ts`.
+
+## References
+
+- `references/options.md`: every `IOptions` key with defaults, CLI flag mapping, hooks with
+  signatures, exported types, `generateApi` return value.
+- `references/patterns.md`: config recipes (axios, local file, multiple APIs, large schemas, hooks,
+  in-memory generation, custom templates, proxies/auth, CI).
+- `references/usage.md`: using the generated client (fetch, axios, `singleHttpClient`, modular),
+  auth, cancellation, error handling, file upload.
+
+Docs: the repository README and the docs site with an online playground (the `docs/` Next.js app in
+the repo) that generates clients from a pasted spec or URL.

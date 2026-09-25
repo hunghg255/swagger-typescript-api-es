@@ -1,4 +1,4 @@
-import { first, merge, omit, values } from 'lodash-es';
+import { first, merge, omit, values } from 'es-toolkit/compat';
 
 import { SCHEMA_TYPES } from '../constants.js';
 import type { SchemaPath } from '../types/config';
@@ -129,7 +129,7 @@ class SchemaParser {
   };
 
   /**
-   * Parses the schema (the result is cached as `schema.$parsed`).
+   * Parses the schema (the result is cached in `schemaParserFabric.parsedSchemaCache`).
    * A string "schema" is returned as is.
    */
   parseSchema = (): ParsedSchema => {
@@ -144,7 +144,8 @@ class SchemaParser {
       return this.schema;
     }
 
-    let parsed = this.schema.$parsed;
+    const cache = this.schemaParserFabric.parsedSchemaCache;
+    let parsed = cache.get(this.schema);
 
     if (!parsed) {
       if (!this.typeName && this.schemaUtils.isRefSchema(this.schema)) {
@@ -155,7 +156,10 @@ class SchemaParser {
 
       // schema has items but don't have array type
       if (this.schema.items && !Array.isArray(this.schema.items) && !this.schema.type) {
-        this.schema.type = SCHEMA_TYPES.ARRAY;
+        // a copy (the input document is not changed), its parse result is cached for both objects
+        const sourceSchema = this.schema;
+        this.schema = cache.inherit(sourceSchema, { ...sourceSchema, type: SCHEMA_TYPES.ARRAY });
+        this.cacheAlso = sourceSchema;
       }
       // schema is enum with one null value
       if (
@@ -165,6 +169,8 @@ class SchemaParser {
       ) {
         this.logger.debug('invalid enum schema', this.schema);
         this.schema = { type: this.config.Ts.Keyword.Null };
+        // the replaced schema is not cached (as before)
+        this.cacheAlso = null;
       }
       // schema is response schema
       if ('content' in this.schema && typeof this.schema.content === 'object') {
@@ -175,7 +181,7 @@ class SchemaParser {
           schemaPath: this.schemaPath,
         });
         const responseParsed = schemaParser.parseSchema();
-        this.schema.$parsed = responseParsed;
+        this.setParsed(responseParsed);
         return responseParsed;
       }
 
@@ -191,7 +197,7 @@ class SchemaParser {
       );
       parsedSchema = this._baseSchemaParsers[schemaType](this.schema, this.typeName);
       parsed = this.config.hooks.onParseSchema(this.schema, parsedSchema) || parsedSchema;
-      this.schema.$parsed = parsed;
+      this.setParsed(parsed);
 
       if (this.config.sortTypes && Array.isArray(parsed?.content)) {
         // sorted in place
@@ -202,6 +208,17 @@ class SchemaParser {
     this.schemaPath.pop();
 
     return parsed;
+  };
+
+  /** the input schema replaced by a changed copy (its parse result is cached too) */
+  private cacheAlso: SchemaObject | null = null;
+
+  private setParsed = (parsed: ParsedSchema) => {
+    const cache = this.schemaParserFabric.parsedSchemaCache;
+    cache.set(this.schema, parsed);
+    if (this.cacheAlso) {
+      cache.set(this.cacheAlso, parsed);
+    }
   };
 
   getInlineParseContent = (): string => {
@@ -231,11 +248,19 @@ class SchemaParser {
       return;
     }
 
-    return {
-      ...extras,
-      ...omit(firstResponse, 'schema'),
-      ...firstSchema,
-    };
+    const cache = this.schemaParserFabric.parsedSchemaCache;
+    // the parse result was carried over by the spread (`$parsed`): the last spread object wins
+    return cache.inherit(
+      responseStruct,
+      cache.inherit(
+        firstResponse,
+        cache.inherit(firstSchema, {
+          ...extras,
+          ...omit(firstResponse, 'schema'),
+          ...firstSchema,
+        })
+      )
+    );
   };
 }
 

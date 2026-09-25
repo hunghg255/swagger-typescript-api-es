@@ -1,4 +1,4 @@
-import { ArrowRight, FlaskConical } from 'lucide-react';
+import { ArrowRight, Code2, FlaskConical } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { MarkdownAsync } from 'react-markdown';
@@ -52,6 +52,12 @@ export default async function DocsPage() {
                   className="inline-flex h-9 items-center gap-2 rounded-lg bg-fg px-3.5 text-sm font-medium text-bg transition-opacity hover:opacity-90"
                 >
                   <FlaskConical className="size-4" aria-hidden /> Try it in the playground
+                </Link>
+                <Link
+                  href="/usage"
+                  className="inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3.5 text-sm font-medium text-fg transition-colors hover:bg-muted"
+                >
+                  <Code2 className="size-4" aria-hidden /> Using the generated client
                 </Link>
                 <a
                   href={site.npm}

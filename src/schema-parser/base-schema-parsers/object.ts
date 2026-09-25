@@ -1,4 +1,4 @@
-import { isObject, map, some, values } from 'lodash-es';
+import { isObject, map, some, values } from 'es-toolkit/compat';
 
 import { SCHEMA_TYPES } from '../../constants';
 import type { SchemaObject } from '../../types/openapi';

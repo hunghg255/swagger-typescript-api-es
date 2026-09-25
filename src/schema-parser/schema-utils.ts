@@ -8,7 +8,7 @@ import {
   isString,
   keys,
   uniq,
-} from 'lodash-es';
+} from 'es-toolkit/compat';
 
 import { SCHEMA_TYPES } from '../constants';
 import type { SchemaWalker } from '../schema-walker';
@@ -23,6 +23,7 @@ import type { BaseSchemaType, ComplexSchemaType, SchemaComponent } from '../type
 import { internalCase } from '../util/internal-case';
 import { pascalCase } from '../util/pascal-case';
 import { isObjectRecord, isRecord } from '../util/type-guards';
+import type { ParsedSchemaCache } from './parsed-schema-cache';
 import type {
   SchemaParserComponentsMap,
   SchemaParserConfig,
@@ -57,6 +58,8 @@ export interface SchemaUtilsDeps {
   typeNameFormatter: Pick<SchemaParserTypeNameFormatter, 'format'>;
   /** not used yet */
   schemaWalker?: SchemaWalker;
+  /** parse results of the raw schemas (carried over to their copies) */
+  parsedSchemaCache?: Pick<ParsedSchemaCache, 'inherit'>;
 }
 
 /** options of `SchemaUtils.resolveTypeName` */
@@ -76,13 +79,25 @@ class SchemaUtils {
   schemaComponentsMap: SchemaUtilsDeps['schemaComponentsMap'];
   typeNameFormatter: SchemaUtilsDeps['typeNameFormatter'];
   schemaWalker: SchemaWalker | undefined;
+  parsedSchemaCache: SchemaUtilsDeps['parsedSchemaCache'];
 
-  constructor({ config, schemaComponentsMap, typeNameFormatter, schemaWalker }: SchemaUtilsDeps) {
+  constructor({
+    config,
+    schemaComponentsMap,
+    typeNameFormatter,
+    schemaWalker,
+    parsedSchemaCache,
+  }: SchemaUtilsDeps) {
     this.config = config;
     this.schemaComponentsMap = schemaComponentsMap;
     this.typeNameFormatter = typeNameFormatter;
     this.schemaWalker = schemaWalker;
+    this.parsedSchemaCache = parsedSchemaCache;
   }
+
+  /** `copy` of `source` keeps its parse result (see `ParsedSchemaCache.inherit`) */
+  inheritParsed = <T>(source: unknown, copy: T): T =>
+    this.parsedSchemaCache ? this.parsedSchemaCache.inherit(source, copy) : copy;
 
   getRequiredProperties = (schema: SchemaObject | null | undefined): string[] => {
     return uniq(schema && isArray(schema.required) ? schema.required : []);
@@ -227,10 +242,10 @@ class SchemaUtils {
         return childSchema;
       }
 
-      return {
+      return this.inheritParsed(childSchema, {
         ...childSchema,
         $$requiredKeys: existedRequiredKeys,
-      };
+      });
     } else if (childSchema.properties) {
       const childSchemaProperties = keys(childSchema.properties);
       const existedRequiredKeys = childSchemaProperties.filter((key) => required.includes(key));
@@ -239,10 +254,10 @@ class SchemaUtils {
         return childSchema;
       }
 
-      return {
+      return this.inheritParsed(childSchema, {
         ...childSchema,
         required: uniq([...this.getRequiredProperties(childSchema), ...existedRequiredKeys]),
-      };
+      });
     }
 
     return childSchema;
@@ -356,7 +371,7 @@ class SchemaUtils {
       return this.checkAndAddRequiredKeys(
         schema,
         this.safeAddNullToType(
-          isEnumWithNull ? { ...schema, nullable: true } : schema,
+          isEnumWithNull ? this.inheritParsed(schema, { ...schema, nullable: true }) : schema,
           this.typeNameFormatter.format(refTypeInfo.typeName)
         )
       );

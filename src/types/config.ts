@@ -370,7 +370,7 @@ export interface ApiConfig {
   version?: string;
 }
 
-/** lodash functions available in templates as `utils._` */
+/** lodash-compatible functions (`es-toolkit/compat`) available in templates as `utils._` */
 export type TemplateLodashUtils = Record<
   | 'compact'
   | 'merge'

@@ -1,4 +1,4 @@
-import { compact, replace, startCase } from 'lodash-es';
+import { compact, replace, startCase } from 'es-toolkit/compat';
 
 import type { CodeGenConfig } from './configuration';
 import type { FormattingSchemaType } from './types/config';

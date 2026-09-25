@@ -1,4 +1,4 @@
-import { filter, startsWith } from 'lodash-es';
+import { filter, startsWith } from 'es-toolkit/compat';
 
 import type { CodeGenConfig } from './configuration';
 import type { ComponentName } from './types/openapi';
@@ -12,8 +12,28 @@ class SchemaComponentsMap {
     this.config = config;
   }
 
+  /** `$ref` -> index in `_data` of its first component (a cache, checked on every read) */
+  private refIndexes = new Map<string, number>();
+
   clear() {
     this._data = [];
+    this.refIndexes.clear();
+  }
+
+  /** index of the first component with this `$ref` (-1 if there is none) */
+  private indexOf($ref: string) {
+    const cached = this.refIndexes.get($ref);
+    if (cached !== undefined && this._data[cached]?.$ref === $ref) {
+      return cached;
+    }
+    // not indexed yet, or `_data` was changed from outside (e.g. through `getComponents()`)
+    const index = this._data.findIndex((c) => c.$ref === $ref);
+    if (index === -1) {
+      this.refIndexes.delete($ref);
+    } else {
+      this.refIndexes.set($ref, index);
+    }
+    return index;
   }
 
   /** `["components", "schemas", "Pet"]` -> `#/components/schemas/Pet` */
@@ -40,10 +60,13 @@ class SchemaComponentsMap {
 
     const usageComponent = this.config.hooks.onCreateComponent(componentSchema) || componentSchema;
 
-    const refIndex = this._data.findIndex((c) => c.$ref === $ref);
+    const refIndex = this.indexOf($ref);
 
     if (refIndex === -1) {
       this._data.push(usageComponent);
+      if (!this.refIndexes.has(usageComponent.$ref)) {
+        this.refIndexes.set(usageComponent.$ref, this._data.length - 1);
+      }
     } else {
       this._data[refIndex] = usageComponent;
     }
@@ -66,7 +89,8 @@ class SchemaComponentsMap {
   }
 
   get($ref: string) {
-    return this._data.find((c) => c.$ref === $ref) || null;
+    const index = this.indexOf($ref);
+    return index === -1 ? null : this._data[index];
   }
 }
 

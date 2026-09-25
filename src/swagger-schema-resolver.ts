@@ -1,7 +1,8 @@
 import path from 'node:path';
 
+import { cloneDeep } from 'es-toolkit';
+import { compact, each, find, get, merge, uniq } from 'es-toolkit/compat';
 import yaml from 'js-yaml';
-import { cloneDeep, compact, each, find, get, merge, uniq } from 'lodash-es';
 import pc from 'picocolors';
 import converter from 'swagger2openapi';
 import type { ConvertInputOptions } from 'swagger2openapi';
@@ -55,6 +56,7 @@ export type SwaggerSchemaResolverConfig = Pick<
   | 'authorizationToken'
   | 'requestOptions'
   | 'update'
+  | 'hasCustomSchemaCode'
 >;
 
 export interface SwaggerSchemaResolverDeps {
@@ -96,7 +98,14 @@ class SwaggerSchemaResolver {
       authorizationToken
     );
     const swaggerSchemaObject = this.processSwaggerSchemaFile(swaggerSchemaFile);
-    return await this.convertSwaggerObject(swaggerSchemaObject, { patch });
+    // a document parsed here from the file / downloaded text is not shared with anyone: no copy needed
+    return await this.convertSwaggerObject(
+      swaggerSchemaObject,
+      { patch },
+      {
+        owned: typeof swaggerSchemaFile === 'string',
+      }
+    );
   }
 
   /**
@@ -104,27 +113,46 @@ class SwaggerSchemaResolver {
    */
   convertSwaggerObject(
     swaggerSchema: unknown,
-    converterOptions: ConverterOptions
+    converterOptions: ConverterOptions,
+    /** `owned`: the document was created by the resolver, so it can be changed without copying it */
+    { owned = false }: { owned?: boolean } = {}
   ): Promise<ResolvedSwaggerSchema> {
     if (!isRecord(swaggerSchema)) {
       throw new Error(`Invalid swagger schema: expected an object, got ${typeof swaggerSchema}`);
     }
 
-    return new Promise((resolve, reject) => {
-      const result = cloneDeep(swaggerSchema);
+    for (const key of ['paths', 'components', 'definitions'] as const) {
+      const value = swaggerSchema[key];
+      if (value != null && (typeof value !== 'object' || Array.isArray(value))) {
+        throw new Error(
+          `Invalid swagger schema: "${key}" must be an object, got ${Array.isArray(value) ? 'array' : typeof value}`
+        );
+      }
+    }
 
-      result.info = merge(
-        {
-          title: 'No title',
-          version: '',
-        },
-        result.info
-      );
+    return new Promise((resolve, reject) => {
+      // The generator never changes the documents, but custom code (hooks, schema parsers,
+      // templates, type constructs) gets the raw schemas and could: then it works on copies.
+      const copyDocuments = this.config.hasCustomSchemaCode;
+      const source = copyDocuments && !owned ? cloneDeep(swaggerSchema) : swaggerSchema;
+
+      // a shallow copy: the input document is not changed
+      const result: Record<string, unknown> = {
+        ...source,
+        info: merge(
+          {
+            title: 'No title',
+            version: '',
+          },
+          source.info
+        ),
+      };
 
       if (isOpenAPIV3Document(result)) {
         resolve({
           usageSchema: result,
-          originalSchema: cloneDeep(result),
+          // its own top level object (`fixSwaggerSchema` replaces `paths` of the usage schema)
+          originalSchema: copyDocuments ? cloneDeep(result) : { ...result },
         });
       } else {
         result.paths = merge({}, result.paths);
@@ -242,17 +270,32 @@ class SwaggerSchemaResolver {
     const usagePaths = usageSchema.paths;
     const originalPaths = originalSchema.paths;
 
+    if (!usagePaths) {
+      return;
+    }
+
+    // the fixed operations are copies (the documents are not changed), `paths` of the usage schema
+    // is replaced by the fixed copy
+    const fixedPaths: Record<string, unknown> = {};
+
     // walk by routes
-    each(usagePaths, (usagePathObject, route) => {
+    each(usagePaths, (usagePathObject: unknown, route) => {
+      if (!isRecord(usagePathObject)) {
+        fixedPaths[route] = usagePathObject;
+        return;
+      }
+
       const originalPathObject: unknown = get(originalPaths, route);
+      const fixedPathObject: Record<string, unknown> = { ...usagePathObject };
 
       // walk by methods
-      each(usagePathObject, (usageRouteInfo: unknown, methodName) => {
+      each(usagePathObject, (usageRouteInfoValue: unknown, methodName) => {
         // skip path level keys which are not operations (`parameters`, `servers`, ...)
-        if (!isOperationObject(usageRouteInfo)) {
+        if (!isOperationObject(usageRouteInfoValue)) {
           return;
         }
 
+        const usageRouteInfo: OperationObject = { ...usageRouteInfoValue };
         const originalRouteInfoValue: unknown = get(originalPathObject, methodName);
         const originalRouteInfo: OperationObject = isOperationObject(originalRouteInfoValue)
           ? originalRouteInfoValue
@@ -274,12 +317,17 @@ class SwaggerSchemaResolver {
             return originalIn === paramIn && originalName === paramName;
           });
           if (!existUsageParam) {
-            // attach the array, so params are not pushed into a throwaway default value
             usageRouteInfo.parameters = [...usageRouteParams, originalRouteParam];
           }
         });
+
+        fixedPathObject[methodName] = usageRouteInfo;
       });
+
+      fixedPaths[route] = fixedPathObject;
     });
+
+    usageSchema.paths = fixedPaths as typeof usageSchema.paths;
   }
 }
 

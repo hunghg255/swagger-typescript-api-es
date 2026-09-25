@@ -11,7 +11,7 @@ const repoRoot = path.join(rootDir, '..');
 const LIBRARY_RUNTIME_DEPENDENCIES = [
   'eta',
   'js-yaml',
-  'lodash-es',
+  'es-toolkit',
   'oxfmt',
   'picocolors',
   'swagger2openapi',

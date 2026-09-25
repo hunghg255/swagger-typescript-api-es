@@ -1,0 +1,9 @@
+{
+  "name": "swagger-typescript-api-es-benchmark",
+  "private": true,
+  "description": "Isolated install of the original acacode/swagger-typescript-api for the comparison benchmark",
+  "type": "module",
+  "dependencies": {
+    "swagger-typescript-api": "13.13.0"
+  }
+}

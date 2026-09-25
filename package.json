@@ -44,15 +44,18 @@
     "start": "tsx play/test.ts",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:immutability": "STA_FREEZE=1 vitest run",
+    "bench": "npm run build && node bench/index.mjs",
+    "bench:compare": "npm run build && npm --prefix bench/compare ci --no-audit --no-fund && node bench/compare/run.mjs",
     "changelog": "npx changeloggithub@latest --all true && git add CHANGELOG.md && git commit -m 'chore: update CHANGELOG.md'",
     "prepublishOnly": "npm run build",
     "release": "bumpp -r && npm publish"
   },
   "dependencies": {
     "cac": "^6.7.14",
+    "es-toolkit": "^1.52.0",
     "eta": "^2.2.0",
     "js-yaml": "^4.2.0",
-    "lodash-es": "^4.18.1",
     "oxfmt": "^0.56.0",
     "picocolors": "^1.1.1",
     "swagger2openapi": "^7.0.8",
@@ -62,7 +65,6 @@
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
-    "@types/lodash-es": "^4.17.12",
     "@types/node": "^20.19.0",
     "@types/swagger2openapi": "^7.0.4",
     "@vitest/coverage-v8": "^4.1.11",

@@ -1,4 +1,4 @@
-import { merge, startsWith } from 'lodash-es';
+import { merge, startsWith } from 'es-toolkit/compat';
 import { Agent, EnvHttpProxyAgent, fetch, type Dispatcher } from 'undici';
 
 import type { RequestOptions } from '../types/config';

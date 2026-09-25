@@ -22,6 +22,7 @@ Generate a fully typed TypeScript API client (`fetch` or `axios`) and data contr
 ## Table of contents
 
 - [Differences from the original](#differences-from-the-original)
+- [Performance](#performance)
 - [Requirements](#requirements)
 - [Install](#install)
 - [Quick start](#quick-start)
@@ -61,6 +62,22 @@ the same kind of client, with these differences:
   generated HTTP clients also accept an `injectHeaders` callback.
 - There is no `generate-templates` CLI command. To copy the built-in templates, call
   [`generateTemplates()`](#custom-templates) from code.
+
+## Performance
+
+Generation time compared with the original `swagger-typescript-api` v13.13.0 (median, warm process,
+same documents and options, Node.js v22.22.2 on 4 cores):
+
+| Document                                 | swagger-typescript-api-es | swagger-typescript-api |                |
+| ---------------------------------------- | ------------------------: | ---------------------: | -------------: |
+| Petstore (15 schemas, 11 operations)     |                      8 ms |                  74 ms | **10× faster** |
+| 300 schemas, 600 operations              |                    107 ms |                  2.2 s | **20× faster** |
+| 1500 schemas, 3000 operations            |                    494 ms |                 11.3 s | **23× faster** |
+| 1500 schemas, 3000 operations, `modular` |                    426 ms |                 14.9 s | **35× faster** |
+
+A single cold run (new process, like the CLI) of the largest document takes about
+938 ms instead of 13.1 s, with less than half the memory. All numbers, the method and
+the caveats are on the docs site's Benchmark page; run it yourself with `npm run bench:compare`.
 
 ## Requirements
 
@@ -427,7 +444,8 @@ import type { GenerateApiOutput, IOptions } from 'swagger-typescript-api-es';
 ```
 
 To pass a schema object you already have, use `spec` (typed as `OpenAPIDocument`, OpenAPI 3.x or
-Swagger 2.0):
+Swagger 2.0). The object is never modified by the generator, and it is not even copied unless hooks,
+custom schema parsers, templates or type constructs are used:
 
 ```ts
 import { readFile } from 'node:fs/promises';
@@ -645,7 +663,8 @@ is looked up in the custom folder, then in the built-in one.
 **`utils`:** `Ts`, `formatDescription`, `escapeJSDocContent`, `internalCase`, `classNameCase`,
 `pascalCase`, `getInlineParseContent`, `getParseContent`, `getComponentByRef`, `parseSchema`,
 `checkAndAddNull`, `safeAddNullToType`, `isNeedToAddNull`, `inlineExtraFormatters`, `formatters`,
-`formatModelName`, `fmtToJSDocLine`, `NameResolver`, `require`, and `_`, a subset of lodash:
+`formatModelName`, `fmtToJSDocLine`, `NameResolver`, `require`, and `_`, lodash-compatible helpers
+(from [`es-toolkit/compat`](https://es-toolkit.dev/compatibility.html)):
 `compact`, `merge`, `each`, `isEmpty`, `sortByProperty`, `noop`, `isObject`, `isString`,
 `isUndefined`, `map`, `uniq`, `size`, `replace`, `camelCase`, `lowerCase`, `values`, `join`, `get`,
 `upperCase`, `sortBy`. `require('./x')` resolves from the templates folder. A package name
@@ -764,18 +783,20 @@ cd swagger-typescript-api-es
 npm install
 ```
 
-| Script                  | What it does                                                    |
-| ----------------------- | --------------------------------------------------------------- |
-| `npm run build`         | Build with `unbuild` and copy `templates/` to `dist/templates/` |
-| `npm run dev`           | Stub build (`unbuild --stub`) for fast local development        |
-| `npm test`              | Run the tests with Vitest (`npm test -- --run` runs them once)  |
-| `npm run test:coverage` | Run the tests once with v8 coverage                             |
-| `npm run lint`          | Lint with oxlint (`lint:fix` to fix)                            |
-| `npm run fmt`           | Format with oxfmt (`fmt:check` to check)                        |
-| `npm run typecheck`     | `tsc --noEmit`                                                  |
-| `npm start`             | Run the playground `play/test.ts`                               |
-| `npm run test:cli`      | Run the built CLI (`node dist/cli.mjs`)                         |
-| `npm run test:cli1`     | Run the CLI from source (`tsx src/cli.ts`)                      |
+| Script                      | What it does                                                                    |
+| --------------------------- | ------------------------------------------------------------------------------- |
+| `npm run build`             | Build with `unbuild` and copy `templates/` to `dist/templates/`                 |
+| `npm run dev`               | Stub build (`unbuild --stub`) for fast local development                        |
+| `npm test`                  | Run the tests with Vitest (`npm test -- --run` runs them once)                  |
+| `npm run test:coverage`     | Run the tests once with v8 coverage                                             |
+| `npm run test:immutability` | Run the tests with deep-frozen input specs (the generator must not change them) |
+| `npm run lint`              | Lint with oxlint (`lint:fix` to fix)                                            |
+| `npm run fmt`               | Format with oxfmt (`fmt:check` to check)                                        |
+| `npm run typecheck`         | `tsc --noEmit`                                                                  |
+| `npm start`                 | Run the playground `play/test.ts`                                               |
+| `npm run bench`             | Build, then benchmark generation on small / large specs                         |
+| `npm run test:cli`          | Run the built CLI (`node dist/cli.mjs`)                                         |
+| `npm run test:cli1`         | Run the CLI from source (`tsx src/cli.ts`)                                      |
 
 Tests live in `tests/`:
 

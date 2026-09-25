@@ -1,4 +1,4 @@
-import { map } from 'lodash-es';
+import { map } from 'es-toolkit/compat';
 
 import { MonoSchemaParser } from '../mono-schema-parser';
 

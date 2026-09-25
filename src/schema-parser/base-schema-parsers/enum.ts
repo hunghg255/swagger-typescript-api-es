@@ -1,4 +1,4 @@
-import { includes, isArray, isObject, isUndefined, map, size } from 'lodash-es';
+import { includes, isArray, isObject, isUndefined, map, size } from 'es-toolkit/compat';
 
 import { SCHEMA_TYPES } from '../../constants';
 import type { EnumFieldContent, ParsedEnumSchema, ParsedSchema } from '../../types/parsed';

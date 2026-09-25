@@ -1,7 +1,8 @@
 import path from 'node:path';
 
-import { cloneDeep, compact, join, map, merge, uniq } from 'lodash-es';
-import ts from 'typescript';
+import { cloneDeep } from 'es-toolkit';
+import { compact, join, map, merge, uniq } from 'es-toolkit/compat';
+import type ts from 'typescript';
 
 import { ComponentTypeNameResolver } from './component-type-name-resolver';
 import * as CONSTANTS from './constants';
@@ -167,6 +168,11 @@ class CodeGenConfig {
 
   /** custom schema parsers */
   schemaParsers: SchemaParsers = {};
+  /**
+   * `true` when hooks, schema parsers, templates or type constructs are customized: they get the raw
+   * schemas and could change them, so the documents are deep-copied (the input is never changed)
+   */
+  hasCustomSchemaCode = false;
   toJS = false;
   silent = false;
   typePrefix = '';
@@ -217,10 +223,12 @@ class CodeGenConfig {
   };
 
   compilerTsConfig: ts.CompilerOptions = {
-    module: ts.ModuleKind.ESNext,
+    // `ts.ModuleKind.ESNext` (literal: `typescript` is only loaded when `toJS` is used)
+    module: 99,
     noImplicitReturns: true,
     alwaysStrict: true,
-    target: ts.ScriptTarget.ESNext,
+    // `ts.ScriptTarget.ESNext`
+    target: 99,
     declaration: true,
     noImplicitAny: false,
     sourceMap: false,
@@ -392,6 +400,15 @@ class CodeGenConfig {
     output,
     ...otherConfig
   }: CodeGenProcessOptions) {
+    // user code which receives the raw schemas (and could change them)
+    this.hasCustomSchemaCode =
+      Object.values(hooks || {}).some((hook) => typeof hook === 'function') ||
+      Object.keys(otherConfig.schemaParsers || {}).length > 0 ||
+      !!otherConfig.templates ||
+      (otherConfig.extraTemplates?.length ?? 0) > 0 ||
+      !!codeGenConstructs ||
+      !!primitiveTypeConstructs;
+
     objectAssign(this.Ts, codeGenConstructs);
     objectAssign(this.primitiveTypes, primitiveTypeConstructs);
 
@@ -420,6 +437,16 @@ class CodeGenConfig {
   }
 
   update = (update: CodeGenConfigUpdate) => {
+    // big documents are replaced by reference: deep-merging them copied the whole schema
+    // on every update (the resolver already works on its own copy of `spec`)
+    if (update && typeof update === 'object') {
+      const { spec, swaggerSchema, originalSchema, ...rest } = update as Partial<CodeGenConfig>;
+      if (spec !== undefined) this.spec = spec;
+      if (swaggerSchema !== undefined) this.swaggerSchema = swaggerSchema;
+      if (originalSchema !== undefined) this.originalSchema = originalSchema;
+      objectAssign(this, rest);
+      return;
+    }
     objectAssign(this, update);
   };
 }

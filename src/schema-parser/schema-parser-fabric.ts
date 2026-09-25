@@ -1,5 +1,3 @@
-import { cloneDeep } from 'lodash-es';
-
 import type { CodeGenConfig } from '../configuration';
 import type { SchemaComponentsMap } from '../schema-components-map';
 import type { SchemaWalker } from '../schema-walker';
@@ -9,6 +7,7 @@ import type { SchemaPath } from '../types/config';
 import type { SchemaObject } from '../types/openapi';
 import type { ParsedSchema, SchemaComponent } from '../types/parsed';
 import type { Logger } from '../util/logger';
+import { ParsedSchemaCache } from './parsed-schema-cache';
 import { SchemaFormatters } from './schema-formatters';
 import { SchemaParser } from './schema-parser';
 import type { SchemaParserOptions } from './schema-parser';
@@ -83,6 +82,8 @@ class SchemaParserFabric {
   templatesWorker: SchemaParserFabricDeps['templatesWorker'];
   schemaUtils: SchemaUtils;
   schemaWalker: SchemaWalker | undefined;
+  /** parse results of the raw schemas (they are not stored on the schemas) */
+  parsedSchemaCache = new ParsedSchemaCache();
 
   constructor({
     config,
@@ -144,7 +145,7 @@ class SchemaParserFabric {
     schema,
     schemaPath,
   }: CreateParsedComponentOptions): SchemaComponent & { typeData: ParsedSchema } => {
-    const schemaCopy = cloneDeep(schema);
+    const schemaCopy = this.parsedSchemaCache.cloneDeep(schema);
     const customComponent = this.schemaComponentsMap.createComponent(
       // `null` is joined as an empty string
       this.schemaComponentsMap.createRef(['components', 'schemas', typeName ?? '']),

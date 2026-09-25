@@ -18,9 +18,8 @@ import {
   uniq,
   upperCase,
   values,
-} from 'lodash-es';
+} from 'es-toolkit/compat';
 import pc from 'picocolors';
-import ts from 'typescript';
 
 import { CodeFormatter } from './code-formatter';
 import { CodeGenConfig } from './configuration.js';
@@ -125,12 +124,18 @@ class CodeGenProcess {
       originalSchema: swagger.originalSchema,
     });
 
-    this.schemaWalker.addSchema('$usage', swagger.usageSchema);
-    this.schemaWalker.addSchema('$original', swagger.originalSchema);
+    // the documents are not changed by the generator (only custom code could change them)
+    const copy = this.config.hasCustomSchemaCode;
+    this.schemaWalker.addSchema('$usage', swagger.usageSchema, { copy });
+    this.schemaWalker.addSchema('$original', swagger.originalSchema, { copy });
 
     this.logger.event('Start generating your typescript api');
 
-    this.config.update(this.config.hooks.onInit(this.config, this) || this.config);
+    const initConfig = this.config.hooks.onInit(this.config, this);
+    // returning the (mutated) config itself or nothing needs no update
+    if (initConfig && initConfig !== this.config) {
+      this.config.update(initConfig);
+    }
 
     this.schemaComponentsMap.clear();
 
@@ -433,7 +438,9 @@ class CodeGenProcess {
   ): Promise<TranslatorIO[]> => {
     const { routes } = configuration;
     const { fileNames, generateRouteTypes, generateClient } = configuration.config;
-    const modularApiFileInfos: TranslatorIO[] = [];
+    // templates are rendered in order (a render can set flags read by later ones, e.g. `internalTemplateOptions`),
+    // the (async) formatting of the files runs concurrently
+    const modularApiFileInfos: Promise<TranslatorIO[]>[] = [];
 
     // routes without module (e.g. `GET /`) are a flat list of routes,
     // wrap them into a module-like structure expected by modular templates
@@ -455,11 +462,11 @@ class CodeGenProcess {
         );
 
         modularApiFileInfos.push(
-          ...(await this.createOutputFileInfo(
+          this.createOutputFileInfo(
             configuration,
             pascalCase(`${fileNames.outOfModuleApi}_Route`),
             outOfModuleRouteContent
-          ))
+          )
         );
       }
       if (generateClient) {
@@ -469,11 +476,7 @@ class CodeGenProcess {
         });
 
         modularApiFileInfos.push(
-          ...(await this.createOutputFileInfo(
-            configuration,
-            fileNames.outOfModuleApi,
-            outOfModuleApiContent
-          ))
+          this.createOutputFileInfo(configuration, fileNames.outOfModuleApi, outOfModuleApiContent)
         );
       }
     }
@@ -490,11 +493,11 @@ class CodeGenProcess {
           );
 
           modularApiFileInfos.push(
-            ...(await this.createOutputFileInfo(
+            this.createOutputFileInfo(
               configuration,
               pascalCase(`${route.moduleName}_Route`),
               routeModuleContent
-            ))
+            )
           );
         }
 
@@ -505,31 +508,32 @@ class CodeGenProcess {
           });
 
           modularApiFileInfos.push(
-            ...(await this.createOutputFileInfo(
-              configuration,
-              pascalCase(route.moduleName),
-              apiModuleContent
-            ))
+            this.createOutputFileInfo(configuration, pascalCase(route.moduleName), apiModuleContent)
           );
         }
       }
     }
 
-    return [
-      ...(await this.createOutputFileInfo(
-        configuration,
-        fileNames.dataContracts,
-        this.templatesWorker.renderTemplate(templatesToRender.dataContracts, configuration)
-      )),
-      ...(generateClient
-        ? await this.createOutputFileInfo(
-            configuration,
-            fileNames.httpClient,
-            this.templatesWorker.renderTemplate(templatesToRender.httpClient, configuration)
-          )
-        : []),
+    const dataContractsFileInfo = this.createOutputFileInfo(
+      configuration,
+      fileNames.dataContracts,
+      this.templatesWorker.renderTemplate(templatesToRender.dataContracts, configuration)
+    );
+    const httpClientFileInfo = generateClient
+      ? this.createOutputFileInfo(
+          configuration,
+          fileNames.httpClient,
+          this.templatesWorker.renderTemplate(templatesToRender.httpClient, configuration)
+        )
+      : [];
+
+    const [dataContracts, httpClient, ...apiModules] = await Promise.all([
+      dataContractsFileInfo,
+      httpClientFileInfo,
       ...modularApiFileInfos,
-    ];
+    ]);
+
+    return [...dataContracts, ...httpClient, ...apiModules.flat()];
   };
 
   createSingleFileInfo = (
@@ -558,7 +562,7 @@ class CodeGenProcess {
     content: string
   ): Promise<TranslatorIO[]> => {
     const fileName = this.fileSystem.cropExtension(fileNameFull);
-    const fileExtension = ts.Extension.Ts;
+    const fileExtension = '.ts';
 
     if (configuration.translateToJavaScript) {
       this.logger.debug('Using js translator for', fileName);

@@ -1,9 +1,9 @@
 import { createRequire } from 'node:module';
 import path, { resolve } from 'node:path';
 
+import { endsWith, lowerCase, reduce, replace, startsWith } from 'es-toolkit/compat';
 import * as Eta from 'eta';
 import type { EtaConfig } from 'eta';
-import { endsWith, lowerCase, reduce, replace, startsWith } from 'lodash-es';
 
 import type { CodeGenConfig } from './configuration';
 import { TEMPLATES_DIR } from './constants';
@@ -35,6 +35,9 @@ export interface TemplatesWorkerDeps {
 
 /** `require` for an ESM-only package (works from sources and from `dist`) */
 const packageRequire = createRequire(import.meta.url);
+
+/** `Eta.compile()` result (eta does not export its `TemplateFunction` type) */
+type CompiledTemplate = (data: object, config: EtaConfig) => string;
 
 class TemplatesWorker {
   config: CodeGenConfig;
@@ -195,7 +198,23 @@ class TemplatesWorker {
    * Reads a template included from another template (`includeFile("@base/route-docs", data)`).
    * `@base`, `@default`, `@modular`, `@original` and `@custom` prefixes are replaced with the template paths.
    */
+  /** contents of included templates, keyed by the template paths + the include path */
+  templateContents = new Map<string, string>();
+
   getTemplateContent = (path: string) => {
+    // `config.update()` merges `templatePaths` in place, so key by the values, not the object
+    const key = `${Object.values(this.config.templatePaths).join('\0')}\0${path}`;
+    let content = this.templateContents.get(key);
+
+    if (content === undefined) {
+      content = this.readTemplateContent(path);
+      this.templateContents.set(key, content);
+    }
+
+    return content;
+  };
+
+  readTemplateContent = (path: string): string => {
     const templatePaths: Record<string, string | null | undefined> = this.config.templatePaths;
     const foundTemplatePathKey = Object.keys(templatePaths).find((key) =>
       startsWith(path, `@${key}`)
@@ -237,6 +256,9 @@ class TemplatesWorker {
   /**
    * Renders a template (synchronously) with the base template data (`utils`, `config`) and `configuration`.
    */
+  /** compiled templates, keyed by the template source */
+  compiledTemplates = new Map<string, CompiledTemplate>();
+
   renderTemplate = (
     template: string | undefined | null,
     configuration: object = {},
@@ -245,20 +267,25 @@ class TemplatesWorker {
     if (!template) {
       return '';
     }
-    return Eta.render(
-      template,
+    const etaConfig = Eta.getConfig({
+      async: false,
+      ...options,
+      includeFile: (path: string, configuration?: object, options?: TemplateRenderOptions) => {
+        return this.renderTemplate(this.getTemplateContent(path), configuration, options);
+      },
+    });
+    let templateFn = this.compiledTemplates.get(template);
+    if (!templateFn) {
+      templateFn = Eta.compile(template, etaConfig);
+      this.compiledTemplates.set(template, templateFn);
+    }
+    return templateFn(
       {
         ...this.getRenderTemplateData(),
         ...configuration,
       },
-      {
-        async: false,
-        ...options,
-        includeFile: (path: string, configuration?: object, options?: TemplateRenderOptions) => {
-          return this.renderTemplate(this.getTemplateContent(path), configuration, options);
-        },
-      }
-    );
+      etaConfig
+    ) as string;
   };
 }
 

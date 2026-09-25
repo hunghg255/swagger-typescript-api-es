@@ -1,14 +1,4 @@
-import {
-  clone,
-  cloneDeep,
-  compact,
-  entries,
-  isArray,
-  isObject,
-  keys,
-  omit,
-  reduce,
-} from 'lodash-es';
+import { clone, compact, entries, isArray, isObject, keys, omit, reduce } from 'es-toolkit/compat';
 
 import { SCHEMA_TYPES } from '../../constants';
 import type { SchemaObject } from '../../types/openapi';
@@ -206,7 +196,7 @@ class DiscriminatorSchemaParser extends MonoSchemaParser<ParsedSchema> {
       : undefined;
     const mappingPropertyRawSchema: SchemaObject | undefined =
       mappingPropertyComponent?.rawTypeData;
-    const parsedEnum = mappingPropertyRawSchema?.$parsed;
+    const parsedEnum = this.schemaParserFabric.parsedSchemaCache.get(mappingPropertyRawSchema);
 
     if (parsedEnum?.type === SCHEMA_TYPES.ENUM) {
       mappingPropertySchemaEnumKeysMap = reduce(
@@ -239,21 +229,28 @@ class DiscriminatorSchemaParser extends MonoSchemaParser<ParsedSchema> {
     const abstractRef = abstractSchemaStruct?.component?.$ref;
     // override parent dependencies
     if (mappingSchema.$ref && abstractRef) {
-      const mappingRefSchema: SchemaObject | undefined =
-        this.schemaUtils.getSchemaRefType(mappingSchema)?.rawTypeData;
-      if (mappingRefSchema) {
+      const mappingComponent = this.schemaUtils.getSchemaRefType(mappingSchema);
+      const mappingRefSchema: SchemaObject | undefined = mappingComponent?.rawTypeData;
+      if (mappingComponent && mappingRefSchema) {
+        const cache = this.schemaParserFabric.parsedSchemaCache;
+        // the input document is not changed: the component gets a changed copy of its schema
+        // (the copies keep the parse results of the originals, as when they were changed in place)
+        let changedRefSchema: SchemaObject | null = null;
         for (const schemaKey of COMPLEX_SCHEMA_TYPES) {
-          const childSchemas = mappingRefSchema[schemaKey];
+          const currentSchema: SchemaObject = changedRefSchema ?? mappingRefSchema;
+          const childSchemas: SchemaObject[keyof Pick<SchemaObject, 'allOf'>] | SchemaObject =
+            currentSchema[schemaKey];
           if (isSchemaList(childSchemas)) {
-            const mappedChildSchemas = childSchemas.map((schema): SchemaObject => {
+            const mappedChildSchemas: SchemaObject[] = childSchemas.map((schema): SchemaObject => {
               if (schema.$ref === refPath) {
-                return {
+                return cache.inherit(schema, {
                   ...schema,
                   $ref: abstractRef,
-                };
+                });
               }
               if (this.schemaUtils.getInternalSchemaType(schema) === SCHEMA_TYPES.OBJECT) {
                 const properties = schema.properties || {};
+                let changedProperties: Record<string, SchemaObject> | null = null;
                 for (const schemaPropertyName in properties) {
                   const schemaProperty = properties[schemaPropertyName];
                   if (
@@ -263,17 +260,31 @@ class DiscriminatorSchemaParser extends MonoSchemaParser<ParsedSchema> {
                     schemaProperty.enum.length === 1 &&
                     mappingPropertySchemaEnumKeysMap[String(schemaProperty.enum[0])]
                   ) {
-                    properties[schemaPropertyName] = this.schemaParserFabric.createSchema({
+                    changedProperties ??= { ...properties };
+                    changedProperties[schemaPropertyName] = this.schemaParserFabric.createSchema({
                       content: mappingPropertySchemaEnumKeysMap[String(schemaProperty.enum[0])],
                     });
                   }
+                }
+                if (changedProperties) {
+                  const changedSchema = cache.inherit(schema, {
+                    ...schema,
+                    properties: changedProperties,
+                  });
+                  return changedSchema;
                 }
               }
               return schema;
             });
             // `not` is a single schema (an array is mapped too)
-            Object.assign(mappingRefSchema, { [schemaKey]: mappedChildSchemas });
+            changedRefSchema = cache.inherit(mappingRefSchema, {
+              ...currentSchema,
+              [schemaKey]: mappedChildSchemas,
+            });
           }
+        }
+        if (changedRefSchema) {
+          mappingComponent.rawTypeData = changedRefSchema;
         }
       }
     }
@@ -282,8 +293,9 @@ class DiscriminatorSchemaParser extends MonoSchemaParser<ParsedSchema> {
   createAbstractSchemaStruct = (): DiscriminatorAbstractSchemaStruct | undefined => {
     const schema = omit(clone(this.schema), ['discriminator', ...COMPLEX_SCHEMA_TYPES]);
     const schemaIsAny =
-      this.schemaParserFabric.getInlineParseContent(cloneDeep(schema)) ===
-      this.config.Ts.Keyword.Any;
+      this.schemaParserFabric.getInlineParseContent(
+        this.schemaParserFabric.parsedSchemaCache.cloneDeep(schema)
+      ) === this.config.Ts.Keyword.Any;
     const schemaIsEmpty = keys(schema).length === 0;
 
     if (schemaIsEmpty || schemaIsAny) {

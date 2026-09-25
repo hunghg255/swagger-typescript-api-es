@@ -26,6 +26,9 @@
 - **Boolean enums** are generated as union types (`true | false`) — a TS `enum` with boolean values does not compile.
 - **Type names are deterministic**: the same spec always produces the same names (they were picked randomly on name clashes).
 
+- Schemas no longer get a `$parsed` property (an undocumented internal cache) and the `spec` object
+  passed to `generateApi` is never modified.
+
 ### 🐞 Bug fixes
 
 - CLI:
@@ -55,10 +58,37 @@
 - `primitiveTypeConstructs` without `$default` could produce `[object Object]` types.
 - `$ref` names containing "undefined" could resolve to the wrong schema for operations without `operationId`.
 
+### ⚡ Performance
+
+- The generator no longer changes the input document, so it is not deep-copied anymore:
+  - parse results are cached aside (`ParsedSchemaCache`) instead of `schema.$parsed`, the
+    `items` without `type`, discriminator mapping and `consumes` / `produces` fixes are applied to copies;
+  - the document is copied only when custom code (hooks, schema parsers, templates, type constructs)
+    could change it; `originalSchema` shares the unchanged objects with the input;
+  - ~25% faster in-process generation of large specs, ~14% faster CLI run; guarded by
+    `npm run test:immutability` (the whole suite with deep-frozen inputs) in CI.
+- Compiled Eta templates are cached (they were recompiled for every route, model and include) and
+  included template files are read once.
+- `typescript` is only loaded when `toJS` is used (~400ms less startup).
+- `lodash-es` replaced by `es-toolkit` (`es-toolkit/compat` where lodash semantics matter, the faster
+  core `cloneDeep` for documents). `utils._` in templates keeps the same lodash-compatible functions.
+- The config no longer deep-merges whole documents (`spec`, `swaggerSchema`, `originalSchema`) and
+  skips the no-op `onInit` update, which copied the whole schema several times.
+- Algorithmic fixes:
+  - response / request types were resolved by scanning (and re-formatting the names of) every
+    component for every route (O(routes × components), 3.4M `formatName` calls on a 1500 / 3000 spec):
+    now an index built once;
+  - `$ref` lookups in the components map and reserved-name checks use a `Map` / `Set` instead of
+    linear scans;
+  - memoized `pascalCase` / `internalCase`, pooled random bytes for route ids, and a document read
+    from a file / URL is no longer deep-copied before use.
+- CLI run (new process): small spec ~840ms → ~380ms; 1500 schemas / 3000 operations ~3.6s → ~1.3s.
+  In-process generation of that spec (`npm run bench`): ~2.6s → ~0.7s. The generated output is unchanged.
+
 ### 🏎 Dependencies
 
 - Replaced `unprompts` with `cac` (drops `unbuild`/`esbuild` from runtime dependencies), `node-fetch-h2` with
-  `undici`, removed `make-dir`, `nanoid` and `node-emoji`, declared `picocolors`.
+  `undici`, removed `make-dir`, `nanoid`, `node-emoji` and `lodash-es` (now `es-toolkit`), declared `picocolors`.
 - `npm audit`: 0 vulnerabilities.
 
 ### 🏷 Types

@@ -138,3 +138,32 @@ describe('SwaggerSchemaResolver.fetchSwaggerSchemaFile', () => {
     );
   });
 });
+
+describe('document structure validation', () => {
+  it.each([
+    [
+      'paths',
+      { swagger: '2.0', info: { title: 't', version: '1' }, paths: 'nope' },
+      /"paths" must be an object, got string/,
+    ],
+    [
+      'paths (array)',
+      { openapi: '3.0.0', info: { title: 't', version: '1' }, paths: [] },
+      /"paths" must be an object, got array/,
+    ],
+    [
+      'components',
+      { openapi: '3.0.0', info: { title: 't', version: '1' }, paths: {}, components: 1 },
+      /"components" must be an object, got number/,
+    ],
+    [
+      'definitions',
+      { swagger: '2.0', info: { title: 't', version: '1' }, paths: {}, definitions: 'x' },
+      /"definitions" must be an object/,
+    ],
+  ])('rejects a non-object %s', async (_name, spec, message) => {
+    await expect(
+      generateApi({ spec: spec as any, output: false, silent: true } as any)
+    ).rejects.toThrow(message);
+  });
+});

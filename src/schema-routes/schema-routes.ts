@@ -6,16 +6,13 @@ import {
   each,
   endsWith,
   entries,
-  find,
   flatMap,
   forEach,
   includes,
-  isEqual,
   isNaN,
   isObject,
   keys,
   map,
-  omit,
   reduce,
   replace,
   slice,
@@ -24,7 +21,7 @@ import {
   startsWith,
   uniq,
   values,
-} from 'lodash-es';
+} from 'es-toolkit/compat';
 
 import type { CodeGenConfig } from '../configuration';
 import {
@@ -160,6 +157,15 @@ const isAllFieldsOptional = (parsedSchema: ParsedSchema) =>
 /** vendor extension with a content type (`x-accepts`, `x-contentType`) */
 const getExtraContentType = (value: unknown) => (typeof value === 'string' ? value : undefined);
 
+interface ParsedSchemasIndex {
+  /** formatted names of the components */
+  formattedNames: Set<string | null | undefined>;
+  /** composite components by their (string) content */
+  complexByContent: Map<string, ParsedSchema & { name: string }>;
+  /** raw names of the components */
+  names: Set<string | null | undefined>;
+}
+
 class SchemaRoutes {
   config: SchemaRoutesConfig;
   schemaParserFabric: SchemaParserFabric;
@@ -247,10 +253,10 @@ class SchemaRoutes {
           return acc;
         }
 
-        acc[method] = {
+        acc[method] = this.inheritParsed(requestInfo, {
           ...requestInfo,
           parameters: this.mergeParameters(parameters, requestInfo.parameters),
-        };
+        });
 
         return acc;
       },
@@ -391,10 +397,14 @@ class SchemaRoutes {
         routeParams[resolvedParameter.in] = [];
       }
 
-      const routeParam = {
-        ...resolvedParameter,
-        ...resolvedParameter.schema,
-      };
+      // the parse result was carried over by the spread: the last spread object wins
+      const routeParam = this.inheritParsed(
+        resolvedParameter,
+        this.inheritParsed(resolvedParameter.schema, {
+          ...resolvedParameter,
+          ...resolvedParameter.schema,
+        })
+      );
 
       if (routeParam.in === 'path') {
         if (!routeParam.name) {
@@ -492,14 +502,55 @@ class SchemaRoutes {
     for (const dataType in content) {
       const mediaType = content[dataType];
       if (mediaType && mediaType.schema) {
-        return {
+        return this.inheritParsed(mediaType.schema, {
           ...mediaType.schema,
           dataType,
-        };
+        });
       }
     }
 
     return null;
+  };
+
+  /** `copy` of `source` keeps its parse result (see `ParsedSchemaCache.inherit`) */
+  inheritParsed = <T>(source: unknown, copy: T): T =>
+    this.schemaParserFabric.parsedSchemaCache.inherit(source, copy);
+
+  /** lookup tables of the parsed components, built once per `parsedSchemas` list */
+  parsedSchemasIndexes = new WeakMap<ParsedSchema[], ParsedSchemasIndex>();
+
+  /**
+   * `getTypeFromRequestInfo` runs for every request / response: scanning all the components
+   * (and formatting their names) each time was O(routes × components).
+   */
+  getParsedSchemasIndex = (parsedSchemas: ParsedSchema[]): ParsedSchemasIndex => {
+    let index = this.parsedSchemasIndexes.get(parsedSchemas);
+
+    if (!index) {
+      index = { formattedNames: new Set(), complexByContent: new Map(), names: new Set() };
+
+      for (const parsedSchema of parsedSchemas) {
+        index.names.add(parsedSchema.name);
+        index.formattedNames.add(this.typeNameFormatter.format(parsedSchema.name));
+
+        if (
+          parsedSchema.schemaType === SCHEMA_TYPES.COMPLEX &&
+          typeof parsedSchema.name === 'string' &&
+          typeof parsedSchema.content === 'string' &&
+          // the first matching component wins (as with `find`)
+          !index.complexByContent.has(parsedSchema.content)
+        ) {
+          index.complexByContent.set(
+            parsedSchema.content,
+            parsedSchema as ParsedSchema & { name: string }
+          );
+        }
+      }
+
+      this.parsedSchemasIndexes.set(parsedSchemas, index);
+    }
+
+    return index;
   };
 
   getTypeFromRequestInfo = ({
@@ -523,13 +574,10 @@ class SchemaRoutes {
       const content = this.schemaParserFabric.getInlineParseContent(schema, typeName, [
         operationId,
       ]);
-      // formatted name of this component is equal to the content
-      const foundSchemaByName = find(
-        parsedSchemas,
-        (parsedSchema) => this.typeNameFormatter.format(parsedSchema.name) === content
-      );
+      const index = this.getParsedSchemasIndex(parsedSchemas);
 
-      if (foundSchemaByName) {
+      // formatted name of this component is equal to the content
+      if (index.formattedNames.has(content)) {
         return content;
       }
 
@@ -537,13 +585,7 @@ class SchemaRoutes {
       // Only composite (allOf/oneOf/anyOf/discriminator) components are considered:
       // for primitive components (e.g. `UserId: { type: string }`) an equal content
       // says nothing about identity and would type every `string` as `UserId`.
-      const foundSchemaByContent = find(
-        parsedSchemas,
-        (parsedSchema): parsedSchema is ParsedSchema & { name: string } =>
-          parsedSchema.schemaType === SCHEMA_TYPES.COMPLEX &&
-          typeof parsedSchema.name === 'string' &&
-          isEqual(parsedSchema.content, content)
-      );
+      const foundSchemaByContent = index.complexByContent.get(content);
 
       return foundSchemaByContent
         ? this.typeNameFormatter.format(foundSchemaByContent.name)
@@ -558,7 +600,7 @@ class SchemaRoutes {
       const typeNameWithoutOpId = operationId
         ? replace(refTypeInfo.typeName, operationId, '')
         : refTypeInfo.typeName;
-      if (find(parsedSchemas, (schema) => schema.name === typeNameWithoutOpId)) {
+      if (this.getParsedSchemasIndex(parsedSchemas).names.has(typeNameWithoutOpId)) {
         return this.typeNameFormatter.format(typeNameWithoutOpId);
       }
 
@@ -602,30 +644,35 @@ class SchemaRoutes {
       requestInfos,
       (acc: ResponseInfo[], requestInfo, status) => {
         const contentTypes = this.getContentTypes([requestInfo]);
+        // the spread copied the parse result as it was *before* `type` below parses `requestInfo`
+        const parsedBefore = this.schemaParserFabric.parsedSchemaCache.get(requestInfo);
 
-        return [
-          ...acc,
-          {
-            ...requestInfo,
-            contentTypes,
-            contentKind: this.getContentKind(contentTypes),
-            type: this.schemaParserFabric.schemaUtils.safeAddNullToType(
+        const responseInfo: ResponseInfo = {
+          ...requestInfo,
+          contentTypes,
+          contentKind: this.getContentKind(contentTypes),
+          type: this.schemaParserFabric.schemaUtils.safeAddNullToType(
+            requestInfo,
+            this.getTypeFromRequestInfo({
               requestInfo,
-              this.getTypeFromRequestInfo({
-                requestInfo,
-                parsedSchemas,
-                operationId,
-                defaultType,
-              })
-            ),
-            description: this.schemaParserFabric.schemaFormatters.formatDescription(
-              requestInfo.description || '',
-              true
-            ),
-            status: isNaN(+status) ? status : +status,
-            isSuccess: this.isSuccessStatus(status),
-          },
-        ];
+              parsedSchemas,
+              operationId,
+              defaultType,
+            })
+          ),
+          description: this.schemaParserFabric.schemaFormatters.formatDescription(
+            requestInfo.description || '',
+            true
+          ),
+          status: isNaN(+status) ? status : +status,
+          isSuccess: this.isSuccessStatus(status),
+        };
+
+        if (parsedBefore !== undefined) {
+          this.schemaParserFabric.parsedSchemaCache.set(responseInfo, parsedBefore);
+        }
+
+        return [...acc, responseInfo];
       },
       []
     );
@@ -719,20 +766,24 @@ class SchemaRoutes {
           usageName = camelCase(usageName);
         }
 
-        const property: RouteParam = {
-          ...schemaPart,
-          ...schemaPart.schema,
-          $origName: schemaPart.name,
-          name: usageName,
-        };
+        // the parse result was carried over by the spread: the last spread object wins
+        const property: RouteParam = this.inheritParsed(
+          schemaPart,
+          this.inheritParsed(schemaPart.schema, {
+            ...schemaPart,
+            ...schemaPart.schema,
+            $origName: schemaPart.name,
+            name: usageName,
+          })
+        );
 
-        return {
+        return this.inheritParsed(objectSchema, {
           ...objectSchema,
           properties: {
             ...objectSchema.properties,
             [usageName]: property,
           },
-        };
+        });
       },
       objectSchema
     );
@@ -846,10 +897,10 @@ class SchemaRoutes {
       (acc: Record<string, LocatedSchemaObject>, pathArgSchema) => {
         const name = 'name' in pathArgSchema ? pathArgSchema.name : undefined;
         if (typeof name === 'string' && name) {
-          acc[name] = {
+          acc[name] = this.inheritParsed(pathArgSchema, {
             ...pathArgSchema,
             in: 'path',
-          };
+          });
         }
 
         return acc;
@@ -861,10 +912,10 @@ class SchemaRoutes {
       queryObjectSchema.properties ?? {},
       (acc: Record<string, LocatedSchemaObject>, property, name) => {
         if (name && isObject(property)) {
-          acc[name] = {
+          acc[name] = this.inheritParsed(property, {
             ...property,
             in: 'query',
-          };
+          });
         }
 
         return acc;
@@ -873,9 +924,9 @@ class SchemaRoutes {
     );
 
     const schema: SchemaObject = {
-      // `$parsed` belongs to the query object schema only (it doesn't contain path params),
+      // the parse result of the query object schema is not reused (it doesn't contain path params),
       // parsed query properties are reused
-      ...omit(queryObjectSchema, '$parsed'),
+      ...queryObjectSchema,
       properties: {
         ...fixedQueryParams,
         ...pathParams,
@@ -945,10 +996,16 @@ class SchemaRoutes {
         );
 
         if (idx > -1) {
-          assign(responseBodyInfo.responses[idx], {
+          const response = responseBodyInfo.responses[idx];
+          assign(response, {
             ...component,
             type: successResponse.type,
           });
+          // `assign` copied (overwrote) the parse result of the component too
+          const componentParsed = this.schemaParserFabric.parsedSchemaCache.get(component);
+          if (componentParsed !== undefined) {
+            this.schemaParserFabric.parsedSchemaCache.set(response, componentParsed);
+          }
         }
       }
     }
@@ -999,7 +1056,7 @@ class SchemaRoutes {
       const component = this.schemaComponentsMap.createComponent(
         // `null` is joined as an empty string (`#/components/schemas/`)
         this.schemaComponentsMap.createRef(['components', 'schemas', typeName ?? '']),
-        { ...schema }
+        this.inheritParsed(schema, { ...schema })
       );
       responseBodyInfo.error.schemas = [component];
       responseBodyInfo.error.type = this.typeNameFormatter.format(component.typeName);

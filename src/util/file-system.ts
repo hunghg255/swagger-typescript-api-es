@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { resolve } from 'node:path';
 
-import { split } from 'lodash-es';
+import { split } from 'es-toolkit/compat';
 
 import { Logger } from './logger';
 

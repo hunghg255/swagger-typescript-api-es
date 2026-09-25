@@ -32,6 +32,9 @@
   --shadow-md: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -6px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 2px 4px rgb(0 0 0 / 0.04), 0 24px 48px -12px rgb(0 0 0 / 0.18);
   --grid-line: rgb(0 0 0 / 0.045);
+  /* benchmark chart series (validated: dataviz validate_palette, light surface #ffffff) */
+  --series-es: #047857;
+  --series-original: #eb6834;
 }
 
 :root[data-theme='dark'] {
@@ -60,6 +63,9 @@
   --shadow-md: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -6px rgb(0 0 0 / 0.6);
   --shadow-lg: 0 2px 4px rgb(0 0 0 / 0.4), 0 24px 48px -12px rgb(0 0 0 / 0.7);
   --grid-line: rgb(255 255 255 / 0.04);
+  /* benchmark chart series (validated against the dark surface #111114) */
+  --series-es: #1baf7a;
+  --series-original: #d95926;
 }
 
 @theme inline {
@@ -83,6 +89,8 @@
   --color-danger-border: var(--danger-border);
   --color-ring: var(--ring);
   --color-code: var(--code-bg);
+  --color-series-es: var(--series-es);
+  --color-series-original: var(--series-original);
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
