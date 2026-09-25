@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 import { cloneDeep, compact, join, map, merge, uniq } from 'lodash-es';
-import ts from 'typescript';
+import type ts from 'typescript';
 
 import { ComponentTypeNameResolver } from './component-type-name-resolver';
 import * as CONSTANTS from './constants';
@@ -217,10 +217,12 @@ class CodeGenConfig {
   };
 
   compilerTsConfig: ts.CompilerOptions = {
-    module: ts.ModuleKind.ESNext,
+    // `ts.ModuleKind.ESNext` (literal: `typescript` is only loaded when `toJS` is used)
+    module: 99,
     noImplicitReturns: true,
     alwaysStrict: true,
-    target: ts.ScriptTarget.ESNext,
+    // `ts.ScriptTarget.ESNext`
+    target: 99,
     declaration: true,
     noImplicitAny: false,
     sourceMap: false,

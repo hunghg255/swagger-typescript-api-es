@@ -774,6 +774,7 @@ npm install
 | `npm run fmt`           | Format with oxfmt (`fmt:check` to check)                        |
 | `npm run typecheck`     | `tsc --noEmit`                                                  |
 | `npm start`             | Run the playground `play/test.ts`                               |
+| `npm run bench`         | Build, then benchmark generation on small / large specs         |
 | `npm run test:cli`      | Run the built CLI (`node dist/cli.mjs`)                         |
 | `npm run test:cli1`     | Run the CLI from source (`tsx src/cli.ts`)                      |
 

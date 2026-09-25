@@ -55,6 +55,14 @@
 - `primitiveTypeConstructs` without `$default` could produce `[object Object]` types.
 - `$ref` names containing "undefined" could resolve to the wrong schema for operations without `operationId`.
 
+### ⚡ Performance
+
+- Compiled Eta templates are cached (they were recompiled for every route, model and include) and
+  included template files are read once.
+- `typescript` is only loaded when `toJS` is used (~400ms less startup).
+- CLI run on a small spec: ~800ms → ~400ms; 1500 schemas / 3000 operations: ~3.4s → ~2.1s
+  (`npm run bench`). The generated output is unchanged.
+
 ### 🏎 Dependencies
 
 - Replaced `unprompts` with `cac` (drops `unbuild`/`esbuild` from runtime dependencies), `node-fetch-h2` with

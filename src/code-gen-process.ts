@@ -20,7 +20,6 @@ import {
   values,
 } from 'lodash-es';
 import pc from 'picocolors';
-import ts from 'typescript';
 
 import { CodeFormatter } from './code-formatter';
 import { CodeGenConfig } from './configuration.js';
@@ -558,7 +557,7 @@ class CodeGenProcess {
     content: string
   ): Promise<TranslatorIO[]> => {
     const fileName = this.fileSystem.cropExtension(fileNameFull);
-    const fileExtension = ts.Extension.Ts;
+    const fileExtension = '.ts';
 
     if (configuration.translateToJavaScript) {
       this.logger.debug('Using js translator for', fileName);

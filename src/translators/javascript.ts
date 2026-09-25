@@ -1,4 +1,4 @@
-import ts from 'typescript';
+import type ts from 'typescript';
 
 import type { TranslatorIO } from '../types/config';
 import { Translator } from './translator';
@@ -7,7 +7,10 @@ class JavascriptTranslator extends Translator {
   /**
    * @returns emitted files: Record<fileName, content>
    */
-  compileTSCode = (input: TranslatorIO) => {
+  /** `typescript` is heavy (~400ms to import), so it is loaded only when `toJS` is used */
+  loadTypescript = async (): Promise<typeof ts> => (await import('typescript')).default;
+
+  compileTSCode = (ts: typeof import('typescript'), input: TranslatorIO) => {
     const fileNameFull = `${input.fileName}${input.fileExtension}`;
     const output: Record<string, string> = {};
     const host = ts.createCompilerHost(this.config.compilerTsConfig, true);
@@ -42,7 +45,8 @@ class JavascriptTranslator extends Translator {
   };
 
   translate = async (input: TranslatorIO): Promise<TranslatorIO[]> => {
-    const compiled = this.compileTSCode(input);
+    const ts = await this.loadTypescript();
+    const compiled = this.compileTSCode(ts, input);
 
     const jsFileName = `${input.fileName}${ts.Extension.Js}`;
     const dtsFileName = `${input.fileName}${ts.Extension.Dts}`;

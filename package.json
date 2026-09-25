@@ -44,6 +44,7 @@
     "start": "tsx play/test.ts",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
+    "bench": "npm run build && node bench/index.mjs",
     "changelog": "npx changeloggithub@latest --all true && git add CHANGELOG.md && git commit -m 'chore: update CHANGELOG.md'",
     "prepublishOnly": "npm run build",
     "release": "bumpp -r && npm publish"

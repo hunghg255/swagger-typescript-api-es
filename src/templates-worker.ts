@@ -36,6 +36,9 @@ export interface TemplatesWorkerDeps {
 /** `require` for an ESM-only package (works from sources and from `dist`) */
 const packageRequire = createRequire(import.meta.url);
 
+/** `Eta.compile()` result (eta does not export its `TemplateFunction` type) */
+type CompiledTemplate = (data: object, config: EtaConfig) => string;
+
 class TemplatesWorker {
   config: CodeGenConfig;
 
@@ -195,7 +198,23 @@ class TemplatesWorker {
    * Reads a template included from another template (`includeFile("@base/route-docs", data)`).
    * `@base`, `@default`, `@modular`, `@original` and `@custom` prefixes are replaced with the template paths.
    */
+  /** contents of included templates, keyed by the template paths + the include path */
+  templateContents = new Map<string, string>();
+
   getTemplateContent = (path: string) => {
+    // `config.update()` merges `templatePaths` in place, so key by the values, not the object
+    const key = `${Object.values(this.config.templatePaths).join('\0')}\0${path}`;
+    let content = this.templateContents.get(key);
+
+    if (content === undefined) {
+      content = this.readTemplateContent(path);
+      this.templateContents.set(key, content);
+    }
+
+    return content;
+  };
+
+  readTemplateContent = (path: string): string => {
     const templatePaths: Record<string, string | null | undefined> = this.config.templatePaths;
     const foundTemplatePathKey = Object.keys(templatePaths).find((key) =>
       startsWith(path, `@${key}`)
@@ -238,7 +257,7 @@ class TemplatesWorker {
    * Renders a template (synchronously) with the base template data (`utils`, `config`) and `configuration`.
    */
   /** compiled templates, keyed by the template source */
-  compiledTemplates = new Map<string, ReturnType<typeof Eta.compile>>();
+  compiledTemplates = new Map<string, CompiledTemplate>();
 
   renderTemplate = (
     template: string | undefined | null,
