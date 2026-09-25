@@ -184,6 +184,14 @@ export default function HomePage() {
               <CodeBlock code={USAGE_EXAMPLE} lang="ts" title="src/pets.ts" className="shadow-md" />
             </div>
           </div>
+          <p className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
+            <Link href="/usage" className="inline-flex items-center gap-1.5 font-medium text-fg hover:text-accent">
+              Next: using the generated client <ArrowRight className="size-3.5" aria-hidden />
+            </Link>
+            <Link href="/skills" className="inline-flex items-center gap-1.5 font-medium text-fg hover:text-accent">
+              Install the AI agent skill <ArrowRight className="size-3.5" aria-hidden />
+            </Link>
+          </p>
         </section>
 
         {/* Features */}

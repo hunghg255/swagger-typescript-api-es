@@ -84,13 +84,23 @@ function SectionList({
   );
 }
 
-export function DocsSidebar({ headings }: { headings: NavHeading[] }) {
+export function DocsSidebar({
+  headings,
+  title = 'Guide',
+  label = 'Documentation sections',
+}: {
+  headings: NavHeading[];
+  /** small caps title above the list */
+  title?: string;
+  /** accessible name of the navigation landmark */
+  label?: string;
+}) {
   const ids = useMemo(() => headings.map((h) => h.id), [headings]);
   const groups = useMemo(() => groupHeadings(headings), [headings]);
   const active = useActiveHeading(ids);
   return (
-    <nav aria-label="Documentation sections" className="scrollbar-thin h-full overflow-y-auto py-8 pr-3">
-      <p className="mb-2 px-2.5 text-xs font-semibold tracking-wide text-fg-subtle uppercase">Guide</p>
+    <nav aria-label={label} className="scrollbar-thin h-full overflow-y-auto py-8 pr-3">
+      <p className="mb-2 px-2.5 text-xs font-semibold tracking-wide text-fg-subtle uppercase">{title}</p>
       <SectionList groups={groups} active={active} />
       <div className="mt-6 border-t border-border pt-5">
         <Link
@@ -156,7 +166,14 @@ export function DocsMobileNav({ headings }: { headings: NavHeading[] }) {
   );
 }
 
-export function DocsToc({ headings }: { headings: NavHeading[] }) {
+export function DocsToc({
+  headings,
+  editHref = `${site.repo}/edit/main/README.md`,
+}: {
+  headings: NavHeading[];
+  /** "Edit this page on GitHub" target */
+  editHref?: string;
+}) {
   const ids = useMemo(() => headings.map((h) => h.id), [headings]);
   const active = useActiveHeading(ids);
   const listRef = useRef<HTMLUListElement>(null);
@@ -194,7 +211,7 @@ export function DocsToc({ headings }: { headings: NavHeading[] }) {
       </ul>
       <div className="mt-5 space-y-2 border-t border-border pt-5 text-[13px]">
         <a
-          href={`${site.repo}/edit/main/README.md`}
+          href={editHref}
           target="_blank"
           rel="noreferrer"
           className="block text-fg-muted hover:text-fg"
