@@ -1,0 +1,376 @@
+{
+  "generatedAt": "2026-09-25T02:16:20.240Z",
+  "commit": "8b7c82e",
+  "environment": {
+    "node": "v22.22.2",
+    "platform": "Linux 6.18.44-fc-v37 (x64)",
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "cores": 4,
+    "memoryGb": 15.7
+  },
+  "settings": {
+    "warmRuns": 5,
+    "coldRuns": 3
+  },
+  "libraries": {
+    "es": {
+      "name": "swagger-typescript-api-es",
+      "version": "0.1.6"
+    },
+    "original": {
+      "name": "swagger-typescript-api",
+      "version": "13.13.0"
+    }
+  },
+  "documents": {
+    "petstore": {
+      "label": "Petstore",
+      "detail": "OpenAPI 3, 15 schemas, 11 operations (tests/fixtures/petstore.json)"
+    },
+    "medium": {
+      "label": "Medium",
+      "detail": "synthetic OpenAPI 3, 300 schemas, 600 operations"
+    },
+    "large": {
+      "label": "Large",
+      "detail": "synthetic OpenAPI 3, 1500 schemas, 3000 operations"
+    }
+  },
+  "optionSets": {
+    "default": {
+      "label": "default",
+      "options": {}
+    },
+    "modular": {
+      "label": "modular",
+      "options": {
+        "modular": true
+      }
+    },
+    "extract": {
+      "label": "extract* + route types",
+      "options": {
+        "extractRequestParams": true,
+        "extractRequestBody": true,
+        "extractResponseBody": true,
+        "extractResponseError": true,
+        "extractEnums": true,
+        "generateRouteTypes": true
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "petstore-default",
+      "document": "petstore",
+      "options": "default",
+      "libraries": {
+        "es": {
+          "cold": {
+            "medianMs": 281.2,
+            "minMs": 274.2,
+            "importMs": 237.4,
+            "generateMs": 43.8,
+            "maxRssMb": 100.4
+          },
+          "warm": {
+            "medianMs": 7.8,
+            "minMs": 6.8,
+            "runs": 5
+          },
+          "outputKb": 13.8,
+          "files": 1
+        },
+        "original": {
+          "cold": {
+            "medianMs": 1015.6,
+            "minMs": 1011.7,
+            "importMs": 660.7,
+            "generateMs": 356.7,
+            "maxRssMb": 284.7
+          },
+          "warm": {
+            "medianMs": 74.2,
+            "minMs": 69,
+            "runs": 5
+          },
+          "outputKb": 14,
+          "files": 1
+        }
+      }
+    },
+    {
+      "id": "petstore-modular",
+      "document": "petstore",
+      "options": "modular",
+      "libraries": {
+        "original": {
+          "cold": {
+            "medianMs": 1059,
+            "minMs": 1041.8,
+            "importMs": 649.1,
+            "generateMs": 409.9,
+            "maxRssMb": 308.6
+          },
+          "warm": {
+            "medianMs": 86.8,
+            "minMs": 84.5,
+            "runs": 5
+          },
+          "outputKb": 13.7,
+          "files": 5
+        },
+        "es": {
+          "cold": {
+            "medianMs": 278.8,
+            "minMs": 272.8,
+            "importMs": 229.7,
+            "generateMs": 50.4,
+            "maxRssMb": 101.5
+          },
+          "warm": {
+            "medianMs": 7.6,
+            "minMs": 6.7,
+            "runs": 5
+          },
+          "outputKb": 14.6,
+          "files": 6
+        }
+      }
+    },
+    {
+      "id": "medium-default",
+      "document": "medium",
+      "options": "default",
+      "libraries": {
+        "es": {
+          "cold": {
+            "medianMs": 444.6,
+            "minMs": 427.3,
+            "importMs": 225.6,
+            "generateMs": 210.6,
+            "maxRssMb": 144.8
+          },
+          "warm": {
+            "medianMs": 107.2,
+            "minMs": 104.3,
+            "runs": 5
+          },
+          "outputKb": 326.8,
+          "files": 1
+        },
+        "original": {
+          "cold": {
+            "medianMs": 3511.2,
+            "minMs": 3421.1,
+            "importMs": 688.1,
+            "generateMs": 2771.1,
+            "maxRssMb": 385.8
+          },
+          "warm": {
+            "medianMs": 2182.3,
+            "minMs": 2034.1,
+            "runs": 5
+          },
+          "outputKb": 315.6,
+          "files": 1
+        }
+      }
+    },
+    {
+      "id": "medium-modular",
+      "document": "medium",
+      "options": "modular",
+      "libraries": {
+        "original": {
+          "cold": {
+            "medianMs": 3908.3,
+            "minMs": 3828.4,
+            "importMs": 641.1,
+            "generateMs": 3267.2,
+            "maxRssMb": 363.4
+          },
+          "warm": {
+            "medianMs": 2780.6,
+            "minMs": 2630.5,
+            "runs": 5
+          },
+          "outputKb": 306.3,
+          "files": 52
+        },
+        "es": {
+          "cold": {
+            "medianMs": 437.9,
+            "minMs": 430.8,
+            "importMs": 230,
+            "generateMs": 207.9,
+            "maxRssMb": 148.5
+          },
+          "warm": {
+            "medianMs": 96.3,
+            "minMs": 87.4,
+            "runs": 5
+          },
+          "outputKb": 484.9,
+          "files": 52
+        }
+      }
+    },
+    {
+      "id": "medium-extract",
+      "document": "medium",
+      "options": "extract",
+      "libraries": {
+        "es": {
+          "cold": {
+            "medianMs": 562.2,
+            "minMs": 561.9,
+            "importMs": 229.6,
+            "generateMs": 333.2,
+            "maxRssMb": 159.7
+          },
+          "warm": {
+            "medianMs": 178.5,
+            "minMs": 164.1,
+            "runs": 5
+          },
+          "outputKb": 575.1,
+          "files": 1
+        },
+        "original": {
+          "cold": {
+            "medianMs": 5359.5,
+            "minMs": 5326.3,
+            "importMs": 668.9,
+            "generateMs": 4673.2,
+            "maxRssMb": 407.7
+          },
+          "warm": {
+            "medianMs": 3915.9,
+            "minMs": 3810.7,
+            "runs": 5
+          },
+          "outputKb": 600.7,
+          "files": 1
+        }
+      }
+    },
+    {
+      "id": "large-default",
+      "document": "large",
+      "options": "default",
+      "libraries": {
+        "original": {
+          "cold": {
+            "medianMs": 13072.8,
+            "minMs": 12792.5,
+            "importMs": 664.1,
+            "generateMs": 12408.6,
+            "maxRssMb": 587.6
+          },
+          "warm": {
+            "medianMs": 11302.2,
+            "minMs": 10994.4,
+            "runs": 5
+          },
+          "outputKb": 1557.9,
+          "files": 1
+        },
+        "es": {
+          "cold": {
+            "medianMs": 938.4,
+            "minMs": 909.3,
+            "importMs": 230.9,
+            "generateMs": 702.6,
+            "maxRssMb": 251.3
+          },
+          "warm": {
+            "medianMs": 494.1,
+            "minMs": 450,
+            "runs": 5
+          },
+          "outputKb": 1614.8,
+          "files": 1
+        }
+      }
+    },
+    {
+      "id": "large-modular",
+      "document": "large",
+      "options": "modular",
+      "libraries": {
+        "es": {
+          "cold": {
+            "medianMs": 880.4,
+            "minMs": 875.7,
+            "importMs": 231.8,
+            "generateMs": 649.5,
+            "maxRssMb": 259.8
+          },
+          "warm": {
+            "medianMs": 425.8,
+            "minMs": 366.9,
+            "runs": 5
+          },
+          "outputKb": 2413.7,
+          "files": 52
+        },
+        "original": {
+          "cold": {
+            "medianMs": 16482,
+            "minMs": 16384.1,
+            "importMs": 651.3,
+            "generateMs": 15830.8,
+            "maxRssMb": 618.3
+          },
+          "warm": {
+            "medianMs": 14854.4,
+            "minMs": 14597.9,
+            "runs": 5
+          },
+          "outputKb": 1476.4,
+          "files": 52
+        }
+      }
+    },
+    {
+      "id": "large-extract",
+      "document": "large",
+      "options": "extract",
+      "libraries": {
+        "original": {
+          "cold": {
+            "medianMs": 29373.5,
+            "minMs": 29156.1,
+            "importMs": 678.6,
+            "generateMs": 28695,
+            "maxRssMb": 743.5
+          },
+          "warm": {
+            "medianMs": 27309.2,
+            "minMs": 27216.1,
+            "runs": 5
+          },
+          "outputKb": 3005.3,
+          "files": 1
+        },
+        "es": {
+          "cold": {
+            "medianMs": 1904.7,
+            "minMs": 1526.5,
+            "importMs": 282.1,
+            "generateMs": 1622.7,
+            "maxRssMb": 313.3
+          },
+          "warm": {
+            "medianMs": 1032.9,
+            "minMs": 1004.2,
+            "runs": 5
+          },
+          "outputKb": 2866.2,
+          "files": 1
+        }
+      }
+    }
+  ]
+}

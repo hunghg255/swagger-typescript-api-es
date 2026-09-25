@@ -22,6 +22,7 @@ Generate a fully typed TypeScript API client (`fetch` or `axios`) and data contr
 ## Table of contents
 
 - [Differences from the original](#differences-from-the-original)
+- [Performance](#performance)
 - [Requirements](#requirements)
 - [Install](#install)
 - [Quick start](#quick-start)
@@ -61,6 +62,22 @@ the same kind of client, with these differences:
   generated HTTP clients also accept an `injectHeaders` callback.
 - There is no `generate-templates` CLI command. To copy the built-in templates, call
   [`generateTemplates()`](#custom-templates) from code.
+
+## Performance
+
+Generation time compared with the original `swagger-typescript-api` v13.13.0 (median, warm process,
+same documents and options, Node.js v22.22.2 on 4 cores):
+
+| Document                                 | swagger-typescript-api-es | swagger-typescript-api |                |
+| ---------------------------------------- | ------------------------: | ---------------------: | -------------: |
+| Petstore (15 schemas, 11 operations)     |                      8 ms |                  74 ms | **10× faster** |
+| 300 schemas, 600 operations              |                    107 ms |                  2.2 s | **20× faster** |
+| 1500 schemas, 3000 operations            |                    494 ms |                 11.3 s | **23× faster** |
+| 1500 schemas, 3000 operations, `modular` |                    426 ms |                 14.9 s | **35× faster** |
+
+A single cold run (new process, like the CLI) of the largest document takes about
+938 ms instead of 13.1 s, with less than half the memory. All numbers, the method and
+the caveats are on the docs site's Benchmark page; run it yourself with `npm run bench:compare`.
 
 ## Requirements
 

@@ -46,6 +46,7 @@
     "test:coverage": "vitest run --coverage",
     "test:immutability": "STA_FREEZE=1 vitest run",
     "bench": "npm run build && node bench/index.mjs",
+    "bench:compare": "npm run build && npm --prefix bench/compare ci --no-audit --no-fund && node bench/compare/run.mjs",
     "changelog": "npx changeloggithub@latest --all true && git add CHANGELOG.md && git commit -m 'chore: update CHANGELOG.md'",
     "prepublishOnly": "npm run build",
     "release": "bumpp -r && npm publish"
